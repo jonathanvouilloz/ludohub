@@ -1,3 +1,4 @@
+import { relations } from 'drizzle-orm'
 import {
   boolean,
   date,
@@ -104,6 +105,7 @@ export const seasons = pgTable('seasons', {
   name: text('name').notNull(),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
+  isArchived: boolean('is_archived').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
@@ -133,6 +135,35 @@ export const assignments = pgTable(
   },
   (t) => [unique().on(t.slotId, t.memberId)],
 )
+
+// ─── Relations (API relationnelle Drizzle : `db.query.*.findMany({ with })`) ──
+
+export const membersRelations = relations(members, ({ many }) => ({
+  assignments: many(assignments),
+}))
+
+export const seasonsRelations = relations(seasons, ({ many }) => ({
+  slots: many(saturdaySlots),
+}))
+
+export const saturdaySlotsRelations = relations(saturdaySlots, ({ one, many }) => ({
+  season: one(seasons, {
+    fields: [saturdaySlots.seasonId],
+    references: [seasons.id],
+  }),
+  assignments: many(assignments),
+}))
+
+export const assignmentsRelations = relations(assignments, ({ one }) => ({
+  slot: one(saturdaySlots, {
+    fields: [assignments.slotId],
+    references: [saturdaySlots.id],
+  }),
+  member: one(members, {
+    fields: [assignments.memberId],
+    references: [members.id],
+  }),
+}))
 
 // ─── Absences ────────────────────────────────────────────────────────────────
 
@@ -316,7 +347,9 @@ export type MemberInsert = typeof members.$inferInsert
 export type SeasonRow = typeof seasons.$inferSelect
 export type SeasonInsert = typeof seasons.$inferInsert
 export type SaturdaySlotRow = typeof saturdaySlots.$inferSelect
+export type SaturdaySlotInsert = typeof saturdaySlots.$inferInsert
 export type AssignmentRow = typeof assignments.$inferSelect
+export type AssignmentInsert = typeof assignments.$inferInsert
 export type AbsenceRow = typeof absences.$inferSelect
 export type AbsenceInsert = typeof absences.$inferInsert
 export type ThemeRow = typeof themes.$inferSelect

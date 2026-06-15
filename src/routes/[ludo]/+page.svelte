@@ -9,9 +9,12 @@
   <h1>Bonjour {data.currentMember.name} 👋</h1>
   <p class="muted">Vous êtes connecté·e. Le tableau de bord arrivera dans un prochain epic.</p>
 
-  {#if isResponsable(data.currentMember)}
-    <a class="settings-link" href="/{data.ludo.slug}/settings/membres">Gérer l'équipe →</a>
-  {/if}
+  <nav class="links">
+    <a class="settings-link" href="/{data.ludo.slug}/planning">Planning →</a>
+    {#if isResponsable(data.currentMember)}
+      <a class="settings-link" href="/{data.ludo.slug}/settings/membres">Gérer l'équipe →</a>
+    {/if}
+  </nav>
 </main>
 
 <style>
@@ -35,9 +38,14 @@
     color: var(--text-muted);
     margin: 0;
   }
+  .links {
+    display: flex;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+    flex-wrap: wrap;
+  }
   .settings-link {
     display: inline-block;
-    margin-top: var(--space-6);
     font-weight: var(--weight-medium);
     color: var(--ludo-color);
     text-decoration: none;

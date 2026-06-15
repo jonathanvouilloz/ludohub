@@ -81,3 +81,13 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** Setup manuel déterministe — `components.json` + `src/lib/utils/cn.ts` écrits à la main, puis `npx shadcn-svelte add -y …` (qui lit `components.json`, pas de preset requis). Le mapping sémantique shadcn est branché sur nos tokens dans `@theme` (`src/app.css`) : `--color-primary`→`--primary`, `--color-destructive`→`--danger`, `--color-border`→`--border`, etc. L'`accent` shadcn = surface de hover (`--bg-hover`), **pas** le magenta de marque ; le magenta reste exposé en `--color-brand*`. `cn` placé dans `$lib/utils/cn` (coexiste avec le dossier `utils/`). `@custom-variant dark` figé sur `.dark` (jamais ajoutée) pour empêcher tout dark: accidentel. Aucune palette grise par défaut introduite.
 
 **Alternatives :** `--preset <base64>` (chaîne fragile, schéma v1.3 non documenté), piper les réponses au prompt clack (non fiable en raw mode), accepter la palette neutre par défaut puis tout réécrire (double travail). Composant `form/` écarté (tire formsnap + sveltekit-superforms) — on utilise les form actions SvelteKit natives.
+
+---
+
+## 2026-06-16 | Planning : consultation ouverte à tous, mutations responsable-only ; swap atomique via db.batch
+
+**Contexte :** Epic 04-PLANNING. Le doc feature impliquait une vue responsable et une vue membre séparées ; en test, un membre simple était bloqué (403) sur le planning. Le driver `neon-http` ne supporte pas les transactions interactives, or le swap doit être atomique.
+
+**Décision :** Tout membre connecté **consulte** le planning (grille + ses prochains samedis) ; seules les **mutations** (saisons, assignations, annulations, swap) sont réservées aux responsables (garde `requireContext` dans les actions). Swap croisé entre deux samedis distincts, atomique via `db.batch()`. Saisons archivables (`isArchived`, lecture seule). Warnings d'absences reportés à l'epic 05.
+
+**Alternatives :** Vue planning entièrement responsable-only (rejetée : les membres veulent consulter), swap via deux UPDATE séquentiels (non atomique, risque d'état incohérent), `db.transaction()` (non supporté par neon-http).
