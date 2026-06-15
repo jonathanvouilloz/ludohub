@@ -1,0 +1,20 @@
+import { eq } from 'drizzle-orm'
+import { db } from './index.js'
+import { ludotheques, type LudothequeInsert, type LudothequeRow } from '../schema.js'
+
+export async function getLudoBySlug(slug: string): Promise<LudothequeRow | undefined> {
+  return db.query.ludotheques.findFirst({ where: eq(ludotheques.slug, slug) })
+}
+
+export async function getLudoById(id: string): Promise<LudothequeRow | undefined> {
+  return db.query.ludotheques.findFirst({ where: eq(ludotheques.id, id) })
+}
+
+export async function getAllLudos(): Promise<LudothequeRow[]> {
+  return db.query.ludotheques.findMany({ orderBy: (l, { asc }) => asc(l.name) })
+}
+
+export async function createLudo(data: LudothequeInsert): Promise<LudothequeRow> {
+  const [ludo] = await db.insert(ludotheques).values(data).returning()
+  return ludo
+}

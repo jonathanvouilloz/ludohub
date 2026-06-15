@@ -1,0 +1,69 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+@theme {
+  --color-primary:        var(--primary);
+  --color-primary-dark:   var(--primary-dark);
+  --color-primary-light:  var(--primary-light);
+  --color-accent:         var(--accent);
+  --color-accent-dark:    var(--accent-dark);
+  --color-accent-light:   var(--accent-light);
+  --color-bg-base:        var(--bg-base);
+  --color-bg-card:        var(--bg-card);
+  --color-bg-sidebar:     var(--bg-sidebar);
+  --color-bg-hover:       var(--bg-hover);
+  --color-border:         var(--border);
+  --color-border-strong:  var(--border-strong);
+  --color-text-main:      var(--text-main);
+  --color-text-muted:     var(--text-muted);
+  --color-text-subtle:    var(--text-subtle);
+  --color-success:        var(--success);
+  --color-success-light:  var(--success-light);
+  --color-warning:        var(--warning);
+  --color-warning-light:  var(--warning-light);
+  --color-danger:         var(--danger);
+  --color-danger-light:   var(--danger-light);
+
+  --font-family-sans: var(--font-sans);
+
+  --radius-sm:   var(--radius-sm);
+  --radius-md:   var(--radius-md);
+  --radius-lg:   var(--radius-lg);
+  --radius-xl:   var(--radius-xl);
+  --radius-pill: var(--radius-pill);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background: var(--bg-base);
+  color: var(--text-main);
+  line-height: var(--leading-base);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
