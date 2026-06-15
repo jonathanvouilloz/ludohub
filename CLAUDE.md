@@ -115,5 +115,8 @@ Structure mémoire :
 - `docs/features/[nom].md` = mémoire complète de chaque feature (detail, pièges, historique)
 
 ## État actuel
-Projet initialisé. Premier epic actif : **SETUP** (schema Drizzle + env + socle SvelteKit).
+Epics **01-SETUP** et **02-AUTH** terminés (socle SvelteKit + Drizzle + Neon, puis connexion multi-tenant slug/password/membre). Prochain epic : **03-MEMBRES** (CRUD membres + rôles).
+Repo GitHub : `github.com/jonathanvouilloz/ludohub` (branche `main`).
 Voir `docs/HANDOFF.md` pour l'état courant.
+
+**Rappel env :** côté serveur, toujours `$env/dynamic/private` (jamais `process.env`). Scripts hors SvelteKit (seed) découplés de `$env`.
