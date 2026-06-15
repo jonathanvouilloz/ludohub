@@ -71,3 +71,13 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** Côté serveur SvelteKit, toujours `$env/dynamic/private` (et `$env/dynamic/public` pour `PUBLIC_*`). Les scripts hors runtime (seed via tsx) restent autonomes : client neon propre + `dotenv`, sans importer de module `$env`.
 
 **Alternatives :** Forcer le chargement de `.env` dans process.env (fragile, ordre de boot), `$env/static` (moins souple pour Vercel runtime).
+
+---
+
+## 2026-06-15 | shadcn-svelte mappé sur les tokens LudoHub (pas la palette par défaut)
+
+**Contexte :** La CLI shadcn-svelte n'avait jamais été lancée avant 03-MEMBRES (besoin de table, input, dialog, select, alert-dialog, badge, checkbox). En v1.3.0 l'init exige un « design system preset » interactif (chaîne base64 du site) que ni `--base-color` ni l'ancien preset documenté ne contournent — l'init purement non-interactif n'était pas possible.
+
+**Décision :** Setup manuel déterministe — `components.json` + `src/lib/utils/cn.ts` écrits à la main, puis `npx shadcn-svelte add -y …` (qui lit `components.json`, pas de preset requis). Le mapping sémantique shadcn est branché sur nos tokens dans `@theme` (`src/app.css`) : `--color-primary`→`--primary`, `--color-destructive`→`--danger`, `--color-border`→`--border`, etc. L'`accent` shadcn = surface de hover (`--bg-hover`), **pas** le magenta de marque ; le magenta reste exposé en `--color-brand*`. `cn` placé dans `$lib/utils/cn` (coexiste avec le dossier `utils/`). `@custom-variant dark` figé sur `.dark` (jamais ajoutée) pour empêcher tout dark: accidentel. Aucune palette grise par défaut introduite.
+
+**Alternatives :** `--preset <base64>` (chaîne fragile, schéma v1.3 non documenté), piper les réponses au prompt clack (non fiable en raw mode), accepter la palette neutre par défaut puis tout réécrire (double travail). Composant `form/` écarté (tire formsnap + sveltekit-superforms) — on utilise les form actions SvelteKit natives.

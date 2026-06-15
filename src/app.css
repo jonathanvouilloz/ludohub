@@ -1,40 +1,79 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 @import './styles/tokens.css';
 
-@theme {
-  --color-primary:        var(--primary);
-  --color-primary-dark:   var(--primary-dark);
-  --color-primary-light:  var(--primary-light);
-  --color-accent:         var(--accent);
-  --color-accent-dark:    var(--accent-dark);
-  --color-accent-light:   var(--accent-light);
-  --color-bg-base:        var(--bg-base);
-  --color-bg-card:        var(--bg-card);
-  --color-bg-sidebar:     var(--bg-sidebar);
-  --color-bg-hover:       var(--bg-hover);
-  --color-border:         var(--border);
-  --color-border-strong:  var(--border-strong);
-  --color-text-main:      var(--text-main);
-  --color-text-muted:     var(--text-muted);
-  --color-text-subtle:    var(--text-subtle);
-  --color-success:        var(--success);
-  --color-success-light:  var(--success-light);
-  --color-warning:        var(--warning);
-  --color-warning-light:  var(--warning-light);
-  --color-danger:         var(--danger);
-  --color-danger-light:   var(--danger-light);
+/* Dark mode piloté par la classe .dark (jamais ajoutée → app toujours claire).
+   Empêche les variants dark: shadcn de suivre prefers-color-scheme par accident. */
+@custom-variant dark (&:is(.dark *));
 
+@theme {
+  /* ─── Tokens de marque LudoHub (utilities bg-primary, text-success, …) ─── */
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-light: var(--primary-light);
+  --color-brand: var(--accent); /* magenta de marque */
+  --color-brand-dark: var(--accent-dark);
+  --color-brand-light: var(--accent-light);
+  --color-bg-base: var(--bg-base);
+  --color-bg-card: var(--bg-card);
+  --color-bg-sidebar: var(--bg-sidebar);
+  --color-bg-hover: var(--bg-hover);
+  --color-border-strong: var(--border-strong);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+  --color-success: var(--success);
+  --color-success-light: var(--success-light);
+  --color-warning: var(--warning);
+  --color-warning-light: var(--warning-light);
+  --color-danger: var(--danger);
+  --color-danger-light: var(--danger-light);
+
+  /* ─── Mapping sémantique shadcn-svelte → tokens LudoHub ─── */
+  --color-background: var(--bg-base);
+  --color-foreground: var(--text-main);
+  --color-card: var(--bg-card);
+  --color-card-foreground: var(--text-main);
+  --color-popover: var(--bg-card);
+  --color-popover-foreground: var(--text-main);
+  --color-primary-foreground: var(--text-inverse);
+  --color-secondary: var(--bg-sidebar);
+  --color-secondary-foreground: var(--text-main);
+  --color-muted: var(--bg-hover);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent: var(--bg-hover); /* accent shadcn = surface de hover */
+  --color-accent-foreground: var(--text-main);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--text-inverse);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-ring: var(--primary);
+
+  /* ─── Typo, radius, ombres ─── */
   --font-family-sans: var(--font-sans);
 
-  --radius-sm:   var(--radius-sm);
-  --radius-md:   var(--radius-md);
-  --radius-lg:   var(--radius-lg);
-  --radius-xl:   var(--radius-xl);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
   --radius-pill: var(--radius-pill);
 
   --shadow-sm: var(--shadow-sm);
   --shadow-md: var(--shadow-md);
   --shadow-lg: var(--shadow-lg);
+}
+
+:root {
+  /* base radius pour les composants shadcn qui lisent var(--radius) */
+  --radius: var(--radius-md);
+}
+
+@layer base {
+  /* En Tailwind v4 la couleur de bordure par défaut = currentColor.
+     Les composants shadcn utilisent `border` nu → on remet notre token. */
+  * {
+    @apply border-border;
+  }
 }
 
 *,
