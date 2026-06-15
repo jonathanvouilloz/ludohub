@@ -17,9 +17,6 @@ export function isActiveMember(member: MemberRow | null | undefined): boolean {
 /**
  * Guard : le membre appartient bien à la ludo du slug courant.
  */
-export function belongsToLudo(
-  member: MemberRow | null | undefined,
-  ludoId: string,
-): boolean {
+export function belongsToLudo(member: MemberRow | null | undefined, ludoId: string): boolean {
   return member?.ludoId === ludoId
 }

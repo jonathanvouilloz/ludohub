@@ -217,11 +217,7 @@ export const themeLoans = pgTable('theme_loans', {
 
 // ─── Cross-ludo (demandes d'aide) ────────────────────────────────────────────
 
-export const helpRequestStatus = pgEnum('help_request_status', [
-  'ouverte',
-  'pourvue',
-  'annulee',
-])
+export const helpRequestStatus = pgEnum('help_request_status', ['ouverte', 'pourvue', 'annulee'])
 
 export const helpRequests = pgTable('help_requests', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -235,11 +231,7 @@ export const helpRequests = pgTable('help_requests', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
-export const helpResponseStatus = pgEnum('help_response_status', [
-  'propose',
-  'confirme',
-  'refuse',
-])
+export const helpResponseStatus = pgEnum('help_response_status', ['propose', 'confirme', 'refuse'])
 
 export const helpResponses = pgTable('help_responses', {
   id: uuid('id').defaultRandom().primaryKey(),

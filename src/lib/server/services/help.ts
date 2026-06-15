@@ -15,11 +15,7 @@ export async function createHelpRequest(
   return request
 }
 
-export async function respondToRequest(
-  helpRequestId: string,
-  memberId: string,
-  ludoId: string,
-) {
+export async function respondToRequest(helpRequestId: string, memberId: string, ludoId: string) {
   const [response] = await db
     .insert(helpResponses)
     .values({ helpRequestId, memberId, ludoId })

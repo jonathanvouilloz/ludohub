@@ -10,104 +10,104 @@
 @layer base {
   :root {
     /* ─── Core ───────────────────────────────────────────── */
-    --primary:        #0073E6;
-    --primary-dark:   #005BA8;
-    --primary-light:  #E8F2FE;
-    --accent:         #C0007A;
-    --accent-dark:    #9A0062;
-    --accent-light:   #FDE8F4;
+    --primary: #0073e6;
+    --primary-dark: #005ba8;
+    --primary-light: #e8f2fe;
+    --accent: #c0007a;
+    --accent-dark: #9a0062;
+    --accent-light: #fde8f4;
 
     /* ─── Surfaces & lignes ──────────────────────────────── */
-    --bg-base:        #EEF2F8;
-    --bg-card:        #FFFFFF;
-    --bg-sidebar:     #F1F5FA;
-    --bg-hover:       #F5F8FC;
-    --border:         #DDE3EE;
-    --border-strong:  #C4CDD9;
+    --bg-base: #eef2f8;
+    --bg-card: #ffffff;
+    --bg-sidebar: #f1f5fa;
+    --bg-hover: #f5f8fc;
+    --border: #dde3ee;
+    --border-strong: #c4cdd9;
 
     /* ─── Ink (texte) ────────────────────────────────────── */
-    --text-main:      #25324B;
-    --text-muted:     #68758E;
-    --text-subtle:    #9BA8BC;
-    --text-inverse:   #FFFFFF;
+    --text-main: #25324b;
+    --text-muted: #68758e;
+    --text-subtle: #9ba8bc;
+    --text-inverse: #ffffff;
 
     /* ─── Sémantiques ────────────────────────────────────── */
-    --success:        #0E9E6E;
-    --success-light:  #E6F7F1;
-    --warning:        #E07800;
-    --warning-light:  #FEF3E6;
-    --danger:         #F02849;
-    --danger-light:   #FEE8EC;
-    --info:           #0073E6;   /* = primary */
+    --success: #0e9e6e;
+    --success-light: #e6f7f1;
+    --warning: #e07800;
+    --warning-light: #fef3e6;
+    --danger: #f02849;
+    --danger-light: #fee8ec;
+    --info: #0073e6; /* = primary */
 
     /* ─── Spacing ────────────────────────────────────────── */
-    --space-1:   4px;
-    --space-2:   8px;
-    --space-3:  12px;
-    --space-4:  16px;
-    --space-5:  20px;
-    --space-6:  24px;
-    --space-8:  32px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
     --space-10: 40px;
     --space-12: 48px;
     --space-16: 64px;
 
     /* ─── Radius ─────────────────────────────────────────── */
-    --radius-sm:   8px;
-    --radius-md:  12px;
-    --radius-lg:  16px;
-    --radius-xl:  20px;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
     --radius-pill: 999px;
 
     /* ─── Ombres ─────────────────────────────────────────── */
-    --shadow-sm:    0 2px 8px rgba(30, 50, 80, 0.06);
-    --shadow-md:    0 8px 24px rgba(30, 50, 80, 0.08);
-    --shadow-lg:    0 16px 40px rgba(30, 50, 80, 0.12);
+    --shadow-sm: 0 2px 8px rgba(30, 50, 80, 0.06);
+    --shadow-md: 0 8px 24px rgba(30, 50, 80, 0.08);
+    --shadow-lg: 0 16px 40px rgba(30, 50, 80, 0.12);
     --shadow-focus: 0 0 0 3px rgba(0, 115, 230, 0.25);
 
     /* ─── Typographie ────────────────────────────────────── */
     --font-sans: 'Nunito', system-ui, sans-serif;
 
-    --text-display: 2rem;       /* 32px — titres de page */
-    --text-h1:      1.5rem;     /* 24px — titres de section */
-    --text-h2:      1.25rem;    /* 20px — sous-titres, en-têtes card */
-    --text-h3:      1rem;       /* 16px — labels de groupe */
-    --text-body:    0.9375rem;  /* 15px — corps standard */
-    --text-small:   0.8125rem;  /* 13px — métadonnées */
-    --text-label:   0.75rem;    /* 12px — nav labels, badges */
+    --text-display: 2rem; /* 32px — titres de page */
+    --text-h1: 1.5rem; /* 24px — titres de section */
+    --text-h2: 1.25rem; /* 20px — sous-titres, en-têtes card */
+    --text-h3: 1rem; /* 16px — labels de groupe */
+    --text-body: 0.9375rem; /* 15px — corps standard */
+    --text-small: 0.8125rem; /* 13px — métadonnées */
+    --text-label: 0.75rem; /* 12px — nav labels, badges */
 
-    --weight-normal:   400;
-    --weight-medium:   500;
+    --weight-normal: 400;
+    --weight-medium: 500;
     --weight-semibold: 600;
-    --weight-bold:     700;
+    --weight-bold: 700;
 
     --leading-tight: 1.2;
-    --leading-base:  1.5;
+    --leading-base: 1.5;
 
     /* ─── Motion ─────────────────────────────────────────── */
-    --dur-fast:   150ms;
-    --dur-base:   250ms;
-    --dur-slow:   450ms;
+    --dur-fast: 150ms;
+    --dur-base: 250ms;
+    --dur-slow: 450ms;
     --dur-reveal: 600ms;
 
-    --ease-out-strong:    cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
     --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
-    --ease-drawer:        cubic-bezier(0.32, 0.72, 0, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
     /* ─── Layout ─────────────────────────────────────────── */
     --sidebar-width: 72px;
-    --max-content:  1200px;
+    --max-content: 1200px;
 
     /* ─── Couleur ludo (injectée dynamiquement par layout) ── */
-    --ludo-color: #0073E6;  /* fallback = primary */
+    --ludo-color: #0073e6; /* fallback = primary */
   }
 
   /* Respect prefers-reduced-motion */
   @media (prefers-reduced-motion: reduce) {
     :root {
-      --dur-fast:   0ms;
-      --dur-base:   0ms;
-      --dur-slow:   0ms;
+      --dur-fast: 0ms;
+      --dur-base: 0ms;
+      --dur-slow: 0ms;
       --dur-reveal: 0ms;
     }
   }

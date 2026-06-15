@@ -29,6 +29,7 @@ src/
 ## Règles d'architecture
 
 ### Séparation des responsabilités
+
 ```
 +page.server.ts   → load() + actions() uniquement. Pas de logique métier.
 services/*.ts     → logique métier. Appelle db/*.ts. Retourne des types typés.
@@ -36,6 +37,7 @@ db/*.ts           → queries Drizzle uniquement. Pas de logique. Retourne des r
 ```
 
 ### Exemple correct
+
 ```typescript
 // db/members.ts
 export async function getMembersByLudo(ludoId: string): Promise<MemberRow[]> {
@@ -46,7 +48,7 @@ export async function getMembersByLudo(ludoId: string): Promise<MemberRow[]> {
 export async function getActiveMembersForSlot(ludoId: string, slotId: string) {
   const allMembers = await getMembersByLudo(ludoId)
   const assigned = await getAssignmentsForSlot(slotId)
-  return allMembers.filter(m => m.isActive && !assigned.find(a => a.memberId === m.id))
+  return allMembers.filter((m) => m.isActive && !assigned.find((a) => a.memberId === m.id))
 }
 
 // +page.server.ts
@@ -58,21 +60,22 @@ export const load = async ({ params }) => {
 
 ## Nommage
 
-| Contexte | Convention | Exemple |
-|----------|-----------|---------|
-| Composants Svelte | PascalCase | `MemberCard.svelte` |
-| Pages SvelteKit | Fichiers système | `+page.svelte`, `+layout.server.ts` |
-| Routes | kebab-case | `/planning/saison-2025` |
-| Fonctions | camelCase | `getActiveMembers()` |
-| Tables DB | snake_case pluriel | `saturday_slots` |
-| Colonnes DB | snake_case | `is_active`, `ludo_id` |
-| Types/interfaces | PascalCase suffixé | `MemberRow`, `AbsenceInsert` |
-| Stores Svelte | camelCase suffixe Store | `membersStore` |
-| Variables d'env | SCREAMING_SNAKE_CASE | `DATABASE_URL` |
+| Contexte          | Convention              | Exemple                             |
+| ----------------- | ----------------------- | ----------------------------------- |
+| Composants Svelte | PascalCase              | `MemberCard.svelte`                 |
+| Pages SvelteKit   | Fichiers système        | `+page.svelte`, `+layout.server.ts` |
+| Routes            | kebab-case              | `/planning/saison-2025`             |
+| Fonctions         | camelCase               | `getActiveMembers()`                |
+| Tables DB         | snake_case pluriel      | `saturday_slots`                    |
+| Colonnes DB       | snake_case              | `is_active`, `ludo_id`              |
+| Types/interfaces  | PascalCase suffixé      | `MemberRow`, `AbsenceInsert`        |
+| Stores Svelte     | camelCase suffixe Store | `membersStore`                      |
+| Variables d'env   | SCREAMING_SNAKE_CASE    | `DATABASE_URL`                      |
 
 ## Conventions Svelte
 
 ### Props
+
 ```svelte
 <script lang="ts">
   // Props avec types explicites
@@ -81,22 +84,25 @@ export const load = async ({ params }) => {
 ```
 
 ### Actions de formulaire
+
 ```typescript
 // Utiliser les form actions SvelteKit, pas fetch manuel
 export const actions = {
   create: async ({ request, locals }) => {
     const data = await request.formData()
     // validation → service → redirect ou return fail()
-  }
+  },
 }
 ```
 
 ### Gestion d'état
+
 - Préférer les stores Svelte pour l'état partagé entre composants
 - Les données serveur passent par `load()` → pas de fetch client si évitable
 - Utiliser `$state()` (Svelte 5 runes) pour l'état local des composants
 
 ## Conventions de commits
+
 ```
 feat(scope): description courte en minuscules
 fix(scope): correction de bug

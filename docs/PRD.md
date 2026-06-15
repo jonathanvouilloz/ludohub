@@ -10,6 +10,7 @@ dev_server: manual
 ---
 
 # PRD — LudoHub
+
 ## Plateforme multi-ludothèque pour les ludothèques de Genève
 
 ---
@@ -56,17 +57,17 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 
 ### Features IN
 
-| Feature | Description | Source |
-|---------|-------------|--------|
-| Multi-tenant + Auth | URL slug par ludo + mot de passe commun + sélection du nom | Nouveau |
-| Gestion membres | CRUD, rôles responsable/membre, désactivation | Port+ |
-| Planning samedis | Saisons, shifts, assignations, swap | Port |
-| Absences / Congés | Demande par membre, approbation par responsable | Port |
-| Thèmes | Items, photos (Vercel Blob, 3 max), prêts push/pull entre ludos | Port+ |
-| Demandes d'aide cross-ludo | Feed visible par toutes les ludos, réponse volontaire | Nouveau |
-| Wishlist jeux | Ajouter un jeu, marquer comme acheté | Port |
-| Demandes de matériel | Lister les besoins, statut commandé/reçu | Port simplifié |
-| Logs d'activité | Audit trail par ludo | Port |
+| Feature                    | Description                                                     | Source         |
+| -------------------------- | --------------------------------------------------------------- | -------------- |
+| Multi-tenant + Auth        | URL slug par ludo + mot de passe commun + sélection du nom      | Nouveau        |
+| Gestion membres            | CRUD, rôles responsable/membre, désactivation                   | Port+          |
+| Planning samedis           | Saisons, shifts, assignations, swap                             | Port           |
+| Absences / Congés          | Demande par membre, approbation par responsable                 | Port           |
+| Thèmes                     | Items, photos (Vercel Blob, 3 max), prêts push/pull entre ludos | Port+          |
+| Demandes d'aide cross-ludo | Feed visible par toutes les ludos, réponse volontaire           | Nouveau        |
+| Wishlist jeux              | Ajouter un jeu, marquer comme acheté                            | Port           |
+| Demandes de matériel       | Lister les besoins, statut commandé/reçu                        | Port simplifié |
+| Logs d'activité            | Audit trail par ludo                                            | Port           |
 
 ### Features OUT (V2)
 
@@ -86,6 +87,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** membre de la ludo Pâquis **je veux** accéder à l'app via l'URL de ma ludo **afin de** m'identifier sans créer de compte individuel.
 
 **Flow :**
+
 1. Accès à `ludohub.ch/paquis`
 2. Page de connexion avec le nom et la couleur de la ludo Pâquis
 3. Saisie du mot de passe commun de la ludo
@@ -93,6 +95,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 5. Accès au dashboard
 
 **Critères d'acceptation :**
+
 - [ ] URL slug unique et non-modifiable par ludo
 - [ ] Mot de passe haché en base (bcrypt via Better Auth)
 - [ ] Session persistée (cookie httpOnly, 30 jours)
@@ -100,6 +103,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 - [ ] Membre désactivé → non visible dans la liste de sélection
 
 **Edge cases :**
+
 - Slug inexistant → 404 avec message "Ludothèque introuvable"
 - Aucun membre actif → message "Contactez votre responsable"
 
@@ -110,6 +114,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** responsable **je veux** gérer les membres de mon équipe **afin de** maintenir la liste à jour.
 
 **Flow :**
+
 1. Section Paramètres → Membres
 2. Ajouter un membre (nom + rôle)
 3. Modifier le nom ou le rôle
@@ -117,6 +122,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 5. Supprimer un membre (uniquement si aucune assignation existante)
 
 **Critères d'acceptation :**
+
 - [ ] Rôles : membre / responsable
 - [ ] Désactivation non-destructive (historique préservé)
 - [ ] Suppression bloquée si des assignations ou absences existent
@@ -128,6 +134,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** responsable **je veux** gérer le planning des samedis de la saison **afin d'** organiser les présences de l'équipe.
 
 **Flow :**
+
 1. Créer une saison (nom, date début, date fin)
 2. Les samedis sont générés automatiquement dans la saison
 3. Configurer le nombre de membres requis par samedi
@@ -138,12 +145,14 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **Vue responsable :** grille complète avec tous les membres par samedi.
 
 **Critères d'acceptation :**
+
 - [ ] Génération auto des samedis entre start_date et end_date
 - [ ] Impossible d'assigner un membre deux fois sur le même slot
 - [ ] Swap : sélectionner deux membres → confirmation → échange
 - [ ] Saison archivée en fin de période (non-supprimée)
 
 **Edge cases :**
+
 - Samedi férié : responsable peut marquer le slot comme "annulé"
 - Membre absent ce jour-là : warning visuel si assigné malgré une absence approuvée
 
@@ -154,6 +163,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** membre **je veux** soumettre une demande d'absence **afin d'** informer ma responsable de mon indisponibilité.
 
 **Flow :**
+
 1. "Nouvelle demande" depuis le dashboard ou la section Absences
 2. Choisir le type (congé / vacances / formation / indisponible)
 3. Sélectionner la période (date début → date fin)
@@ -162,6 +172,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 6. Responsable : voir les demandes en attente → approuver ou refuser avec note
 
 **Critères d'acceptation :**
+
 - [ ] Types : congé / vacances / formation / indisponible
 - [ ] Statuts : en_attente / approuvé / refusé
 - [ ] Responsable voit toutes les demandes de sa ludo
@@ -175,23 +186,27 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** membre **je veux** gérer les thèmes de ma ludo et consulter ceux disponibles dans le réseau **afin de** trouver du contenu pour nos activités.
 
 **Flow — Créer un thème :**
+
 1. Nouveau thème → nom + description
 2. Ajouter des items (nom + quantité)
 3. Ajouter jusqu'à 3 photos (upload → Vercel Blob)
 4. Cocher "Partager dans le réseau" pour le rendre visible aux autres ludos
 
 **Flow — Prêter (push) :**
+
 1. Ouvrir un thème de ma ludo → "Prêter à une ludo"
 2. Sélectionner la ludo destinataire
 3. Note optionnelle → Confirmer
 4. Thème marqué "En prêt chez [ludo]"
 
 **Flow — Emprunter (pull) :**
+
 1. Section "Réseau" → Thèmes disponibles (tous les thèmes `is_shareable: true` des autres ludos)
 2. "Demander ce thème" → notification pour la ludo propriétaire
 3. Propriétaire confirme → prêt actif
 
 **Critères d'acceptation :**
+
 - [ ] Upload photos : max 3, formats jpg/png/webp, max 5MB chacune
 - [ ] Un thème ne peut pas être prêté si un prêt actif existe déjà
 - [ ] Historique des prêts visible sur la fiche thème
@@ -204,6 +219,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** membre de Pâquis **je veux** publier une demande de remplacement **afin de** trouver rapidement quelqu'un d'une autre ludo disponible.
 
 **Flow :**
+
 1. "Nouvelle demande d'aide" → date + créneau + note descriptive
 2. Demande publiée dans le feed cross-ludo, visible par tous
 3. Un membre d'une autre ludo clique "Je suis disponible"
@@ -211,6 +227,7 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 5. Demande marquée "Pourvue"
 
 **Critères d'acceptation :**
+
 - [ ] Feed cross-ludo visible par tous les membres de toutes les ludos
 - [ ] Demandes passées filtrables / archivables
 - [ ] Statuts : ouverte / pourvue / annulée
@@ -223,11 +240,13 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** membre **je veux** noter des jeux à acheter **afin de** centraliser les souhaits d'acquisition.
 
 **Flow :**
+
 1. Ajouter un jeu (titre + lien optionnel + prix CHF estimé)
 2. Liste visible par tous les membres de la ludo
 3. Marquer comme "Acheté" avec le nom de l'acheteur
 
 **Critères d'acceptation :**
+
 - [ ] Jeux achetés déplacés en bas de liste ou section dédiée
 - [ ] Lien externe cliquable
 - [ ] Prix CHF optionnel
@@ -239,11 +258,13 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 **En tant que** membre **je veux** signaler un besoin en matériel ou fournitures **afin de** centraliser les demandes.
 
 **Flow :**
+
 1. Ajouter une demande (nom + catégorie + urgence + note)
 2. Liste visible par la ludo
 3. Responsable marque comme "Commandé" puis "Reçu"
 
 **Critères d'acceptation :**
+
 - [ ] Catégories : jeux / matériel / fournitures / autre
 - [ ] Urgence : normale / haute / critique
 - [ ] Statuts : en_attente / commandé / reçu
@@ -290,6 +311,7 @@ activity_log    (id, ludo_id, member_id, action, entity_type,
 ```
 
 **Relations clés :**
+
 - `members.ludo_id` → `ludotheques.id`
 - `seasons.ludo_id` → `ludotheques.id`
 - `saturday_slots.season_id` → `seasons.id`
@@ -315,6 +337,7 @@ CI :            GitHub Actions (lint + typecheck + tests sur PR)
 ```
 
 **Variables d'environnement nécessaires :**
+
 ```
 DATABASE_URL=           # Neon connection string
 BETTER_AUTH_SECRET=     # Secret session Better Auth
@@ -386,23 +409,24 @@ src/
 
 **Palette de couleurs :**
 
-| Token | Valeur | Usage |
-|-------|--------|-------|
-| `--bg-base` | `#EEF2F8` | Fond général gris bleuté |
-| `--bg-card` | `#FFFFFF` | Cartes blanches |
-| `--bg-sidebar` | `#F1F5FA` | Sidebar |
-| `--primary` | `#0073E6` | Navigation, liens, actions secondaires |
-| `--primary-dark` | `#005BA8` | Bouton actif, hover |
-| `--accent` | `#C0007A` | Actions principales (CTA) |
-| `--text-main` | `#25324B` | Texte principal |
-| `--text-muted` | `#68758E` | Labels, secondaire |
-| `--danger` | `#F02849` | Badges notification, erreurs |
+| Token            | Valeur    | Usage                                  |
+| ---------------- | --------- | -------------------------------------- |
+| `--bg-base`      | `#EEF2F8` | Fond général gris bleuté               |
+| `--bg-card`      | `#FFFFFF` | Cartes blanches                        |
+| `--bg-sidebar`   | `#F1F5FA` | Sidebar                                |
+| `--primary`      | `#0073E6` | Navigation, liens, actions secondaires |
+| `--primary-dark` | `#005BA8` | Bouton actif, hover                    |
+| `--accent`       | `#C0007A` | Actions principales (CTA)              |
+| `--text-main`    | `#25324B` | Texte principal                        |
+| `--text-muted`   | `#68758E` | Labels, secondaire                     |
+| `--danger`       | `#F02849` | Badges notification, erreurs           |
 
 **Couleur par ludothèque :** chaque ludo a une couleur d'accent stockée en DB. Utilisée dans le header de connexion et un dot d'identification dans le feed cross-ludo.
 
 **Typographie :** Nunito (Google Fonts) — arrondie, douce, lisible. Proche de SF Pro Rounded. Poids 400/500/700.
 
 **Layout :**
+
 - Sidebar verticale étroite (~72px) avec icônes + labels 12px
 - Contenu principal en cartes blanches `border-radius: 16-20px`
 - Fond gris bleuté permet aux cartes de ressortir sans ombre forte
@@ -422,9 +446,11 @@ src/
 ```
 dev_server: manual
 ```
+
 Jonathan teste lui-même en gardant un serveur actif. Claude ne lance pas le serveur pour valider.
 
 **Flows critiques à couvrir avec Playwright :**
+
 - [ ] Connexion à une ludo (slug → password → pick name → dashboard)
 - [ ] Créer une saison et assigner un membre à un samedi
 - [ ] Soumettre une absence + approbation par responsable

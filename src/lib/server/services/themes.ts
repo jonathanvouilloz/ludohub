@@ -11,9 +11,9 @@ export async function createThemeWithItems(
   const [theme] = await db.insert(themes).values(data).returning()
 
   if (items.length > 0) {
-    await db.insert(
-      (await import('../schema.js')).themeItems,
-    ).values(items.map((item) => ({ ...item, themeId: theme.id })))
+    await db
+      .insert((await import('../schema.js')).themeItems)
+      .values(items.map((item) => ({ ...item, themeId: theme.id })))
   }
 
   return theme

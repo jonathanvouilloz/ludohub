@@ -27,12 +27,12 @@ banned_words:
   - authentification
   - token
   - session
-  - "FASE (sans contexte)"
+  - 'FASE (sans contexte)'
   - GMB
 colors:
-  primary: "#0073E6"
-  secondary: "#C0007A"
-  text: "#25324B"
+  primary: '#0073E6'
+  secondary: '#C0007A'
+  text: '#25324B'
 ---
 
 ## Positionnement

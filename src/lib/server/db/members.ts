@@ -25,10 +25,7 @@ export async function createMember(data: MemberInsert): Promise<MemberRow> {
   return member
 }
 
-export async function updateMember(
-  id: string,
-  data: Partial<MemberInsert>,
-): Promise<MemberRow> {
+export async function updateMember(id: string, data: Partial<MemberInsert>): Promise<MemberRow> {
   const [member] = await db.update(members).set(data).where(eq(members.id, id)).returning()
   return member
 }

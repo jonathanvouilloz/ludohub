@@ -6,7 +6,5 @@ export default defineConfig({
     port: 4173,
   },
   testDir: 'e2e',
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-  ],
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 })
