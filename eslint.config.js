@@ -19,6 +19,13 @@ export default ts.config(
     },
   },
   {
-    ignores: ['.svelte-kit/', 'build/', 'node_modules/'],
+    // Composants shadcn-svelte générés : vendored, non maintenus à la main.
+    ignores: [
+      '.svelte-kit/',
+      'build/',
+      'node_modules/',
+      'src/lib/components/ui/',
+      'src/lib/utils/cn.ts',
+    ],
   },
 )

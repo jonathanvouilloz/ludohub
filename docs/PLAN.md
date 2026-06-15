@@ -6,7 +6,7 @@
 | --- | ----------------------------------------------------------- | ------ | -------- | ------------------------------------------------------------- |
 | 01  | SETUP — Socle technique (schema, Drizzle, env, auth base)   | M      | **DONE** | [01-setup.md](features/01-setup.md)                           |
 | 02  | AUTH — Connexion multi-tenant (slug, password, member pick) | M      | **DONE** | [02-auth.md](features/02-auth.md)                             |
-| 03  | MEMBRES — CRUD membres + rôles                              | S      | TODO     | [03-membres.md](features/03-membres.md)                       |
+| 03  | MEMBRES — CRUD membres + rôles                              | S      | **DONE** | [03-membres.md](features/03-membres.md)                       |
 | 04  | PLANNING — Saisons, samedis, assignations, swap             | L      | TODO     | [04-planning.md](features/04-planning.md)                     |
 | 05  | ABSENCES — Demande, approbation, intégration planning       | M      | TODO     | [05-absences.md](features/05-absences.md)                     |
 | 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts        | L      | TODO     | [06-themes.md](features/06-themes.md)                         |
@@ -53,7 +53,8 @@
 
 ## Archive
 
-| #   | Feature                       | Terminée le |
-| --- | ----------------------------- | ----------- |
-| 01  | SETUP — Socle technique       | 2026-06-15  |
-| 02  | AUTH — Connexion multi-tenant | 2026-06-15  |
+| #   | Feature                        | Terminée le |
+| --- | ------------------------------ | ----------- |
+| 01  | SETUP — Socle technique        | 2026-06-15  |
+| 02  | AUTH — Connexion multi-tenant  | 2026-06-15  |
+| 03  | MEMBRES — CRUD membres + rôles | 2026-06-15  |
