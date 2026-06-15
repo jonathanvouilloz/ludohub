@@ -1,6 +1,18 @@
 # Feature : SETUP — Socle technique
 
-**Epic :** 01 | **Taille :** M | **Statut :** EN COURS
+**Epic :** 01 | **Taille :** M | **Statut :** DONE
+
+---
+
+## État session 2026-06-15 (clôture)
+
+**Fait :**
+- `.env` créé avec DATABASE_URL (Neon pooler eu-central-1), BETTER_AUTH_SECRET généré, PUBLIC_APP_URL=localhost:5173
+- `pnpm db:push` → 19 tables créées dans Neon sans erreur ✅
+- `pnpm check` → 0 erreurs, 0 warnings ✅
+- Socle 100% complet — prêt pour 02-AUTH
+
+**Reste :** RAS — feature DONE
 
 ---
 
@@ -74,8 +86,8 @@ Initialisation complète du projet SvelteKit : structure de fichiers, Drizzle sc
 ### Database
 - [x] Écrire `src/lib/server/schema.ts` — schema Drizzle complet (toutes les tables du PRD)
 - [x] Configurer `drizzle.config.ts` (Neon + migrations)
-- [ ] `pnpm db:push` — pousser le schema vers Neon dev ← **PROCHAIN**
-- [ ] Vérifier les tables dans Drizzle Studio
+- [x] `pnpm db:push` — 19 tables créées dans Neon ✅
+- [x] Vérifier les tables dans Neon (19/19 ✅)
 
 ### Auth (socle)
 - [x] Configurer `src/lib/server/auth.ts` — Better Auth avec drizzleAdapter
