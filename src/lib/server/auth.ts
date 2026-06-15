@@ -1,5 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { env } from '$env/dynamic/private'
+import { env as publicEnv } from '$env/dynamic/public'
 import { db } from './db/index.js'
 import { user, session, account, verification } from './schema.js'
 
@@ -16,8 +18,8 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
-  secret: process.env.BETTER_AUTH_SECRET!,
-  trustedOrigins: [process.env.PUBLIC_APP_URL ?? 'http://localhost:5173'],
+  secret: env.BETTER_AUTH_SECRET,
+  trustedOrigins: [publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173'],
   // Le flow d'auth custom (ludo password → member selection) est implémenté
   // dans la feature 02-AUTH via des routes SvelteKit dédiées.
   // Better Auth gère uniquement la persistance des sessions ici.

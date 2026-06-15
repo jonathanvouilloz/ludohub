@@ -51,3 +51,23 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** `drizzle-orm@^0.45`, `drizzle-kit@>=0.31`, `vitest@^3` (v4 installé). Better Auth v1.6 exige drizzle-orm 0.45+ ; vitest v2 est incompatible avec Vite 6 (types Plugin conflictuels).
 
 **Alternatives :** Rester sur drizzle-orm 0.40 + better-auth 1.2 — écarté car versions trop en retard sur l'écosystème.
+
+---
+
+## 2026-06-15 | Session AUTH = cookie signé custom (pas Better Auth), hashing scrypt
+
+**Contexte :** Le flow ludo est « mot de passe partagé + sélection de membre », sans compte individuel. Le modèle natif de Better Auth (email/password par user) ne colle pas. Décision prise pendant l'implémentation de 02-AUTH (révise l'entrée « Auth par mot de passe partagé » qui prévoyait bcrypt + Better Auth).
+
+**Décision :** Cookie signé custom `ludohub_session` (HMAC-SHA256 via `makeSignature` de `better-auth/crypto`, clé = `BETTER_AUTH_SECRET`), payload `{ ludoId, memberId }`, httpOnly 30j. Hashing du password ludo via `hashPassword`/`verifyPassword` de `better-auth/crypto` (scrypt, edge-compatible) — pas de bcrypt. Better Auth reste câblé sur `/api/auth/*` pour un super-admin futur.
+
+**Alternatives :** Better Auth user-par-ludo (sélection de membre tortueuse), hybride sur la table session Better Auth (couplage inutile), bcryptjs (dépendance native évitée).
+
+---
+
+## 2026-06-15 | Accès env serveur via `$env/*`, jamais `process.env`
+
+**Contexte :** En dev SvelteKit, Vite ne peuple pas `process.env` avec le `.env`. Le code SETUP lisait `process.env.DATABASE_URL` → `Error: not set` au 1er accès SSR DB.
+
+**Décision :** Côté serveur SvelteKit, toujours `$env/dynamic/private` (et `$env/dynamic/public` pour `PUBLIC_*`). Les scripts hors runtime (seed via tsx) restent autonomes : client neon propre + `dotenv`, sans importer de module `$env`.
+
+**Alternatives :** Forcer le chargement de `.env` dans process.env (fragile, ordre de boot), `$env/static` (moins souple pour Vercel runtime).

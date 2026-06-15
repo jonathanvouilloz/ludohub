@@ -16,9 +16,11 @@
     "test:e2e": "playwright test",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "db:seed": "tsx src/lib/server/db/seed.ts"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.48.0",
     "@sveltejs/adapter-vercel": "^5.5.0",
     "@sveltejs/kit": "^2.21.0",
@@ -34,6 +36,7 @@
     "prettier-plugin-svelte": "^3.3.2",
     "svelte": "^5.28.0",
     "svelte-check": "^4.1.5",
+    "tsx": "^4.22.4",
     "typescript": "^5.7.3",
     "vite": "^6.3.5",
     "vitest": "^4.1.9"
