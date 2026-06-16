@@ -9,7 +9,7 @@
 | 03  | MEMBRES — CRUD membres + rôles                              | S      | **DONE** | [03-membres.md](features/03-membres.md)                       |
 | 04  | PLANNING — Saisons, samedis, assignations, swap             | L      | **DONE** | [04-planning.md](features/04-planning.md)                     |
 | 05  | ABSENCES — Demande, approbation, intégration planning       | M      | **DONE** | [05-absences.md](features/05-absences.md)                     |
-| 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts        | L      | TODO     | [06-themes.md](features/06-themes.md)                         |
+| 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts        | L      | **DONE** | [06-themes.md](features/06-themes.md)                         |
 | 07  | RÉSEAU — Demandes d'aide cross-ludo                         | M      | TODO     | [07-reseau.md](features/07-reseau.md)                         |
 | 08  | WISHLIST + MATÉRIEL — Listes internes simples               | S      | TODO     | [08-wishlist-materiaux.md](features/08-wishlist-materiaux.md) |
 | 09  | ADMIN — Super admin (CRUD ludos, logs)                      | M      | TODO     | [09-admin.md](features/09-admin.md)                           |
@@ -60,3 +60,4 @@
 | 03  | MEMBRES — CRUD membres + rôles                  | 2026-06-15  |
 | 04  | PLANNING — Saisons, samedis, assignations, swap | 2026-06-16  |
 | 05  | ABSENCES — Demande, approbation, warnings        | 2026-06-16  |
+| 06  | THÈMES — Catalogue, items, photos Blob, prêts    | 2026-06-16  |

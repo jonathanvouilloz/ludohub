@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, ne } from 'drizzle-orm'
 import { db } from './index.js'
 import { ludotheques, type LudothequeInsert, type LudothequeRow } from '../schema.js'
 
@@ -12,6 +12,13 @@ export async function getLudoById(id: string): Promise<LudothequeRow | undefined
 
 export async function getAllLudos(): Promise<LudothequeRow[]> {
   return db.query.ludotheques.findMany({ orderBy: (l, { asc }) => asc(l.name) })
+}
+
+export async function getOtherLudos(excludeLudoId: string): Promise<LudothequeRow[]> {
+  return db.query.ludotheques.findMany({
+    where: ne(ludotheques.id, excludeLudoId),
+    orderBy: (l, { asc }) => asc(l.name),
+  })
 }
 
 export async function createLudo(data: LudothequeInsert): Promise<LudothequeRow> {

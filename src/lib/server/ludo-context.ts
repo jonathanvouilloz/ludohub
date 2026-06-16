@@ -1,5 +1,5 @@
 import { error, redirect, type RequestEvent } from '@sveltejs/kit'
-import { getLudoBySlug } from './db/ludotheques.js'
+import { getLudoById, getLudoBySlug } from './db/ludotheques.js'
 import { getMemberById } from './db/members.js'
 import { clearLudoSession } from './services/auth.js'
 import { belongsToLudo, isActiveMember, isResponsable } from '$lib/utils/permissions.js'
@@ -38,4 +38,23 @@ export async function requireResponsableContext(event: Ctx) {
     throw error(403, 'Accès refusé')
   }
   return ctx
+}
+
+/**
+ * Résout `ludo` + `member` à partir de la seule session (cookie), sans param
+ * `[ludo]` dans l'URL. Pour les routes cross-ludo `/reseau/*` et l'endpoint
+ * d'upload, qui n'ont pas de slug. Renvoie vers `/` si pas de session valide.
+ */
+export async function requireSessionContext(event: Pick<RequestEvent, 'locals' | 'cookies'>) {
+  const session = event.locals.ludoSession
+  if (!session) throw redirect(303, '/')
+
+  const ludo = await getLudoById(session.ludoId)
+  const member = await getMemberById(session.memberId)
+  if (!ludo || !member || !isActiveMember(member) || !belongsToLudo(member, ludo.id)) {
+    clearLudoSession(event.cookies)
+    throw redirect(303, '/')
+  }
+
+  return { ludo, member }
 }

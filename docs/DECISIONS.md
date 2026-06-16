@@ -111,3 +111,13 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** Helper `src/lib/server/ludo-context.ts` — `requireLudoContext({ params, locals, cookies })` re-résout `ludo` + `member` depuis `params.ludo` + `locals.ludoSession` (même logique que le layout), `requireResponsableContext` ajoute la garde rôle. Utilisé dans **toutes** les form actions sous `[ludo]` ; le `+layout.server.ts` réutilise le même helper (DRY). Les `load` enfants gardent `await parent()`.
 
 **Alternatives :** Lire `locals` dans les actions (le bug), peupler `locals` dans `hooks.server.ts` (DB call sur chaque requête, y compris assets), dupliquer la résolution dans chaque action (non DRY).
+
+---
+
+## 2026-06-16 | Thèmes : prêts push-only en 06, contexte session pour `/reseau`, gotcha CSS Tailwind v4
+
+**Contexte :** Epic 06-THÈMES. Le doc feature décrivait aussi un flow pull/request (`requestTheme` → `en_attente` → `confirmLoanRequest`), mais l'enum `loan_status` ne contient que `actif/retourne/annule`. Les routes catalogue réseau vivent sous `/reseau/*` (hors `[ludo]`), sans slug pour `requireLudoContext`. Bug UI : les `Button` rendus en `<a href>` avaient un texte invisible + souligné.
+
+**Décision :** (1) **Prêts push uniquement** en 06 (propriétaire prête → `actif`, puis retour) ; le flow pull/request est reporté à 07-RÉSEAU → enum laissé inchangé, pas de `db:push`. (2) **Tous les membres actifs** gèrent les thèmes (actions via `requireLudoContext`, pas responsable). (3) Helper `requireSessionContext` (résout `ludo`+`member` depuis la seule session) pour `/reseau/*` et l'endpoint d'upload. (4) En Tailwind v4 les règles CSS **hors `@layer`** priment sur les utilitaires : `a {}` global dans `app.css` écrasait `text-primary-foreground` des boutons-liens → scopé en `a:not([data-slot='button'])`. Input partagé passé `bg-transparent`→`bg-card`.
+
+**Alternatives :** Ajouter `en_attente` à l'enum dès 06 (scope élargi prématurément), réutiliser `requireLudoContext` avec un slug factice pour `/reseau` (bancal), déplacer les règles `a` dans `@layer base` (corrige la précédence mais touche tous les liens), corriger l'input localement page par page (non DRY).

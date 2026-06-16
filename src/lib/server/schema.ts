@@ -254,6 +254,45 @@ export const themeLoans = pgTable('theme_loans', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+export const themesRelations = relations(themes, ({ one, many }) => ({
+  ownerLudo: one(ludotheques, {
+    fields: [themes.ownerLudoId],
+    references: [ludotheques.id],
+  }),
+  items: many(themeItems),
+  images: many(themeImages),
+  loans: many(themeLoans),
+}))
+
+export const themeItemsRelations = relations(themeItems, ({ one }) => ({
+  theme: one(themes, {
+    fields: [themeItems.themeId],
+    references: [themes.id],
+  }),
+}))
+
+export const themeImagesRelations = relations(themeImages, ({ one }) => ({
+  theme: one(themes, {
+    fields: [themeImages.themeId],
+    references: [themes.id],
+  }),
+}))
+
+export const themeLoansRelations = relations(themeLoans, ({ one }) => ({
+  theme: one(themes, {
+    fields: [themeLoans.themeId],
+    references: [themes.id],
+  }),
+  fromLudo: one(ludotheques, {
+    fields: [themeLoans.fromLudoId],
+    references: [ludotheques.id],
+  }),
+  toLudo: one(ludotheques, {
+    fields: [themeLoans.toLudoId],
+    references: [ludotheques.id],
+  }),
+}))
+
 // ─── Cross-ludo (demandes d'aide) ────────────────────────────────────────────
 
 export const helpRequestStatus = pgEnum('help_request_status', ['ouverte', 'pourvue', 'annulee'])
@@ -362,7 +401,12 @@ export type AbsenceRow = typeof absences.$inferSelect
 export type AbsenceInsert = typeof absences.$inferInsert
 export type ThemeRow = typeof themes.$inferSelect
 export type ThemeInsert = typeof themes.$inferInsert
+export type ThemeItemRow = typeof themeItems.$inferSelect
+export type ThemeItemInsert = typeof themeItems.$inferInsert
+export type ThemeImageRow = typeof themeImages.$inferSelect
+export type ThemeImageInsert = typeof themeImages.$inferInsert
 export type ThemeLoanRow = typeof themeLoans.$inferSelect
+export type ThemeLoanInsert = typeof themeLoans.$inferInsert
 export type HelpRequestRow = typeof helpRequests.$inferSelect
 export type HelpResponseRow = typeof helpResponses.$inferSelect
 export type GameWishRow = typeof gameWishes.$inferSelect

@@ -93,12 +93,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-a {
+a:not([data-slot='button']) {
   color: var(--primary);
   text-decoration: none;
 }
 
-a:hover {
+a:not([data-slot='button']):hover {
   text-decoration: underline;
 }
 

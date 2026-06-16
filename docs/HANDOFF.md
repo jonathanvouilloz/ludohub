@@ -2,13 +2,13 @@
 
 ## Features actives
 
-| Feature       | Fichier                                            | Statut   |
-| ------------- | -------------------------------------------------- | -------- |
-| 05 — ABSENCES | [features/05-absences.md](features/05-absences.md) | **DONE** |
-| 06 — THÈMES   | [features/06-themes.md](features/06-themes.md)     | TODO     |
+| Feature     | Fichier                                        | Statut       |
+| ----------- | ---------------------------------------------- | ------------ |
+| 06 — THÈMES | [features/06-themes.md](features/06-themes.md) | **DONE**     |
+| 07 — RÉSEAU | [features/07-reseau.md](features/07-reseau.md) | EN ATTENTE   |
 
 ## Reprendre ici
 
-**06-THÈMES** — Prochain epic (catalogue de thèmes, items, photos Vercel Blob, prêts). Lire `docs/features/06-themes.md`.
-Épic 05 terminé : demandes/approbation d'absences + warnings planning ; fix 403 app-wide sur les form actions (`src/lib/server/ludo-context.ts`).
-Commit : feat(absences): demande/approbation + warnings planning + fix 403 actions
+**07-RÉSEAU** — Prochain epic (demandes d'aide cross-ludo). Y inclure le flow pull/request des prêts de thèmes (`requestTheme`/`confirmLoanRequest`, statut `en_attente`) reporté depuis 06. Lire `docs/features/07-reseau.md`.
+Épic 06 terminé : catalogue thèmes + items + photos Vercel Blob + prêts push + catalogue réseau ; fixes UI (boutons-liens, inputs, checkbox).
+Commit : feat(themes): catalogue, items, photos Blob, prêts push + fixes UI

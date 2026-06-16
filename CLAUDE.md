@@ -128,7 +128,7 @@ Structure mémoire :
 
 ## État actuel
 
-Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING** et **05-ABSENCES** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning). Prochain epic : **06-THÈMES** (catalogue, items, photos Vercel Blob, prêts).
+Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING**, **05-ABSENCES** et **06-THÈMES** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning ; catalogue thèmes + items + photos Vercel Blob + prêts push + catalogue réseau). Prochain epic : **07-RÉSEAU** (demandes d'aide cross-ludo ; y inclure le flow pull/request des prêts reporté depuis 06).
 Repo GitHub : `github.com/jonathanvouilloz/ludohub` (branche `main`).
 Voir `docs/HANDOFF.md` pour l'état courant.
 
