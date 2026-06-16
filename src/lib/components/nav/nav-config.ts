@@ -5,6 +5,8 @@ import BoxesIcon from '@lucide/svelte/icons/boxes'
 import CalendarOffIcon from '@lucide/svelte/icons/calendar-off'
 import Share2Icon from '@lucide/svelte/icons/share-2'
 import UsersIcon from '@lucide/svelte/icons/users'
+import PackageIcon from '@lucide/svelte/icons/package'
+import DicesIcon from '@lucide/svelte/icons/dices'
 
 /** Zone(s) du shell où une destination apparaît. */
 export type NavZone = 'sidebar' | 'tabbar' | 'sheet'
@@ -43,10 +45,17 @@ export function buildNavConfig(slug: string): NavDest[] {
       zones: ['sidebar', 'tabbar'],
     },
     {
-      label: 'Thèmes',
-      href: `${base}/themes`,
-      icon: BoxesIcon,
-      match: (p) => p.startsWith(`${base}/themes`),
+      label: 'Matériel',
+      href: `${base}/supplies`,
+      icon: PackageIcon,
+      match: (p) => p.startsWith(`${base}/supplies`),
+      zones: ['sidebar', 'tabbar'],
+    },
+    {
+      label: 'Jeux',
+      href: `${base}/games`,
+      icon: DicesIcon,
+      match: (p) => p.startsWith(`${base}/games`),
       zones: ['sidebar', 'tabbar'],
     },
     {
@@ -57,11 +66,18 @@ export function buildNavConfig(slug: string): NavDest[] {
       zones: ['sidebar', 'sheet'],
     },
     {
+      label: 'Thèmes',
+      href: `${base}/themes`,
+      icon: BoxesIcon,
+      match: (p) => p.startsWith(`${base}/themes`),
+      zones: ['sidebar', 'sheet'],
+    },
+    {
       label: 'Réseau',
       href: '/reseau/aide',
       icon: Share2Icon,
       match: (p) => p.startsWith('/reseau'),
-      zones: ['sidebar', 'tabbar'],
+      zones: ['sidebar', 'sheet'],
     },
     {
       label: 'Équipe',

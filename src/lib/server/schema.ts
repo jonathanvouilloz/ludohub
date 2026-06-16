@@ -393,6 +393,20 @@ export const supplyRequests = pgTable('supply_requests', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+export const gameWishesRelations = relations(gameWishes, ({ one }) => ({
+  buyer: one(members, {
+    fields: [gameWishes.buyerId],
+    references: [members.id],
+  }),
+}))
+
+export const supplyRequestsRelations = relations(supplyRequests, ({ one }) => ({
+  member: one(members, {
+    fields: [supplyRequests.memberId],
+    references: [members.id],
+  }),
+}))
+
 // ─── Audit ───────────────────────────────────────────────────────────────────
 
 export const activityLog = pgTable('activity_log', {
@@ -433,5 +447,7 @@ export type ThemeLoanInsert = typeof themeLoans.$inferInsert
 export type HelpRequestRow = typeof helpRequests.$inferSelect
 export type HelpResponseRow = typeof helpResponses.$inferSelect
 export type GameWishRow = typeof gameWishes.$inferSelect
+export type GameWishInsert = typeof gameWishes.$inferInsert
 export type SupplyRequestRow = typeof supplyRequests.$inferSelect
+export type SupplyRequestInsert = typeof supplyRequests.$inferInsert
 export type ActivityLogRow = typeof activityLog.$inferSelect
