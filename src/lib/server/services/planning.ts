@@ -16,9 +16,10 @@ import {
   swapAssignments,
 } from '../db/planning.js'
 import { getMemberById } from '../db/members.js'
+import { getApprovedAbsencesByMember } from './absences.js'
 import { belongsToLudo, isActiveMember } from '$lib/utils/permissions.js'
-import { getSwissSaturdays, toDateString } from '$lib/utils/dates.js'
-import type { SeasonRow } from '../schema.js'
+import { getSwissSaturdays, isDateInRange, toDateString } from '$lib/utils/dates.js'
+import type { AbsenceRow, SeasonRow } from '../schema.js'
 
 /**
  * Erreur métier : message destiné à l'utilisateur (FR). Levée par le service,
@@ -74,10 +75,39 @@ export async function getActiveSeason(ludoId: string) {
   return getActiveSeasonByLudo(ludoId)
 }
 
+/**
+ * Charge la grille d'une saison et annote chaque assignation d'une absence
+ * approuvée éventuelle (membre absent ce samedi). Le champ `absence` permet à
+ * l'UI de marquer l'assigné et de le décompter de l'effectif rempli.
+ */
 export async function getSeasonGrid(seasonId: string, ludoId: string) {
   const season = await requireSeasonInLudo(seasonId, ludoId)
   const slots = await getSlotsBySeason(seasonId)
-  return { season, slots }
+
+  const absencesByMember = await getApprovedAbsencesByMember(
+    ludoId,
+    season.startDate,
+    season.endDate,
+  )
+
+  const enrichedSlots = slots.map((slot) => ({
+    ...slot,
+    assignments: slot.assignments.map((a) => ({
+      ...a,
+      absence: findCoveringAbsence(absencesByMember.get(a.memberId), slot.date),
+    })),
+  }))
+
+  return { season, slots: enrichedSlots }
+}
+
+/** Première absence de la liste couvrant la date du samedi, sinon `null`. */
+function findCoveringAbsence(
+  absences: AbsenceRow[] | undefined,
+  slotDate: string,
+): AbsenceRow | null {
+  if (!absences) return null
+  return absences.find((ab) => isDateInRange(slotDate, ab.startDate, ab.endDate)) ?? null
 }
 
 export async function getMyUpcomingSaturdays(memberId: string) {

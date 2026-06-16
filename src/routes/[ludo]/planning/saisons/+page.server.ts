@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit'
+import { fail } from '@sveltejs/kit'
 import {
   archiveSeason,
   createSeason,
@@ -6,6 +6,7 @@ import {
   listSeasons,
   PlanningServiceError,
 } from '$lib/server/services/planning.js'
+import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -13,13 +14,6 @@ export const load: PageServerLoad = async ({ parent }) => {
   const { ludo, currentMember } = await parent()
   const seasons = await listSeasons(ludo.id)
   return { seasons, responsable: isResponsable(currentMember) }
-}
-
-function requireContext(locals: App.Locals) {
-  if (!isResponsable(locals.currentMember) || !locals.ludo) {
-    throw error(403, 'Accès refusé')
-  }
-  return { ludo: locals.ludo }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -33,9 +27,9 @@ async function run(fn: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
-  create: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  create: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() =>
       createSeason(ludo.id, {
         name: String(data.get('name') ?? ''),
@@ -45,17 +39,17 @@ export const actions: Actions = {
     )
   },
 
-  archive: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  archive: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     const archived = String(data.get('archived') ?? 'true') === 'true'
     return run(() => archiveSeason(id, ludo.id, archived))
   },
 
-  delete: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  delete: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     return run(() => deleteSeason(id, ludo.id))
   },

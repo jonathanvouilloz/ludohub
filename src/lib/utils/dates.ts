@@ -50,6 +50,15 @@ export function isSaturday(date: Date): boolean {
 }
 
 /**
+ * Retourne true si `date` est comprise dans [start, end] (bornes incluses).
+ * Les trois valeurs sont des strings ISO `YYYY-MM-DD` : la comparaison
+ * lexicographique est sûre car le format est zéro-paddé et trié naturellement.
+ */
+export function isDateInRange(date: string, start: string, end: string): boolean {
+  return date >= start && date <= end
+}
+
+/**
  * Convertit une date ISO en string YYYY-MM-DD (pour les colonnes Drizzle `date`).
  */
 export function toDateString(date: Date): string {

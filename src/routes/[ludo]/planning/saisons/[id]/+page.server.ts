@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit'
+import { fail } from '@sveltejs/kit'
 import { getActiveMembersByLudo } from '$lib/server/db/members.js'
 import {
   assignMember,
@@ -9,6 +9,7 @@ import {
   reopenSlot,
   swapMembers,
 } from '$lib/server/services/planning.js'
+import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -19,13 +20,6 @@ export const load: PageServerLoad = async ({ params, parent }) => {
   // Liste des membres seulement utile aux responsables (dialog d'assignation).
   const members = responsable ? await getActiveMembersByLudo(ludo.id) : []
   return { season, slots, members, responsable }
-}
-
-function requireContext(locals: App.Locals) {
-  if (!isResponsable(locals.currentMember) || !locals.ludo) {
-    throw error(403, 'Accès refusé')
-  }
-  return { ludo: locals.ludo }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -39,37 +33,37 @@ async function run(fn: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
-  assign: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  assign: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() =>
       assignMember(String(data.get('slotId') ?? ''), String(data.get('memberId') ?? ''), ludo.id),
     )
   },
 
-  remove: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  remove: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() =>
       removeMember(String(data.get('slotId') ?? ''), String(data.get('memberId') ?? ''), ludo.id),
     )
   },
 
-  cancelSlot: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  cancelSlot: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() => cancelSlot(String(data.get('slotId') ?? ''), ludo.id))
   },
 
-  reopenSlot: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  reopenSlot: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() => reopenSlot(String(data.get('slotId') ?? ''), ludo.id))
   },
 
-  swap: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  swap: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() =>
       swapMembers(
         String(data.get('slotAId') ?? ''),

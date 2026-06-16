@@ -4,11 +4,11 @@
 
 | Feature       | Fichier                                            | Statut   |
 | ------------- | -------------------------------------------------- | -------- |
-| 04 — PLANNING | [features/04-planning.md](features/04-planning.md) | **DONE** |
-| 05 — ABSENCES | [features/05-absences.md](features/05-absences.md) | TODO     |
+| 05 — ABSENCES | [features/05-absences.md](features/05-absences.md) | **DONE** |
+| 06 — THÈMES   | [features/06-themes.md](features/06-themes.md)     | TODO     |
 
 ## Reprendre ici
 
-**05-ABSENCES** — Prochain epic à démarrer (demande / approbation d'absences + intégration des warnings dans la grille planning). Lire `docs/features/05-absences.md`.
-Épic 04 terminé (bug 403 membre résolu via `await parent()`, warning Better Auth corrigé). Tests Playwright planning = optionnels (epic 10).
-Commit : [à venir] fix(planning): resolve 403 + Better Auth baseURL
+**06-THÈMES** — Prochain epic (catalogue de thèmes, items, photos Vercel Blob, prêts). Lire `docs/features/06-themes.md`.
+Épic 05 terminé : demandes/approbation d'absences + warnings planning ; fix 403 app-wide sur les form actions (`src/lib/server/ludo-context.ts`).
+Commit : feat(absences): demande/approbation + warnings planning + fix 403 actions

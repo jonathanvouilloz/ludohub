@@ -101,3 +101,13 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** Dans tout `+page.server.ts` enfant, récupérer le contexte tenant via `const { ludo, currentMember } = await parent()` (le `+layout.server.ts` les **retourne**) — crée une dépendance explicite, valeurs garanties. `locals.*` réservé aux **actions** (`requireContext`), qui s'exécutent hors de la course des `load`.
 
 **Alternatives :** Peupler `locals.ludo` dans `hooks.server.ts` (slug pas fiablement dispo avant routing), garder la lecture `locals` synchrone (course non déterministe), helper re-résolvant le contexte depuis la session (DB call redondant avec le layout).
+
+---
+
+## 2026-06-16 | Contexte tenant des form actions via `requireLudoContext`, jamais `locals` (révise l'entrée précédente)
+
+**Contexte :** Epic 05. Un membre soumettant une demande d'absence recevait un 403. Cause : `locals.ludo`/`locals.currentMember` ne sont posés que par le `load` du `[ludo]/+layout.server.ts`, et en SvelteKit les `load` **ne s'exécutent pas avant** une form action (ils tournent après, pour le re-render). Donc `locals.ludo` est `undefined` dans **toute** action — bug latent identique dans les actions de `membres` et `planning`, jamais déclenché jusque-là (membres issus du seed, planning WIP). Ceci corrige l'hypothèse de l'entrée précédente selon laquelle `locals.*` suffisait pour les actions.
+
+**Décision :** Helper `src/lib/server/ludo-context.ts` — `requireLudoContext({ params, locals, cookies })` re-résout `ludo` + `member` depuis `params.ludo` + `locals.ludoSession` (même logique que le layout), `requireResponsableContext` ajoute la garde rôle. Utilisé dans **toutes** les form actions sous `[ludo]` ; le `+layout.server.ts` réutilise le même helper (DRY). Les `load` enfants gardent `await parent()`.
+
+**Alternatives :** Lire `locals` dans les actions (le bug), peupler `locals` dans `hooks.server.ts` (DB call sur chaque requête, y compris assets), dupliquer la résolution dans chaque action (non DRY).

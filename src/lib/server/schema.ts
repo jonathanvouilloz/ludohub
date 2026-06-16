@@ -140,6 +140,7 @@ export const assignments = pgTable(
 
 export const membersRelations = relations(members, ({ many }) => ({
   assignments: many(assignments),
+  absences: many(absences),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -193,6 +194,13 @@ export const absences = pgTable('absences', {
   respondedBy: uuid('responded_by').references(() => members.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+export const absencesRelations = relations(absences, ({ one }) => ({
+  member: one(members, {
+    fields: [absences.memberId],
+    references: [members.id],
+  }),
+}))
 
 // ─── Thèmes ──────────────────────────────────────────────────────────────────
 

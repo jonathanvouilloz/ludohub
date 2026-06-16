@@ -8,7 +8,7 @@ import {
   reactivateMember,
   updateMember,
 } from '$lib/server/services/members.js'
-import { isResponsable } from '$lib/utils/permissions.js'
+import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -17,14 +17,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 
   const members = await getMembersByLudo(ludo.id)
   return { members }
-}
-
-/** Garde commun à toutes les actions : retourne le contexte ludo/membre ou throw 403. */
-function requireContext(locals: App.Locals) {
-  if (!isResponsable(locals.currentMember) || !locals.ludo || !locals.currentMember) {
-    throw error(403, 'Accès refusé')
-  }
-  return { ludo: locals.ludo, currentMember: locals.currentMember }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -38,9 +30,9 @@ async function run(fn: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
-  create: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  create: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     return run(() =>
       createMember(ludo.id, {
         name: String(data.get('name') ?? ''),
@@ -49,36 +41,36 @@ export const actions: Actions = {
     )
   },
 
-  update: async ({ request, locals }) => {
-    const { ludo, currentMember } = requireContext(locals)
-    const data = await request.formData()
+  update: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     return run(() =>
-      updateMember(id, ludo.id, currentMember.id, {
+      updateMember(id, ludo.id, member.id, {
         name: String(data.get('name') ?? ''),
         role: String(data.get('role') ?? 'member'),
       }),
     )
   },
 
-  deactivate: async ({ request, locals }) => {
-    const { ludo, currentMember } = requireContext(locals)
-    const data = await request.formData()
+  deactivate: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
-    return run(() => deactivateMember(id, ludo.id, currentMember.id))
+    return run(() => deactivateMember(id, ludo.id, member.id))
   },
 
-  reactivate: async ({ request, locals }) => {
-    const { ludo } = requireContext(locals)
-    const data = await request.formData()
+  reactivate: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     return run(() => reactivateMember(id, ludo.id))
   },
 
-  delete: async ({ request, locals }) => {
-    const { ludo, currentMember } = requireContext(locals)
-    const data = await request.formData()
+  delete: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
-    return run(() => deleteMember(id, ludo.id, currentMember.id))
+    return run(() => deleteMember(id, ludo.id, member.id))
   },
 }

@@ -3,10 +3,20 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { formatDateShort, isGenevaHoliday } from '$lib/utils/dates.js'
-  import type { AssignmentRow, MemberRow, SaturdaySlotRow } from '$lib/server/schema'
+  import type { AbsenceRow, AssignmentRow, MemberRow, SaturdaySlotRow } from '$lib/server/schema'
 
-  type AssignmentWithMember = AssignmentRow & { member: MemberRow }
+  type AssignmentWithMember = AssignmentRow & {
+    member: MemberRow
+    absence?: AbsenceRow | null
+  }
   type SlotWithAssignments = SaturdaySlotRow & { assignments: AssignmentWithMember[] }
+
+  const absenceLabels: Record<string, string> = {
+    conge: 'Congé',
+    vacances: 'Vacances',
+    formation: 'Formation',
+    indisponible: 'Indisponible',
+  }
 
   let {
     slot,
@@ -19,7 +29,8 @@
   } = $props()
 
   const holiday = $derived(isGenevaHoliday(slot.date))
-  const filled = $derived(slot.assignments.length)
+  // Effectif réel : un membre absent (absence approuvée) ne compte pas comme présent.
+  const filled = $derived(slot.assignments.filter((a) => !a.absence).length)
   const understaffed = $derived(!slot.isCancelled && filled < slot.requiredCount)
 </script>
 
@@ -36,8 +47,13 @@
   {#if !slot.isCancelled}
     <ul class="members">
       {#each slot.assignments as a (a.id)}
-        <li>
+        <li class:absent={a.absence}>
           <Badge variant="secondary">{a.member.name}</Badge>
+          {#if a.absence}
+            <span class="absence-tag" title={absenceLabels[a.absence.type] ?? 'Absent'}>
+              Absent
+            </span>
+          {/if}
           {#if !readOnly}
             <form method="POST" action="?/remove" use:enhance>
               <input type="hidden" name="slotId" value={slot.id} />
@@ -129,6 +145,18 @@
   }
   .members form {
     display: inline;
+  }
+  .members li.absent {
+    opacity: 0.75;
+  }
+  .absence-tag {
+    font-size: var(--text-label);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--danger);
+    background: var(--danger-light);
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
   }
   .empty {
     font-size: var(--text-small);
