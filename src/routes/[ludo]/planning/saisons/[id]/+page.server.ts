@@ -12,12 +12,12 @@ import {
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { Actions, PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ params, locals }) => {
-  if (!locals.ludo || !locals.currentMember) throw error(403, 'Accès refusé')
-  const responsable = isResponsable(locals.currentMember)
-  const { season, slots } = await getSeasonGrid(params.id, locals.ludo.id)
+export const load: PageServerLoad = async ({ params, parent }) => {
+  const { ludo, currentMember } = await parent()
+  const responsable = isResponsable(currentMember)
+  const { season, slots } = await getSeasonGrid(params.id, ludo.id)
   // Liste des membres seulement utile aux responsables (dialog d'assignation).
-  const members = responsable ? await getActiveMembersByLudo(locals.ludo.id) : []
+  const members = responsable ? await getActiveMembersByLudo(ludo.id) : []
   return { season, slots, members, responsable }
 }
 

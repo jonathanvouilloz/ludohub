@@ -9,10 +9,10 @@ import {
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { Actions, PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ locals }) => {
-  if (!locals.ludo || !locals.currentMember) throw error(403, 'Accès refusé')
-  const seasons = await listSeasons(locals.ludo.id)
-  return { seasons, responsable: isResponsable(locals.currentMember) }
+export const load: PageServerLoad = async ({ parent }) => {
+  const { ludo, currentMember } = await parent()
+  const seasons = await listSeasons(ludo.id)
+  return { seasons, responsable: isResponsable(currentMember) }
 }
 
 function requireContext(locals: App.Locals) {

@@ -1,6 +1,28 @@
 # Feature : PLANNING — Saisons et samedis
 
-**Epic :** 04 | **Taille :** L | **Statut :** EN COURS
+**Epic :** 04 | **Taille :** L | **Statut :** DONE
+
+## Etat session 2026-06-16 (suite — fix 403)
+
+**Fait :**
+
+- **Bug 403 résolu.** Cause : les `load` planning lisaient `locals.ludo`/`locals.currentMember` de façon synchrone alors qu'ils ne sont posés qu'après 2 `await` dans `[ludo]/+layout.server.ts` → course concurrente entre `load` SvelteKit → `locals` vide → `throw error(403)`.
+- Fix : les 3 `load` planning (`+page`, `saisons/+page`, `saisons/[id]/+page`) utilisent désormais `await parent()` (le layout **retourne** `{ ludo, currentMember }`), ce qui crée une dépendance explicite et garantit les valeurs.
+- Warning Better Auth `Base URL is not set` corrigé : ajout `baseURL` dans `src/lib/server/auth.ts`.
+- Validé en runtime par Jonathan (Bruno Martin, membre simple → accès `/planning` OK ; warning disparu).
+- `pnpm check` 0 erreur, eslint clean sur les fichiers touchés.
+
+**Prochain :** Epic 04 fonctionnel. Reste optionnel : tests Playwright (création saison + assignation, double-assignation, swap). Sinon enchaîner **epic 05-ABSENCES**.
+
+**Pieges :**
+
+- Ne **jamais** lire `locals.ludo`/`locals.currentMember` dans un `load` enfant → toujours `await parent()` (les `load` SvelteKit s'exécutent en parallèle, `locals` posé par le layout n'est pas garanti).
+- Les **actions** (`requireContext(locals)`) restent inchangées et fonctionnent (validé runtime responsable) — même convention que membres (epic 03).
+- Lint repo rouge sur 2 docs (`docs/PLAN.md`, `docs/features/04-planning.md`) : dette de formatage pré-existante, hors scope.
+
+**Commit :** [à venir] fix(planning): resolve 403 on member access via await parent() + set Better Auth baseURL
+
+---
 
 ## Etat session 2026-06-16
 
@@ -12,7 +34,7 @@
 - Consultation ouverte à **tous les membres connectés** ; mutations réservées aux responsables (actions `requireContext`).
 - `pnpm check` 0 erreur, `pnpm lint` vert.
 
-**Prochain :** **BUG 403 non résolu.** Bruno Martin (membre) a toujours 403 sur `/planning`. Cause probable : `locals.ludo`/`locals.currentMember` posés par `[ludo]/+layout.server.ts` *après* des `await`, lus en parallèle par le `load` de page → `undefined` → `throw error(403)`. Fix : remplacer la lecture de `locals` par `await parent()` dans les 3 `+page.server.ts` du planning (vérifier aussi pourquoi membres marche : peut-être à migrer pareil). Puis régler le warning Better Auth `Base URL is not set` via `BETTER_AUTH_URL`.
+**Prochain :** **BUG 403 non résolu.** Bruno Martin (membre) a toujours 403 sur `/planning`. Cause probable : `locals.ludo`/`locals.currentMember` posés par `[ludo]/+layout.server.ts` _après_ des `await`, lus en parallèle par le `load` de page → `undefined` → `throw error(403)`. Fix : remplacer la lecture de `locals` par `await parent()` dans les 3 `+page.server.ts` du planning (vérifier aussi pourquoi membres marche : peut-être à migrer pareil). Puis régler le warning Better Auth `Base URL is not set` via `BETTER_AUTH_URL`.
 
 **Pieges :**
 
@@ -23,7 +45,6 @@
 **Commit :** [à venir] feat(planning): saisons, samedis, assignations, swap (WIP, 403 à corriger)
 
 ---
-
 
 ## Description
 
@@ -81,7 +102,7 @@ Gestion du planning des samedis. Saisons avec dates, génération automatique de
 
 ## Critères d'acceptation
 
-- [x] Génération automatique des samedis entre start_date et end_date (code) — _à valider en runtime_
+- [x] Génération automatique des samedis entre start*date et end_date (code) — *à valider en runtime\_
 - [x] Impossible d'assigner un même membre deux fois sur le même slot (UNIQUE + check service)
 - [x] Swap : sélectionner deux membres → confirmation → échange atomique (`db.batch`)
 - [x] Vue membre : ses prochains samedis (section « Mes prochains samedis »)
@@ -102,21 +123,21 @@ Gestion du planning des samedis. Saisons avec dates, génération automatique de
 
 ## Carte du code
 
-> Mise à jour : 2026-06-16
+> Mise à jour : 2026-06-16 (suite)
 
-| Fichier                                            | Rôle                                                                   |
-| -------------------------------------------------- | ---------------------------------------------------------------------- |
-| `src/lib/server/schema.ts`                         | Tables planning + `relations()` + `seasons.isArchived`                 |
-| `src/lib/server/db/planning.ts`                    | Queries saisons/slots/assignations, `swapAssignments` (db.batch)       |
-| `src/lib/server/services/planning.ts`              | Logique métier : gardes tenant, validation, blocage archivé, swap      |
-| `src/lib/utils/dates.ts`                           | `getSwissSaturdays`, `isGenevaHoliday`, `toDateString`, `formatDate*`  |
-| `src/routes/[ludo]/planning/+page.server.ts`       | Load grille saison active + mes samedis (ouvert à tous)                |
-| `src/routes/[ludo]/planning/saisons/+page.server.ts` | Liste saisons + actions create/archive/delete (responsable)          |
-| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Grille saison + actions assign/remove/cancel/swap (responsable)   |
-| `src/lib/components/planning/*.svelte`             | PlanningGrid, SlotCard, SeasonDialog, AssignMemberDialog, SwapDialog, MySchedule |
+| Fichier                                                   | Rôle                                                                             |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `src/lib/server/schema.ts`                                | Tables planning + `relations()` + `seasons.isArchived`                           |
+| `src/lib/server/db/planning.ts`                           | Queries saisons/slots/assignations, `swapAssignments` (db.batch)                 |
+| `src/lib/server/services/planning.ts`                     | Logique métier : gardes tenant, validation, blocage archivé, swap                |
+| `src/lib/utils/dates.ts`                                  | `getSwissSaturdays`, `isGenevaHoliday`, `toDateString`, `formatDate*`            |
+| `src/routes/[ludo]/planning/+page.server.ts`              | Load grille saison active + mes samedis (ouvert à tous)                          |
+| `src/routes/[ludo]/planning/saisons/+page.server.ts`      | Liste saisons + actions create/archive/delete (responsable)                      |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Grille saison + actions assign/remove/cancel/swap (responsable)                  |
+| `src/lib/components/planning/*.svelte`                    | PlanningGrid, SlotCard, SeasonDialog, AssignMemberDialog, SwapDialog, MySchedule |
 
 ### Decisions cles
 
 - **`relations()` Drizzle obligatoires** pour l'API `with` — absentes initialement, plantaient au runtime.
 - **`neon-http` sans transaction interactive** → swap atomique via `db.batch()`.
-- **Lecture `locals` dans les `load` de page = suspect du bug 403** (course parallèle avec le layout). À migrer vers `await parent()`.
+- **Ne jamais lire `locals.ludo`/`locals.currentMember` dans un `load` enfant** → `await parent()` (les `load` SvelteKit tournent en parallèle ; `locals` posé par le layout n'est pas garanti). C'était la cause du bug 403, résolu.

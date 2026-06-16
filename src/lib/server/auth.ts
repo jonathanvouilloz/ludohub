@@ -19,6 +19,7 @@ export const auth = betterAuth({
     },
   },
   secret: env.BETTER_AUTH_SECRET,
+  baseURL: publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173',
   trustedOrigins: [publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173'],
   // Le flow d'auth custom (ludo password → member selection) est implémenté
   // dans la feature 02-AUTH via des routes SvelteKit dédiées.

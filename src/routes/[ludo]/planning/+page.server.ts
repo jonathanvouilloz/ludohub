@@ -1,4 +1,3 @@
-import { error } from '@sveltejs/kit'
 import {
   getActiveSeason,
   getMyUpcomingSaturdays,
@@ -7,9 +6,10 @@ import {
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ locals }) => {
-  const { ludo, currentMember } = locals
-  if (!ludo || !currentMember) throw error(403, 'Accès refusé')
+export const load: PageServerLoad = async ({ parent }) => {
+  // `ludo`/`currentMember` viennent du `+layout.server.ts` parent : `await parent()`
+  // garantit qu'ils sont posés (sinon course concurrente entre les `load` → 403).
+  const { ludo, currentMember } = await parent()
 
   const responsable = isResponsable(currentMember)
   const activeSeason = await getActiveSeason(ludo.id)

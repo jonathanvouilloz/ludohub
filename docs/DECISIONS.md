@@ -91,3 +91,13 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** Tout membre connecté **consulte** le planning (grille + ses prochains samedis) ; seules les **mutations** (saisons, assignations, annulations, swap) sont réservées aux responsables (garde `requireContext` dans les actions). Swap croisé entre deux samedis distincts, atomique via `db.batch()`. Saisons archivables (`isArchived`, lecture seule). Warnings d'absences reportés à l'epic 05.
 
 **Alternatives :** Vue planning entièrement responsable-only (rejetée : les membres veulent consulter), swap via deux UPDATE séquentiels (non atomique, risque d'état incohérent), `db.transaction()` (non supporté par neon-http).
+
+---
+
+## 2026-06-16 | Contexte tenant dans les `load` enfants via `await parent()`, jamais `locals`
+
+**Contexte :** Le 403 du planning venait de `load` enfants lisant `locals.ludo`/`locals.currentMember` posés par `[ludo]/+layout.server.ts` après deux `await`. Les `load` SvelteKit s'exécutant en parallèle, le `load` enfant lisait `locals` vide → `throw error(403)`. Warning Better Auth `Base URL is not set` corrigé en parallèle (`baseURL` ajouté à la config).
+
+**Décision :** Dans tout `+page.server.ts` enfant, récupérer le contexte tenant via `const { ludo, currentMember } = await parent()` (le `+layout.server.ts` les **retourne**) — crée une dépendance explicite, valeurs garanties. `locals.*` réservé aux **actions** (`requireContext`), qui s'exécutent hors de la course des `load`.
+
+**Alternatives :** Peupler `locals.ludo` dans `hooks.server.ts` (slug pas fiablement dispo avant routing), garder la lecture `locals` synchrone (course non déterministe), helper re-résolvant le contexte depuis la session (DB call redondant avec le layout).

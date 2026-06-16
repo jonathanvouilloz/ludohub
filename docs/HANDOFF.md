@@ -2,12 +2,13 @@
 
 ## Features actives
 
-| Feature       | Fichier                                            | Statut       |
-| ------------- | -------------------------------------------------- | ------------ |
-| 04 — PLANNING | [features/04-planning.md](features/04-planning.md) | **EN COURS** |
-| 05 — ABSENCES | [features/05-absences.md](features/05-absences.md) | EN ATTENTE   |
+| Feature       | Fichier                                            | Statut   |
+| ------------- | -------------------------------------------------- | -------- |
+| 04 — PLANNING | [features/04-planning.md](features/04-planning.md) | **DONE** |
+| 05 — ABSENCES | [features/05-absences.md](features/05-absences.md) | TODO     |
 
 ## Reprendre ici
 
-04-PLANNING — **Bug 403 à corriger** : membre simple (Bruno Martin) refusé sur `/planning`. Cause probable : `locals.ludo`/`locals.currentMember` lus en parallèle avant que `[ludo]/+layout.server.ts` ne les pose → passer à `await parent()` dans les 3 `+page.server.ts` planning. Puis régler warning Better Auth (`BETTER_AUTH_URL`). Détail complet dans le fichier feature.
-Commit : (session planning WIP, non committé)
+**05-ABSENCES** — Prochain epic à démarrer (demande / approbation d'absences + intégration des warnings dans la grille planning). Lire `docs/features/05-absences.md`.
+Épic 04 terminé (bug 403 membre résolu via `await parent()`, warning Better Auth corrigé). Tests Playwright planning = optionnels (epic 10).
+Commit : [à venir] fix(planning): resolve 403 + Better Auth baseURL
