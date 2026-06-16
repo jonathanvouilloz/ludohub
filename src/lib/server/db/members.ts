@@ -16,6 +16,18 @@ export async function getActiveMembersByLudo(ludoId: string): Promise<MemberRow[
   })
 }
 
+/** Responsables actifs d'une ludo — destinataires des notifs `action_required` internes. */
+export async function getActiveResponsables(ludoId: string): Promise<MemberRow[]> {
+  return db.query.members.findMany({
+    where: and(
+      eq(members.ludoId, ludoId),
+      eq(members.role, 'responsable'),
+      eq(members.isActive, true),
+    ),
+    orderBy: (m, { asc }) => asc(m.name),
+  })
+}
+
 export async function getMemberById(id: string): Promise<MemberRow | undefined> {
   return db.query.members.findFirst({ where: eq(members.id, id) })
 }

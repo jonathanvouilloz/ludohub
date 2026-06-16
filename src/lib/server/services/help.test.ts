@@ -12,6 +12,7 @@ vi.mock('../db/help.js', () => ({
   setRequestStatus: vi.fn(),
   setResponseStatus: vi.fn(),
 }))
+vi.mock('./events.js', () => ({ emitEvent: vi.fn() }))
 
 import {
   createHelpRequest,

@@ -14,6 +14,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-16 | Notifications ≠ activity_log, point d'émission unifié (dispatcher)
+
+**Contexte :** L'epic 10 ajoute des notifs in-app. Les notifications (par destinataire, lu/non-lu, fan-out 1→N, souvent une autre ludo) et l'audit `activity_log` (super-admin, append-only, ludo acteur) sont deux préoccupations distinctes.
+
+**Décision :** Tables séparées, mais **point d'émission unique** : les services appellent `emitEvent` (`services/events.ts`) une fois ; le dispatcher écrit la ligne d'audit **et** les notifications par destinataire. Dispatch best-effort (try/catch — ne fait jamais échouer l'action métier), idempotent, jamais d'auto-notif de l'acteur.
+
+**Alternatives :** Fusionner les deux tables (sémantiques incompatibles : cardinalité, audience, cycle de vie), ou émettre séparément dans chaque service (duplication + risque d'oubli).
+
+---
+
 ## 2026-06-15 | Multi-tenant par slug URL (pas de sous-domaine)
 
 **Contexte :** 12 ludos connues, nombre limité. Les ludos sont créées manuellement par le super admin (Jonathan).

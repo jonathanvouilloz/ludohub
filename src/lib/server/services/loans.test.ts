@@ -9,6 +9,7 @@ vi.mock('../db/loans.js', () => ({
 }))
 vi.mock('../db/ludotheques.js', () => ({ getLudoById: vi.fn() }))
 vi.mock('../db/themes.js', () => ({ getThemeById: vi.fn() }))
+vi.mock('./events.js', () => ({ emitEvent: vi.fn() }))
 
 import {
   createLoan,

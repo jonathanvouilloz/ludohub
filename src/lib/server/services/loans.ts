@@ -8,6 +8,7 @@ import {
 import { getLudoById } from '../db/ludotheques.js'
 import { getThemeById } from '../db/themes.js'
 import type { ThemeLoanRow } from '../schema.js'
+import { emitEvent } from './events.js'
 
 /**
  * Erreur métier : message FR destiné à l'utilisateur. Levée par le service,
@@ -85,13 +86,26 @@ export async function requestTheme(
   const open = await getOpenLoanForTheme(themeId)
   if (open) throw new LoanServiceError('Ce thème est déjà en prêt ou réservé.')
 
-  return createLoan({
+  const loan = await createLoan({
     themeId,
     fromLudoId: theme.ownerLudoId,
     toLudoId: requestingLudoId,
     status: 'en_attente',
     notes: notes?.trim() || null,
   })
+
+  await emitEvent({
+    type: 'theme_request',
+    actorLudoId: requestingLudoId,
+    entityType: 'theme',
+    entityId: themeId,
+    title: "Nouvelle demande d'emprunt",
+    body: `Une autre ludothèque souhaite emprunter « ${theme.name} ».`,
+    recipientLudoId: theme.ownerLudoId,
+    metadata: { loanId: loan.id },
+  })
+
+  return loan
 }
 
 /** Confirmation d'une demande par la ludo propriétaire → prêt actif. */
@@ -104,6 +118,17 @@ export async function confirmLoanRequest(loanId: string, ownerLudoId: string): P
     throw new LoanServiceError("Cette demande n'est plus en attente.")
   }
   await setLoanStatus(loanId, 'actif')
+
+  await emitEvent({
+    type: 'theme_request_confirmed',
+    actorLudoId: ownerLudoId,
+    entityType: 'theme',
+    entityId: loan.themeId,
+    title: "Demande d'emprunt acceptée",
+    body: "Votre demande d'emprunt de thème a été acceptée.",
+    recipientLudoId: loan.toLudoId,
+    metadata: { loanId: loan.id },
+  })
 }
 
 /** Refus d'une demande par la ludo propriétaire → annulée. */
@@ -116,6 +141,17 @@ export async function declineLoanRequest(loanId: string, ownerLudoId: string): P
     throw new LoanServiceError("Cette demande n'est plus en attente.")
   }
   await setLoanStatus(loanId, 'annule')
+
+  await emitEvent({
+    type: 'theme_request_declined',
+    actorLudoId: ownerLudoId,
+    entityType: 'theme',
+    entityId: loan.themeId,
+    title: "Demande d'emprunt refusée",
+    body: "Votre demande d'emprunt de thème a été refusée.",
+    recipientLudoId: loan.toLudoId,
+    metadata: { loanId: loan.id },
+  })
 }
 
 /** Retrait d'une demande en attente par la ludo demandeuse → annulée. */

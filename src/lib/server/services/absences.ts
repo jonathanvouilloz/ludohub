@@ -8,6 +8,7 @@ import {
   updateAbsenceStatus,
 } from '../db/absences.js'
 import type { AbsenceRow } from '../schema.js'
+import { emitEvent } from './events.js'
 
 /**
  * Erreur métier : message FR destiné à l'utilisateur. Levée par le service,
@@ -51,7 +52,7 @@ export async function requestAbsence(data: {
     throw new AbsenceServiceError('La date de début doit précéder la date de fin.')
   }
 
-  return insertAbsence({
+  const absence = await insertAbsence({
     ludoId: data.ludoId,
     memberId: data.memberId,
     type,
@@ -60,6 +61,19 @@ export async function requestAbsence(data: {
     notes: data.notes?.trim() || null,
     status: 'en_attente',
   })
+
+  await emitEvent({
+    type: 'absence_request',
+    actorLudoId: data.ludoId,
+    actorMemberId: data.memberId,
+    entityType: 'absence',
+    entityId: absence.id,
+    title: "Nouvelle demande d'absence",
+    body: 'Une demande d’absence attend votre décision.',
+    recipientResponsablesOf: data.ludoId,
+  })
+
+  return absence
 }
 
 /** Charge une absence et vérifie qu'elle appartient bien à la ludo. */
@@ -82,11 +96,25 @@ export async function approveAbsence(
   if (absence.status !== 'en_attente') {
     throw new AbsenceServiceError('Cette demande a déjà été traitée.')
   }
-  return updateAbsenceStatus(id, {
+  const updated = await updateAbsenceStatus(id, {
     status: 'approuve',
     responderNotes: note?.trim() || null,
     respondedBy: responderId,
   })
+
+  await emitEvent({
+    type: 'absence_approved',
+    actorLudoId: ludoId,
+    actorMemberId: responderId,
+    entityType: 'absence',
+    entityId: id,
+    title: 'Absence approuvée',
+    body: 'Votre demande d’absence a été approuvée.',
+    recipientLudoId: ludoId,
+    recipientMemberId: absence.memberId,
+  })
+
+  return updated
 }
 
 /** Refus responsable. Note obligatoire. */
@@ -104,11 +132,25 @@ export async function refuseAbsence(
   if (!trimmed) {
     throw new AbsenceServiceError('Une note est requise pour refuser une demande.')
   }
-  return updateAbsenceStatus(id, {
+  const updated = await updateAbsenceStatus(id, {
     status: 'refuse',
     responderNotes: trimmed,
     respondedBy: responderId,
   })
+
+  await emitEvent({
+    type: 'absence_refused',
+    actorLudoId: ludoId,
+    actorMemberId: responderId,
+    entityType: 'absence',
+    entityId: id,
+    title: 'Absence refusée',
+    body: 'Votre demande d’absence a été refusée.',
+    recipientLudoId: ludoId,
+    recipientMemberId: absence.memberId,
+  })
+
+  return updated
 }
 
 /** Annulation par le membre propriétaire, tant que la demande est en attente. */

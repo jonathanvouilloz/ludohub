@@ -5,21 +5,30 @@
   import BottomTabBar from './BottomTabBar.svelte'
   import MoreSheet from './MoreSheet.svelte'
 
-  let { ludo, member, children }: { ludo: LudothequeRow; member: MemberRow; children: Snippet } =
-    $props()
+  let {
+    ludo,
+    member,
+    notifCount = 0,
+    children,
+  }: {
+    ludo: LudothequeRow
+    member: MemberRow
+    notifCount?: number
+    children: Snippet
+  } = $props()
 
   let sheetOpen = $state(false)
 </script>
 
 <div class="app-shell">
-  <AppSidebar {ludo} {member} />
+  <AppSidebar {ludo} {member} {notifCount} />
   <main class="app-shell__content">
     {@render children()}
   </main>
 </div>
 
-<BottomTabBar {ludo} onMore={() => (sheetOpen = true)} />
-<MoreSheet {ludo} {member} bind:open={sheetOpen} />
+<BottomTabBar {ludo} {notifCount} onMore={() => (sheetOpen = true)} />
+<MoreSheet {ludo} {member} {notifCount} bind:open={sheetOpen} />
 
 <style>
   .app-shell {

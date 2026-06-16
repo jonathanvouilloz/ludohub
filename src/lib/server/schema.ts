@@ -422,6 +422,51 @@ export const activityLog = pgTable('activity_log', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+// ─── Notifications in-app ──────────────────────────────────────────────────────
+
+export const notificationType = pgEnum('notification_type', [
+  'theme_request',
+  'theme_request_confirmed',
+  'theme_request_declined',
+  'help_response',
+  'help_confirmed',
+  'absence_request',
+  'absence_approved',
+  'absence_refused',
+])
+
+export const notificationSeverity = pgEnum('notification_severity', ['info', 'action_required'])
+
+export const notifications = pgTable('notifications', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  recipientLudoId: uuid('recipient_ludo_id')
+    .notNull()
+    .references(() => ludotheques.id, { onDelete: 'cascade' }),
+  // null → toute la ludo destinataire ; sinon un membre précis.
+  recipientMemberId: uuid('recipient_member_id').references(() => members.id, {
+    onDelete: 'cascade',
+  }),
+  type: notificationType('type').notNull(),
+  severity: notificationSeverity('severity').notNull().default('info'),
+  entityType: text('entity_type').notNull(),
+  entityId: uuid('entity_id'),
+  title: text('title').notNull(),
+  body: text('body'),
+  isRead: boolean('is_read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  recipientLudo: one(ludotheques, {
+    fields: [notifications.recipientLudoId],
+    references: [ludotheques.id],
+  }),
+  recipientMember: one(members, {
+    fields: [notifications.recipientMemberId],
+    references: [members.id],
+  }),
+}))
+
 // ─── Types utilitaires ────────────────────────────────────────────────────────
 
 export type LudothequeRow = typeof ludotheques.$inferSelect
@@ -451,3 +496,8 @@ export type GameWishInsert = typeof gameWishes.$inferInsert
 export type SupplyRequestRow = typeof supplyRequests.$inferSelect
 export type SupplyRequestInsert = typeof supplyRequests.$inferInsert
 export type ActivityLogRow = typeof activityLog.$inferSelect
+export type ActivityLogInsert = typeof activityLog.$inferInsert
+export type NotificationRow = typeof notifications.$inferSelect
+export type NotificationInsert = typeof notifications.$inferInsert
+export type NotificationType = (typeof notificationType.enumValues)[number]
+export type NotificationSeverity = (typeof notificationSeverity.enumValues)[number]

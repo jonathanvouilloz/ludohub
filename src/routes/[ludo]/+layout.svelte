@@ -5,7 +5,7 @@
 </script>
 
 <div class="ludo-scope" style="--ludo-color: {data.ludo.color}">
-  <AppShell ludo={data.ludo} member={data.currentMember}>
+  <AppShell ludo={data.ludo} member={data.currentMember} notifCount={data.notifCount}>
     {@render children()}
   </AppShell>
 </div>

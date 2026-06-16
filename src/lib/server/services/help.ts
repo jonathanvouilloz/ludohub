@@ -11,6 +11,7 @@ import {
   setResponseStatus,
 } from '../db/help.js'
 import type { HelpRequestRow, HelpResponseRow } from '../schema.js'
+import { emitEvent } from './events.js'
 
 /**
  * Erreur métier : message FR destiné à l'utilisateur. Levée par le service,
@@ -65,7 +66,25 @@ export async function respondToRequest(
   if (await hasMemberResponded(requestId, memberId)) {
     throw new HelpServiceError('Vous avez déjà répondu à cette demande.')
   }
-  return createResponse({ helpRequestId: requestId, memberId, ludoId: responderLudoId })
+  const response = await createResponse({
+    helpRequestId: requestId,
+    memberId,
+    ludoId: responderLudoId,
+  })
+
+  await emitEvent({
+    type: 'help_response',
+    actorLudoId: responderLudoId,
+    actorMemberId: memberId,
+    entityType: 'help_request',
+    entityId: requestId,
+    title: 'Un volontaire pour votre demande',
+    body: 'Une ludothèque propose son aide pour une de vos demandes.',
+    recipientLudoId: request.ludoId,
+    metadata: { responseId: response.id },
+  })
+
+  return response
 }
 
 // ─── Confirmation d'un volontaire (côté ludo demandeuse) ─────────────────────
@@ -89,6 +108,17 @@ export async function confirmVolunteer(
   await setResponseStatus(responseId, 'confirme')
   await refuseOtherResponses(requestId, responseId)
   await setRequestStatus(requestId, 'pourvue')
+
+  await emitEvent({
+    type: 'help_confirmed',
+    actorLudoId: requestingLudoId,
+    entityType: 'help_request',
+    entityId: requestId,
+    title: 'Votre aide a été confirmée',
+    body: 'Une ludothèque a confirmé votre proposition d’aide.',
+    recipientLudoId: response.ludoId,
+    metadata: { responseId },
+  })
 }
 
 // ─── Lectures ────────────────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import Share2Icon from '@lucide/svelte/icons/share-2'
 import UsersIcon from '@lucide/svelte/icons/users'
 import PackageIcon from '@lucide/svelte/icons/package'
 import DicesIcon from '@lucide/svelte/icons/dices'
+import BellIcon from '@lucide/svelte/icons/bell'
 
 /** Zone(s) du shell où une destination apparaît. */
 export type NavZone = 'sidebar' | 'tabbar' | 'sheet'
@@ -20,6 +21,8 @@ export type NavDest = {
   zones: NavZone[]
   /** Réservé aux responsables (masqué pour les membres simples). */
   responsableOnly?: boolean
+  /** Clé de badge dynamique alimentée par le shell (compteur de notifs). */
+  badgeKey?: 'notifications'
 }
 
 /**
@@ -76,8 +79,16 @@ export function buildNavConfig(slug: string): NavDest[] {
       label: 'Réseau',
       href: '/reseau/aide',
       icon: Share2Icon,
-      match: (p) => p.startsWith('/reseau'),
+      match: (p) => p.startsWith('/reseau') && !p.startsWith('/reseau/notifications'),
       zones: ['sidebar', 'sheet'],
+    },
+    {
+      label: 'Notifications',
+      href: '/reseau/notifications',
+      icon: BellIcon,
+      match: (p) => p.startsWith('/reseau/notifications'),
+      zones: ['sidebar', 'sheet'],
+      badgeKey: 'notifications',
     },
     {
       label: 'Équipe',

@@ -6,7 +6,11 @@
   import LudoBadge from './LudoBadge.svelte'
   import { buildNavConfig } from './nav-config'
 
-  let { ludo, member }: { ludo: LudothequeRow; member: MemberRow } = $props()
+  let {
+    ludo,
+    member,
+    notifCount = 0,
+  }: { ludo: LudothequeRow; member: MemberRow; notifCount?: number } = $props()
 
   const items = $derived(
     buildNavConfig(ludo.slug).filter(
@@ -18,7 +22,7 @@
 <aside class="app-sidebar">
   <nav class="app-sidebar__nav" aria-label="Navigation principale">
     {#each items as dest (dest.href)}
-      <NavItem {dest} />
+      <NavItem {dest} badge={dest.badgeKey === 'notifications' ? notifCount : 0} />
     {/each}
   </nav>
 

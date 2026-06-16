@@ -2,10 +2,15 @@
   import { page } from '$app/state'
   import type { NavDest } from './nav-config'
 
-  let { dest, layout = 'stack' }: { dest: NavDest; layout?: 'stack' | 'row' } = $props()
+  let {
+    dest,
+    layout = 'stack',
+    badge = 0,
+  }: { dest: NavDest; layout?: 'stack' | 'row'; badge?: number } = $props()
 
   const active = $derived(dest.match(page.url.pathname))
   const Icon = $derived(dest.icon)
+  const badgeText = $derived(badge > 9 ? '9+' : String(badge))
 </script>
 
 <a
@@ -14,9 +19,12 @@
   class:nav-item--active={active}
   aria-current={active ? 'page' : undefined}
 >
-  <!-- Emplacement réservé badge Notifications (epic 10) : wrapper .nav-item__icon -->
   <span class="nav-item__icon">
     <Icon size={24} aria-hidden="true" />
+    {#if badge > 0}
+      <span class="nav-item__badge" aria-label="{badge} notification(s) à traiter">{badgeText}</span
+      >
+    {/if}
   </span>
   <span class="nav-item__label">{dest.label}</span>
 </a>
@@ -49,9 +57,28 @@
     display: inline-flex;
     position: relative;
   }
+  .nav-item__badge {
+    position: absolute;
+    top: -6px;
+    left: 100%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--danger);
+    color: var(--text-inverse);
+    font-size: 0.625rem;
+    font-weight: var(--weight-bold);
+    line-height: 1;
+  }
   .nav-item__label {
     font-size: var(--text-label);
     font-weight: var(--weight-medium);
+    white-space: nowrap;
   }
 
   /* Vertical : icône au-dessus du label (sidebar + tab bar). */
@@ -60,7 +87,7 @@
     justify-content: center;
     gap: var(--space-1);
     min-height: 44px;
-    padding: var(--space-2) var(--space-1);
+    padding: var(--space-2) 0;
     text-align: center;
   }
 

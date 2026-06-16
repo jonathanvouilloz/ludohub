@@ -4,9 +4,14 @@
   import NavItem from './NavItem.svelte'
   import { buildNavConfig } from './nav-config'
 
-  let { ludo, onMore }: { ludo: LudothequeRow; onMore: () => void } = $props()
+  let {
+    ludo,
+    notifCount = 0,
+    onMore,
+  }: { ludo: LudothequeRow; notifCount?: number; onMore: () => void } = $props()
 
   const items = $derived(buildNavConfig(ludo.slug).filter((d) => d.zones.includes('tabbar')))
+  const badgeText = $derived(notifCount > 9 ? '9+' : String(notifCount))
 </script>
 
 <nav class="bottom-tab-bar" aria-label="Navigation principale">
@@ -14,7 +19,14 @@
     <NavItem {dest} />
   {/each}
   <button type="button" class="tab-more" onclick={onMore}>
-    <span class="tab-more__icon"><MenuIcon size={24} aria-hidden="true" /></span>
+    <span class="tab-more__icon">
+      <MenuIcon size={24} aria-hidden="true" />
+      {#if notifCount > 0}
+        <span class="tab-more__badge" aria-label="{notifCount} notification(s) à traiter"
+          >{badgeText}</span
+        >
+      {/if}
+    </span>
     <span class="tab-more__label">Plus</span>
   </button>
 </nav>
@@ -63,6 +75,25 @@
   }
   .tab-more__icon {
     display: inline-flex;
+    position: relative;
+  }
+  .tab-more__badge {
+    position: absolute;
+    top: -6px;
+    left: 100%;
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 var(--space-1);
+    border-radius: var(--radius-pill);
+    background: var(--danger);
+    color: var(--text-inverse);
+    font-size: 0.625rem;
+    font-weight: var(--weight-bold);
+    line-height: 1;
   }
   .tab-more__label {
     font-size: var(--text-label);

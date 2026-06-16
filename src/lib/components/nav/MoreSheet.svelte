@@ -11,8 +11,9 @@
   let {
     ludo,
     member,
+    notifCount = 0,
     open = $bindable(false),
-  }: { ludo: LudothequeRow; member: MemberRow; open?: boolean } = $props()
+  }: { ludo: LudothequeRow; member: MemberRow; notifCount?: number; open?: boolean } = $props()
 
   const items = $derived(
     buildNavConfig(ludo.slug).filter(
@@ -67,7 +68,7 @@
 
     <nav class="more-sheet__nav" aria-label="Navigation secondaire">
       {#each items as dest (dest.href)}
-        <NavItem {dest} layout="row" />
+        <NavItem {dest} layout="row" badge={dest.badgeKey === 'notifications' ? notifCount : 0} />
       {/each}
     </nav>
 
