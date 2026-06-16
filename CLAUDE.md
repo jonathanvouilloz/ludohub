@@ -128,7 +128,7 @@ Structure mémoire :
 
 ## État actuel
 
-Epics **01-SETUP** et **02-AUTH** terminés (socle SvelteKit + Drizzle + Neon, puis connexion multi-tenant slug/password/membre). Prochain epic : **03-MEMBRES** (CRUD membres + rôles).
+Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES** et **04-PLANNING** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap). Prochain epic : **05-ABSENCES** (demande, approbation, intégration warnings planning).
 Repo GitHub : `github.com/jonathanvouilloz/ludohub` (branche `main`).
 Voir `docs/HANDOFF.md` pour l'état courant.
 
