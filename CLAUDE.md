@@ -128,8 +128,10 @@ Structure mémoire :
 
 ## État actuel
 
-Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES** et **04-PLANNING** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap). Prochain epic : **05-ABSENCES** (demande, approbation, intégration warnings planning).
+Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING** et **05-ABSENCES** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning). Prochain epic : **06-THÈMES** (catalogue, items, photos Vercel Blob, prêts).
 Repo GitHub : `github.com/jonathanvouilloz/ludohub` (branche `main`).
 Voir `docs/HANDOFF.md` pour l'état courant.
 
 **Rappel env :** côté serveur, toujours `$env/dynamic/private` (jamais `process.env`). Scripts hors SvelteKit (seed) découplés de `$env`.
+
+**Rappel form actions :** le contexte tenant (ludo/membre) se résout dans les actions via `requireLudoContext`/`requireResponsableContext` de `src/lib/server/ludo-context.ts` — jamais `locals.ludo`/`locals.currentMember` (posés seulement par le `load` du layout, indispo avant une action en SvelteKit).
