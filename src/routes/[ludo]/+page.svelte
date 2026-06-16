@@ -13,6 +13,7 @@
     <a class="settings-link" href="/{data.ludo.slug}/planning">Planning →</a>
     <a class="settings-link" href="/{data.ludo.slug}/absences">Absences →</a>
     <a class="settings-link" href="/{data.ludo.slug}/themes">Thèmes →</a>
+    <a class="settings-link" href="/reseau/aide">Demandes d'aide →</a>
     {#if isResponsable(data.currentMember)}
       <a class="settings-link" href="/{data.ludo.slug}/settings/membres">Gérer l'équipe →</a>
     {/if}

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation'
-  import { Button } from '$lib/components/ui/button/index.js'
 
   type ThemeImage = { id: string; url: string }
 
@@ -79,14 +78,15 @@
         hidden
         onchange={onUpload}
       />
-      <Button
+      <button
         type="button"
-        variant="outline"
+        class="dropzone"
         disabled={atMax || uploading}
         onclick={() => fileInput?.click()}
       >
+        <span class="plus" aria-hidden="true">+</span>
         {uploading ? 'Envoi…' : atMax ? `Maximum ${MAX} photos` : 'Ajouter une photo'}
-      </Button>
+      </button>
       {#if error}<p class="error" role="alert">{error}</p>{/if}
     </div>
   {/if}
@@ -134,6 +134,35 @@
     color: var(--text-subtle);
     font-style: italic;
     margin: 0;
+  }
+  .dropzone {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    font: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+    background: var(--bg-hover);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition:
+      border-color var(--dur-fast) ease,
+      color var(--dur-fast) ease;
+  }
+  .dropzone:hover:not(:disabled) {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .dropzone:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .plus {
+    font-size: 1.1rem;
+    line-height: 1;
   }
   .error {
     margin: 0;

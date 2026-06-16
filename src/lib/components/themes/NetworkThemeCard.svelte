@@ -1,16 +1,18 @@
 <script lang="ts">
+  import { enhance } from '$app/forms'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Button } from '$lib/components/ui/button/index.js'
 
   type ThemeImage = { id: string; url: string }
   type ThemeItem = { id: string }
-  type ThemeLoan = { status: string }
   type NetworkTheme = {
     id: string
     name: string
     description?: string | null
     items?: ThemeItem[]
     images?: ThemeImage[]
-    loans?: ThemeLoan[]
+    onLoan?: boolean
+    myRequestStatus?: string | null
     ownerLudo?: { name: string } | null
   }
 
@@ -18,7 +20,12 @@
 
   const cover = $derived(theme.images?.[0])
   const itemCount = $derived(theme.items?.length ?? 0)
-  const onLoan = $derived((theme.loans ?? []).some((l) => l.status === 'actif'))
+  const onLoan = $derived(theme.onLoan ?? false)
+  const requestStatus = $derived(theme.myRequestStatus ?? null)
+  // Demande possible uniquement si rien d'ouvert (ni prêt actif, ni demande à moi).
+  const canRequest = $derived(!onLoan && !requestStatus)
+
+  let submitting = $state(false)
 </script>
 
 <article class="card">
@@ -35,12 +42,35 @@
     {#if theme.description}<p class="muted">{theme.description}</p>{/if}
     <div class="meta">
       <span class="count">{itemCount} item{itemCount > 1 ? 's' : ''}</span>
-      {#if onLoan}
+      {#if requestStatus === 'actif'}
+        <Badge variant="secondary">Emprunté par vous</Badge>
+      {:else if requestStatus === 'en_attente'}
+        <Badge variant="secondary">Demande envoyée</Badge>
+      {:else if onLoan}
         <Badge variant="secondary">En prêt</Badge>
       {:else}
         <Badge variant="outline">Disponible</Badge>
       {/if}
     </div>
+
+    {#if canRequest}
+      <form
+        method="POST"
+        action="?/request"
+        use:enhance={() => {
+          submitting = true
+          return async ({ update }) => {
+            submitting = false
+            await update()
+          }
+        }}
+      >
+        <input type="hidden" name="themeId" value={theme.id} />
+        <Button type="submit" size="sm" disabled={submitting}>
+          {submitting ? 'Envoi…' : 'Demander ce thème'}
+        </Button>
+      </form>
+    {/if}
   </div>
 </article>
 
@@ -100,5 +130,8 @@
   .count {
     font-size: var(--text-small);
     color: var(--text-subtle);
+  }
+  form {
+    margin-top: var(--space-3);
   }
 </style>

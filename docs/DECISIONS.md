@@ -121,3 +121,23 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** (1) **Prêts push uniquement** en 06 (propriétaire prête → `actif`, puis retour) ; le flow pull/request est reporté à 07-RÉSEAU → enum laissé inchangé, pas de `db:push`. (2) **Tous les membres actifs** gèrent les thèmes (actions via `requireLudoContext`, pas responsable). (3) Helper `requireSessionContext` (résout `ludo`+`member` depuis la seule session) pour `/reseau/*` et l'endpoint d'upload. (4) En Tailwind v4 les règles CSS **hors `@layer`** priment sur les utilitaires : `a {}` global dans `app.css` écrasait `text-primary-foreground` des boutons-liens → scopé en `a:not([data-slot='button'])`. Input partagé passé `bg-transparent`→`bg-card`.
 
 **Alternatives :** Ajouter `en_attente` à l'enum dès 06 (scope élargi prématurément), réutiliser `requireLudoContext` avec un slug factice pour `/reseau` (bancal), déplacer les règles `a` dans `@layer base` (corrige la précédence mais touche tous les liens), corriger l'input localement page par page (non DRY).
+
+---
+
+## 2026-06-16 | RÉSEAU : flow pull via `en_attente`, garde « ouvrant », confirmation par tout membre actif
+
+**Contexte :** Epic 07-RÉSEAU. Réalisation du flow pull/request reporté de 06 (enum `loan_status` à étendre) + des demandes d'aide cross-ludo. Question de qui confirme côté ludo demandeuse, et de comment empêcher un thème déjà réservé d'être re-prêté.
+
+**Décision :** (1) `loan_status` += `en_attente` (`db:push`) : un pull crée un prêt `en_attente` que le **propriétaire** confirme → `actif`. (2) `getOpenLoanForTheme` (statut `actif|en_attente`) bloque **et** un nouveau push **et** un nouveau pull tant qu'un prêt est ouvert ; demandes en attente exclues de l'historique des prêts (section dédiée sur la fiche). (3) Confirmation/annulation d'une demande d'aide = **tout membre actif** de la ludo demandeuse (cohérent avec la gestion des thèmes, pas de gating responsable) ; à la confirmation d'un volontaire, les **autres réponses passent `refuse`** automatiquement. (4) États « en attente » thémisés via tokens `--warning`/`--warning-light` (le variant `outline` paraissait transparent).
+
+**Alternatives :** Confirmation responsable-only (incohérent avec les thèmes), garde sur le seul statut `actif` (laisserait deux demandes ouvrir en parallèle), laisser les réponses non confirmées en `propose` (feed ambigu), badge outline par défaut (illisible sur carte).
+
+---
+
+## 2026-06-16 | Notifications ≠ activity_log : tables distinctes, point d'émission unifié (planif epic 10)
+
+**Contexte :** Discussion post-07 sur un système de notifications. `activity_log` existe au schéma mais n'est écrit nulle part (réservé à 11-ADMIN). Tentation de tout y mettre. Par ailleurs, constat que la **navigation** (sidebar spécifiée au PRD/DESIGN) n'a jamais été construite — aucun epic ne l'a prise en charge.
+
+**Décision :** Deux nouveaux epics planifiés (numéro = ordre) : **08-NAVIGATION** (shell : sidebar 72px desktop + bottom tab bar mobile) puis **10-NOTIFICATIONS**. On **ne fusionne pas** `notifications` et `activity_log` (audiences, cycle lu/non-lu, cible destinataire ≠ acteur, fan-out 1→N différents) — on **unifie le point d'émission** : un dispatcher (`events.ts`) écrit la ligne d'audit **et** les notifications par destinataire. `type` (domaine) + `severity` (`info`/`action_required`, ce dernier alimente le badge). Roadmap renumérotée : wishlist 08→09, admin 09→11, tests →12.
+
+**Alternatives :** Greffer état lu/non-lu + destinataire sur `activity_log` (pollue le journal d'audit), notifications sans table (badges calculés au load — pas d'historique lu/non-lu), push web/email (hors stack ; éventuel via Brevo plus tard).

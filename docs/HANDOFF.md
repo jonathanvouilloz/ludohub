@@ -2,13 +2,12 @@
 
 ## Features actives
 
-| Feature     | Fichier                                        | Statut       |
-| ----------- | ---------------------------------------------- | ------------ |
-| 06 — THÈMES | [features/06-themes.md](features/06-themes.md) | **DONE**     |
-| 07 — RÉSEAU | [features/07-reseau.md](features/07-reseau.md) | EN ATTENTE   |
+| Feature         | Fichier                                                | Statut     |
+| --------------- | ------------------------------------------------------ | ---------- |
+| 07 — RÉSEAU     | [features/07-reseau.md](features/07-reseau.md)         | **DONE**   |
+| 08 — NAVIGATION | [features/08-navigation.md](features/08-navigation.md) | EN ATTENTE |
 
 ## Reprendre ici
 
-**07-RÉSEAU** — Prochain epic (demandes d'aide cross-ludo). Y inclure le flow pull/request des prêts de thèmes (`requestTheme`/`confirmLoanRequest`, statut `en_attente`) reporté depuis 06. Lire `docs/features/07-reseau.md`.
-Épic 06 terminé : catalogue thèmes + items + photos Vercel Blob + prêts push + catalogue réseau ; fixes UI (boutons-liens, inputs, checkbox).
-Commit : feat(themes): catalogue, items, photos Blob, prêts push + fixes UI
+**08-NAVIGATION** — Prochain epic : shell applicatif (sidebar 72px desktop + bottom tab bar mobile), remplace les liens d'en-tête ad hoc, pré-requis du badge de 10-NOTIFICATIONS. Lire `docs/features/08-navigation.md`.
+Épic 07 terminé : demandes d'aide cross-ludo + flow pull thèmes (`en_attente`) + fixes UI (chip warning, dropzone photo). e2e `reseau-aide.spec.ts` à lancer.

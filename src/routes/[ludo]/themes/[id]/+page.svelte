@@ -15,7 +15,9 @@
   const theme = $derived(data.theme)
   const editable = $derived(!theme.isArchived)
   const activeLoan = $derived((theme.loans ?? []).find((l) => l.status === 'actif'))
-  const history = $derived(theme.loans ?? [])
+  const pendingRequests = $derived((theme.loans ?? []).filter((l) => l.status === 'en_attente'))
+  // L'historique exclut les demandes en attente (affichées dans leur section dédiée).
+  const history = $derived((theme.loans ?? []).filter((l) => l.status !== 'en_attente'))
 
   let loanOpen = $state(false)
 
@@ -55,6 +57,34 @@
 
   {#if form?.error}
     <p class="banner" role="alert">{form.error}</p>
+  {/if}
+
+  {#if pendingRequests.length > 0}
+    <section class="requests">
+      <h2>Demandes d'emprunt en attente</h2>
+      {#each pendingRequests as req (req.id)}
+        <div class="request">
+          <div>
+            <span class="request-head">
+              <strong>{req.toLudo?.name ?? '—'}</strong>
+              <span class="pending-pill">En attente</span>
+            </span>
+            <span class="muted"> · {formatDateShort(req.createdAt)}</span>
+            {#if req.notes}<p class="note">{req.notes}</p>{/if}
+          </div>
+          <div class="request-actions">
+            <form method="POST" action="?/confirmRequest" use:enhance>
+              <input type="hidden" name="loanId" value={req.id} />
+              <Button type="submit" size="sm" disabled={!!activeLoan}>Accepter</Button>
+            </form>
+            <form method="POST" action="?/declineRequest" use:enhance>
+              <input type="hidden" name="loanId" value={req.id} />
+              <Button type="submit" variant="outline" size="sm">Refuser</Button>
+            </form>
+          </div>
+        </div>
+      {/each}
+    </section>
   {/if}
 
   {#if activeLoan}
@@ -199,6 +229,54 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     flex-wrap: wrap;
+  }
+  .requests {
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .requests h2 {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-body);
+    color: var(--text-main);
+  }
+  .request {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-2) 0;
+    flex-wrap: wrap;
+  }
+  .request + .request {
+    border-top: 1px solid var(--border);
+  }
+  .request-head {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .pending-pill {
+    display: inline-flex;
+    align-items: center;
+    height: 1.25rem;
+    padding: 0 var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--warning-light);
+    color: var(--warning);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+  }
+  .request-actions {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .note {
+    margin: var(--space-1) 0 0;
+    color: var(--text-muted);
+    font-size: var(--text-small);
   }
   .columns {
     display: grid;

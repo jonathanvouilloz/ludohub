@@ -236,7 +236,7 @@ export const themeImages = pgTable('theme_images', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
-export const loanStatus = pgEnum('loan_status', ['actif', 'retourne', 'annule'])
+export const loanStatus = pgEnum('loan_status', ['en_attente', 'actif', 'retourne', 'annule'])
 
 export const themeLoans = pgTable('theme_loans', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -325,6 +325,29 @@ export const helpResponses = pgTable('help_responses', {
   status: helpResponseStatus('status').notNull().default('propose'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+export const helpRequestsRelations = relations(helpRequests, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [helpRequests.ludoId],
+    references: [ludotheques.id],
+  }),
+  responses: many(helpResponses),
+}))
+
+export const helpResponsesRelations = relations(helpResponses, ({ one }) => ({
+  request: one(helpRequests, {
+    fields: [helpResponses.helpRequestId],
+    references: [helpRequests.id],
+  }),
+  member: one(members, {
+    fields: [helpResponses.memberId],
+    references: [members.id],
+  }),
+  ludo: one(ludotheques, {
+    fields: [helpResponses.ludoId],
+    references: [ludotheques.id],
+  }),
+}))
 
 // ─── Interne ludo ────────────────────────────────────────────────────────────
 

@@ -10,7 +10,13 @@ import {
   setThemeShareable,
   ThemeServiceError,
 } from '$lib/server/services/themes.js'
-import { loanTheme, returnTheme, LoanServiceError } from '$lib/server/services/loans.js'
+import {
+  confirmLoanRequest,
+  declineLoanRequest,
+  loanTheme,
+  returnTheme,
+  LoanServiceError,
+} from '$lib/server/services/loans.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params, parent }) => {
@@ -96,5 +102,17 @@ export const actions: Actions = {
     const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
     return run(() => returnTheme(String(data.get('loanId') ?? ''), ludo.id))
+  },
+
+  confirmRequest: async (event) => {
+    const { ludo } = await requireLudoContext(event)
+    const data = await event.request.formData()
+    return run(() => confirmLoanRequest(String(data.get('loanId') ?? ''), ludo.id))
+  },
+
+  declineRequest: async (event) => {
+    const { ludo } = await requireLudoContext(event)
+    const data = await event.request.formData()
+    return run(() => declineLoanRequest(String(data.get('loanId') ?? ''), ludo.id))
   },
 }
