@@ -128,7 +128,7 @@ Structure mémoire :
 
 ## État actuel
 
-Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING**, **05-ABSENCES** et **06-THÈMES** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning ; catalogue thèmes + items + photos Vercel Blob + prêts push + catalogue réseau). Prochain epic : **07-RÉSEAU** (demandes d'aide cross-ludo ; y inclure le flow pull/request des prêts reporté depuis 06).
+Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING**, **05-ABSENCES**, **06-THÈMES** et **07-RÉSEAU** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning ; catalogue thèmes + items + photos Vercel Blob + prêts push/pull ; demandes d'aide cross-ludo). Roadmap renumérotée : prochain epic **08-NAVIGATION** (shell : sidebar 72px desktop + bottom tab bar mobile — la nav était spécifiée au PRD/DESIGN mais jamais construite), puis **09-WISHLIST+MATÉRIEL**, **10-NOTIFICATIONS** (notifs in-app + dispatcher distinct de `activity_log`), **11-ADMIN**, **12-TESTS E2E**.
 Repo GitHub : `github.com/jonathanvouilloz/ludohub` (branche `main`).
 Voir `docs/HANDOFF.md` pour l'état courant.
 
