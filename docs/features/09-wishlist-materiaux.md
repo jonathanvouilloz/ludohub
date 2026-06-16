@@ -25,7 +25,7 @@ Deux listes internes par ludo : wishlist de jeux à acheter, et demandes de mat�
 **Fait :** Epic 09 implémenté de bout en bout — relations Drizzle + types `Insert` dans `schema.ts` (aucune migration, tables déjà en base) · couches `db/wishes.ts` + `db/supplies.ts` · services `wishes.ts`/`supplies.ts` (+ tests, 52 verts) · routes `[ludo]/games` + `[ludo]/supplies` · composants (WishlistItem, SupplyRequestRow, 2 dialogs) · nav réordonnée par usage.
 **Prochain :** Validation manuelle par Jonathan sur son serveur (scénarios wishlist/matériel/nav). Si OK → passer 09 DONE dans PLAN + `/epic-recap`.
 **Pieges :** Statut matériel = `Select` qui auto-submit via `requestSubmit()` (resync `$effect` sur la donnée serveur). Prix stocké en **centimes** (`priceChf`). Réseau + Thèmes ont quitté la tabbar mobile (→ sheet « Plus ») suite au reclassement d'usage demandé.
-**Commit :** [ff18ed2] feat(interne): wishlist jeux + demandes de matériel (epic 09)
+**Commit :** [7fa8f46] feat(interne): wishlist jeux + demandes de matériel (epic 09)
 
 ---
 
