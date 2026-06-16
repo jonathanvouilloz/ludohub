@@ -17,7 +17,6 @@
 
 <main class="reseau">
   <header>
-    <a class="back" href="/{data.ludo.slug}">← Accueil</a>
     <div class="title-row">
       <div>
         <h1>Demandes d'aide</h1>
@@ -25,7 +24,6 @@
       </div>
       <Button onclick={() => (dialogOpen = true)}>Nouvelle demande</Button>
     </div>
-    <a class="link" href="/reseau/themes">Catalogue réseau →</a>
   </header>
 
   {#if form?.error}
@@ -58,17 +56,11 @@
     flex-direction: column;
     gap: var(--space-1);
   }
-  .back {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: var(--text-small);
-  }
   .title-row {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
     gap: var(--space-4);
-    margin: var(--space-2) 0 var(--space-2);
     flex-wrap: wrap;
   }
   h1 {
@@ -78,11 +70,6 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .link {
-    color: var(--ludo-color, var(--primary));
-    text-decoration: none;
-    font-size: var(--text-small);
   }
   .banner {
     margin: 0;

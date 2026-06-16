@@ -11,7 +11,7 @@
 | 05  | ABSENCES — Demande, approbation, intégration planning       | M      | **DONE** | [05-absences.md](features/05-absences.md)                     |
 | 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts        | L      | **DONE** | [06-themes.md](features/06-themes.md)                         |
 | 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull thèmes      | M      | **DONE** | [07-reseau.md](features/07-reseau.md)                         |
-| 08  | NAVIGATION — Shell applicatif (sidebar desktop + tab bar mobile) | M | TODO    | [08-navigation.md](features/08-navigation.md)                 |
+| 08  | NAVIGATION — Shell applicatif (sidebar desktop + tab bar mobile) | M | **DONE** | [08-navigation.md](features/08-navigation.md)                 |
 | 09  | WISHLIST + MATÉRIEL — Listes internes simples               | S      | TODO     | [09-wishlist-materiaux.md](features/09-wishlist-materiaux.md) |
 | 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log   | M      | TODO     | [10-notifications.md](features/10-notifications.md)           |
 | 11  | ADMIN — Super admin (CRUD ludos, logs)                      | M      | TODO     | [11-admin.md](features/11-admin.md)                           |
@@ -19,14 +19,12 @@
 
 ## Prochaines étapes prioritaires
 
-1. **08-NAVIGATION** : shell applicatif partagé — **fondationnel**. Sidebar verticale 72px
-   (icônes + labels, PRD §Layout) sur desktop, **bottom tab bar** sur mobile (~50/50
-   d'usage). Remplace les liens d'en-tête ad hoc actuels. Pré-requis du badge de notifs.
-2. **09-WISHLIST + MATÉRIEL** : dernières features de contenu interne (listes simples).
-3. **10-NOTIFICATIONS** : notifs in-app (dépend du shell pour le badge + de tous les
+1. **09-WISHLIST + MATÉRIEL** : dernières features de contenu interne (listes simples).
+2. **10-NOTIFICATIONS** : notifs in-app (dépend du shell pour le badge + de tous les
    domaines de contenu existants). Dispatcher unique qui alimente notifs **et** `activity_log`.
-4. **11-ADMIN** : super admin (CRUD ludos + consultation `activity_log` peuplé par le dispatcher).
-5. **12-TESTS E2E** : Playwright sur les flows critiques (transversal, à consolider en fin).
+3. **11-ADMIN** : super admin (CRUD ludos + consultation `activity_log` peuplé par le dispatcher).
+4. **12-TESTS E2E** : Playwright sur les flows critiques (transversal, à consolider en fin).
+   Inclut les 3 tests du shell de navigation (08) reportés ici.
 
 ## Ordre de dépendances
 
@@ -72,3 +70,4 @@
 | 05  | ABSENCES — Demande, approbation, warnings        | 2026-06-16  |
 | 06  | THÈMES — Catalogue, items, photos Blob, prêts    | 2026-06-16  |
 | 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull  | 2026-06-16  |
+| 08  | NAVIGATION — Shell (sidebar desktop + tab bar mobile) | 2026-06-16 |

@@ -18,7 +18,6 @@
       <p class="muted">Le catalogue de thèmes de votre ludothèque.</p>
     </div>
     <div class="head-actions">
-      <a class="link" href="/reseau/themes">Catalogue réseau →</a>
       <Button href="/{data.ludo.slug}/themes/new">Nouveau thème</Button>
     </div>
   </header>
@@ -52,14 +51,6 @@
     display: flex;
     align-items: center;
     gap: var(--space-4);
-  }
-  .link {
-    color: var(--ludo-color);
-    font-weight: var(--weight-medium);
-    text-decoration: none;
-  }
-  .link:hover {
-    text-decoration: underline;
   }
   h1 {
     color: var(--text-main);

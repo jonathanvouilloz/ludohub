@@ -2,12 +2,12 @@
 
 ## Features actives
 
-| Feature         | Fichier                                                | Statut     |
-| --------------- | ------------------------------------------------------ | ---------- |
-| 07 — RÉSEAU     | [features/07-reseau.md](features/07-reseau.md)         | **DONE**   |
-| 08 — NAVIGATION | [features/08-navigation.md](features/08-navigation.md) | EN ATTENTE |
+| Feature                  | Fichier                                                              | Statut     |
+| ------------------------ | ------------------------------------------------------------------- | ---------- |
+| 08 — NAVIGATION          | [features/08-navigation.md](features/08-navigation.md)              | **DONE**   |
+| 09 — WISHLIST + MATÉRIEL | [features/09-wishlist-materiaux.md](features/09-wishlist-materiaux.md) | EN ATTENTE |
 
 ## Reprendre ici
 
-**08-NAVIGATION** — Prochain epic : shell applicatif (sidebar 72px desktop + bottom tab bar mobile), remplace les liens d'en-tête ad hoc, pré-requis du badge de 10-NOTIFICATIONS. Lire `docs/features/08-navigation.md`.
-Épic 07 terminé : demandes d'aide cross-ludo + flow pull thèmes (`en_attente`) + fixes UI (chip warning, dropzone photo). e2e `reseau-aide.spec.ts` à lancer.
+**09-WISHLIST + MATÉRIEL** — Prochain epic : listes internes simples (souhaits + matériel). Lire `docs/features/09-wishlist-materiaux.md`.
+Épic 08 terminé : shell partagé (`src/lib/components/nav/`) sidebar 72px desktop + tab bar mobile + sheet « Plus », couvre `[ludo]/*` et `reseau/*`, route `/auth/logout`. Tests Playwright du shell reportés à l'epic 12.

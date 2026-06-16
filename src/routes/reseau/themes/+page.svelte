@@ -12,10 +12,8 @@
 
 <main class="reseau">
   <header>
-    <a class="back" href="/{data.ludo.slug}/themes">← Mes thèmes</a>
     <h1>Catalogue réseau</h1>
     <p class="muted">Les thèmes partagés par les autres ludothèques du réseau.</p>
-    <a class="link" href="/reseau/aide">Demandes d'aide →</a>
   </header>
 
   {#if themes.length === 0}
@@ -35,25 +33,13 @@
     margin: 0 auto;
     padding: var(--space-8) var(--space-6);
   }
-  .back {
-    color: var(--text-muted);
-    text-decoration: none;
-    font-size: var(--text-small);
-  }
   h1 {
     color: var(--text-main);
-    margin: var(--space-2) 0 var(--space-1);
+    margin: 0 0 var(--space-1);
   }
   .muted {
     color: var(--text-muted);
-    margin: 0 0 var(--space-2);
-  }
-  .link {
-    color: var(--ludo-color, var(--primary));
-    text-decoration: none;
-    font-size: var(--text-small);
-    display: inline-block;
-    margin-bottom: var(--space-6);
+    margin: 0 0 var(--space-6);
   }
   .empty {
     color: var(--text-subtle);

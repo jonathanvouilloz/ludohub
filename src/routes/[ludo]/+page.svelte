@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { isResponsable } from '$lib/utils/permissions.js'
-
   let { data } = $props()
 </script>
 
@@ -8,16 +6,6 @@
   <p class="eyebrow" style="color: var(--ludo-color)">{data.ludo.name}</p>
   <h1>Bonjour {data.currentMember.name} 👋</h1>
   <p class="muted">Vous êtes connecté·e. Le tableau de bord arrivera dans un prochain epic.</p>
-
-  <nav class="links">
-    <a class="settings-link" href="/{data.ludo.slug}/planning">Planning →</a>
-    <a class="settings-link" href="/{data.ludo.slug}/absences">Absences →</a>
-    <a class="settings-link" href="/{data.ludo.slug}/themes">Thèmes →</a>
-    <a class="settings-link" href="/reseau/aide">Demandes d'aide →</a>
-    {#if isResponsable(data.currentMember)}
-      <a class="settings-link" href="/{data.ludo.slug}/settings/membres">Gérer l'équipe →</a>
-    {/if}
-  </nav>
 </main>
 
 <style>
@@ -40,20 +28,5 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .links {
-    display: flex;
-    gap: var(--space-6);
-    margin-top: var(--space-6);
-    flex-wrap: wrap;
-  }
-  .settings-link {
-    display: inline-block;
-    font-weight: var(--weight-medium);
-    color: var(--ludo-color);
-    text-decoration: none;
-  }
-  .settings-link:hover {
-    text-decoration: underline;
   }
 </style>

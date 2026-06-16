@@ -141,3 +141,13 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 **Décision :** Deux nouveaux epics planifiés (numéro = ordre) : **08-NAVIGATION** (shell : sidebar 72px desktop + bottom tab bar mobile) puis **10-NOTIFICATIONS**. On **ne fusionne pas** `notifications` et `activity_log` (audiences, cycle lu/non-lu, cible destinataire ≠ acteur, fan-out 1→N différents) — on **unifie le point d'émission** : un dispatcher (`events.ts`) écrit la ligne d'audit **et** les notifications par destinataire. `type` (domaine) + `severity` (`info`/`action_required`, ce dernier alimente le badge). Roadmap renumérotée : wishlist 08→09, admin 09→11, tests →12.
 
 **Alternatives :** Greffer état lu/non-lu + destinataire sur `activity_log` (pollue le journal d'audit), notifications sans table (badges calculés au load — pas d'historique lu/non-lu), push web/email (hors stack ; éventuel via Brevo plus tard).
+
+---
+
+## 2026-06-16 | NAVIGATION : shell mutualisé piloté par une config de destinations à zones
+
+**Contexte :** Epic 08-NAVIGATION. La sidebar (72px desktop) + bottom tab bar mobile devaient envelopper **et** `[ludo]/*` **et** `reseau/*` sans dupliquer la liste des liens entre sidebar / tab bar / sheet « Plus ». Pas de composant Sheet/Drawer dans `ui/`, pas de route logout. Les tokens `--bp-*` ne sont pas utilisables dans une condition `@media` (limite CSS).
+
+**Décision :** Source unique `nav-config.ts` — chaque destination porte un tableau `zones` (`sidebar`/`tabbar`/`sheet`) + un matcher d'état actif + `responsableOnly` ; sidebar, tab bar et sheet filtrent la même liste. Shell rendu identiquement pour les deux scopes car les deux `+layout.server.ts` exposent `ludo` + `currentMember`. Sheet « Plus » montée en permanence + transition CSS `--ease-drawer` (pas de transition JS) → respecte `prefers-reduced-motion` via la neutralisation des durées dans `tokens.css`. Breakpoint `768px` **en dur** dans les `@media`. Route `POST /auth/logout` (slug résolu serveur depuis la session → redirect `/auth/{slug}`). Tab bar mobile = Accueil · Planning · Thèmes · Réseau · Plus (Absences/Équipe en sheet). Wrapper `.nav-item__icon` réservé au futur badge notifs (epic 10).
+
+**Alternatives :** Deux shells séparés (`[ludo]` vs `reseau`, duplication), trois listes de liens distinctes (désync), transition JS Svelte (`fly`) pour la sheet (durée hardcodée + reduced-motion non respecté), composant Drawer shadcn (dépendance bits-ui non installée), logout en form action par scope (slug à passer + duplication).
