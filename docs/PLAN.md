@@ -10,22 +10,23 @@
 | 04  | PLANNING — Saisons, samedis, assignations, swap             | L      | **DONE** | [04-planning.md](features/04-planning.md)                     |
 | 05  | ABSENCES — Demande, approbation, intégration planning       | M      | **DONE** | [05-absences.md](features/05-absences.md)                     |
 | 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts        | L      | **DONE** | [06-themes.md](features/06-themes.md)                         |
-| 07  | RÉSEAU — Demandes d'aide cross-ludo                         | M      | TODO     | [07-reseau.md](features/07-reseau.md)                         |
-| 08  | WISHLIST + MATÉRIEL — Listes internes simples               | S      | TODO     | [08-wishlist-materiaux.md](features/08-wishlist-materiaux.md) |
-| 09  | ADMIN — Super admin (CRUD ludos, logs)                      | M      | TODO     | [09-admin.md](features/09-admin.md)                           |
-| 10  | TESTS E2E — Playwright flows critiques (5 flows)            | M      | TODO     | [10-tests-e2e.md](features/10-tests-e2e.md)                   |
+| 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull thèmes      | M      | **DONE** | [07-reseau.md](features/07-reseau.md)                         |
+| 08  | NAVIGATION — Shell applicatif (sidebar desktop + tab bar mobile) | M | TODO    | [08-navigation.md](features/08-navigation.md)                 |
+| 09  | WISHLIST + MATÉRIEL — Listes internes simples               | S      | TODO     | [09-wishlist-materiaux.md](features/09-wishlist-materiaux.md) |
+| 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log   | M      | TODO     | [10-notifications.md](features/10-notifications.md)           |
+| 11  | ADMIN — Super admin (CRUD ludos, logs)                      | M      | TODO     | [11-admin.md](features/11-admin.md)                           |
+| 12  | TESTS E2E — Playwright flows critiques                      | M      | TODO     | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
 
 ## Prochaines étapes prioritaires
 
-1. **01-SETUP** : Créer le projet SvelteKit, schema Drizzle complet, Neon connexion, Better Auth base
-2. **02-AUTH** : Login page, middleware session, cookie 30j
-3. **03-MEMBRES** : CRUD (s'appuie sur auth pour les guards)
-4. **04-PLANNING** : Feature core, le plus complexe
-5. **05-ABSENCES** : Dépend du planning (warnings de conflit)
-6. **06-THÈMES** : Feature de partage — cœur du réseau
-7. **07-RÉSEAU** : Feed cross-ludo (dépend de 06 pour les thèmes)
-8. **08 + 09** : Features simples, parallélisables
-9. **10-TESTS** : Playwright en continu avec chaque feature
+1. **08-NAVIGATION** : shell applicatif partagé — **fondationnel**. Sidebar verticale 72px
+   (icônes + labels, PRD §Layout) sur desktop, **bottom tab bar** sur mobile (~50/50
+   d'usage). Remplace les liens d'en-tête ad hoc actuels. Pré-requis du badge de notifs.
+2. **09-WISHLIST + MATÉRIEL** : dernières features de contenu interne (listes simples).
+3. **10-NOTIFICATIONS** : notifs in-app (dépend du shell pour le badge + de tous les
+   domaines de contenu existants). Dispatcher unique qui alimente notifs **et** `activity_log`.
+4. **11-ADMIN** : super admin (CRUD ludos + consultation `activity_log` peuplé par le dispatcher).
+5. **12-TESTS E2E** : Playwright sur les flows critiques (transversal, à consolider en fin).
 
 ## Ordre de dépendances
 
@@ -37,9 +38,11 @@
                │     └── 05-ABSENCES
                ├── 06-THÈMES
                │     └── 07-RÉSEAU
-               ├── 08-WISHLIST + MATÉRIEL
-               └── 09-ADMIN
-10-TESTS (transversal, tout au long)
+               ├── 08-NAVIGATION ────────────┐  (shell transversal : englobe toutes les sections)
+               │     └── 10-NOTIFICATIONS     │  (badge dans le shell + dispatcher → activity_log)
+               ├── 09-WISHLIST + MATÉRIEL ────┘
+               └── 11-ADMIN                      (consomme activity_log alimenté par 10)
+12-TESTS (transversal, tout au long)
 ```
 
 ## Notes d'architecture
@@ -48,16 +51,24 @@
 - Better Auth est configuré en 01-SETUP mais les pages de login sont dans 02-AUTH
 - Les features cross-ludo (RÉSEAU, catalog thèmes) s'appuient sur `src/routes/reseau/` (hors scope `[ludo]`)
 - L'admin est dans `src/routes/admin/`, protégé par `SUPER_ADMIN_PASSWORD` distinct des sessions ludo
+- **Navigation (08)** : le PRD/DESIGN spécifiaient déjà la sidebar (72px, états nav sur
+  `/styleguide#nav`, token `--ease-drawer`) mais aucun epic ne l'avait prise en charge —
+  01-SETUP a posé le socle technique, pas le shell visuel. 08 comble ce trou.
+- **Notifications (10) ≠ activity_log** : deux préoccupations distinctes (audience, cycle
+  lu/non-lu, cible destinataire ≠ acteur, fan-out 1→N). On **n'fusionne pas** les tables, on
+  **unifie le point d'émission** : les services émettent un événement → un dispatcher écrit
+  la ligne d'audit (`activity_log`, pour 11-ADMIN) **et** les notifications par destinataire.
 
 ---
 
 ## Archive
 
-| #   | Feature                                         | Terminée le |
-| --- | ----------------------------------------------- | ----------- |
-| 01  | SETUP — Socle technique                         | 2026-06-15  |
-| 02  | AUTH — Connexion multi-tenant                   | 2026-06-15  |
-| 03  | MEMBRES — CRUD membres + rôles                  | 2026-06-15  |
-| 04  | PLANNING — Saisons, samedis, assignations, swap | 2026-06-16  |
+| #   | Feature                                          | Terminée le |
+| --- | ------------------------------------------------ | ----------- |
+| 01  | SETUP — Socle technique                          | 2026-06-15  |
+| 02  | AUTH — Connexion multi-tenant                    | 2026-06-15  |
+| 03  | MEMBRES — CRUD membres + rôles                   | 2026-06-15  |
+| 04  | PLANNING — Saisons, samedis, assignations, swap  | 2026-06-16  |
 | 05  | ABSENCES — Demande, approbation, warnings        | 2026-06-16  |
 | 06  | THÈMES — Catalogue, items, photos Blob, prêts    | 2026-06-16  |
+| 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull  | 2026-06-16  |
