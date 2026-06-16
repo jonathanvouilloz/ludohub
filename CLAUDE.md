@@ -128,7 +128,7 @@ Structure mémoire :
 
 ## État actuel
 
-Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING**, **05-ABSENCES**, **06-THÈMES** et **07-RÉSEAU** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning ; catalogue thèmes + items + photos Vercel Blob + prêts push/pull ; demandes d'aide cross-ludo). Roadmap renumérotée : prochain epic **08-NAVIGATION** (shell : sidebar 72px desktop + bottom tab bar mobile — la nav était spécifiée au PRD/DESIGN mais jamais construite), puis **09-WISHLIST+MATÉRIEL**, **10-NOTIFICATIONS** (notifs in-app + dispatcher distinct de `activity_log`), **11-ADMIN**, **12-TESTS E2E**.
+Epics **01-SETUP**, **02-AUTH**, **03-MEMBRES**, **04-PLANNING**, **05-ABSENCES**, **06-THÈMES**, **07-RÉSEAU** et **08-NAVIGATION** terminés (socle SvelteKit + Drizzle + Neon ; connexion multi-tenant slug/password/membre ; CRUD membres + rôles ; planning saisons/samedis/assignations/swap ; demandes d'absence + approbation + warnings planning ; catalogue thèmes + items + photos Vercel Blob + prêts push/pull ; demandes d'aide cross-ludo ; shell de navigation partagé sidebar 72px desktop + bottom tab bar mobile couvrant `[ludo]/*` et `reseau/*` + route `/auth/logout`). Prochain epic **09-WISHLIST+MATÉRIEL** (listes internes simples), puis **10-NOTIFICATIONS** (notifs in-app + dispatcher distinct de `activity_log`), **11-ADMIN**, **12-TESTS E2E** (inclut les 3 tests Playwright du shell reportés depuis 08).
 Repo GitHub : `github.com/jonathanvouilloz/ludohub` (branche `main`).
 Voir `docs/HANDOFF.md` pour l'état courant.
 

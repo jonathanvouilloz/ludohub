@@ -13,7 +13,7 @@
 
 **Prochain :** Epic 09-WISHLIST + MATÉRIEL (listes internes simples). Les 3 tests Playwright du shell sont reportés à l'epic 12-TESTS E2E.
 **Pieges :** Les `--bp-*` ne sont pas utilisables dans une condition `@media` (limite CSS) → breakpoint en dur `768px` (= `--bp-md`). Sheet montée en permanence (transition CSS) pour respecter `prefers-reduced-motion` automatiquement.
-**Commit :** _(à venir ce wrap)_
+**Commit :** [eef0483] feat(nav): shell applicatif partagé (sidebar desktop + tab bar mobile)
 
 ---
 
