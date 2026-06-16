@@ -24,7 +24,7 @@ Prochain epic : **11-ADMIN** (super admin, consomme `activity_log` désormais pe
 **Pieges :** `db:push` requis avant exécution (table `notifications`). Le push de prêt n'était pas
 cassé — seul le catalogue réseau était orphelin de lien. Catalogue réseau = thèmes `is_shareable`
 uniquement (pas de vue dédiée « prêts reçus »).
-**Commit :** (à venir) feat(notifs): notifications in-app + dispatcher (epic 10)
+**Commit :** [0ffac48] feat(notifs): notifications in-app + dispatcher (epic 10)
 
 ---
 
