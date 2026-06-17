@@ -1,4 +1,4 @@
-import { error, fail } from '@sveltejs/kit'
+import { fail } from '@sveltejs/kit'
 import { getMembersByLudo } from '$lib/server/db/members.js'
 import {
   createMember,
@@ -11,10 +11,8 @@ import {
 import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import type { Actions, PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ locals }) => {
-  const ludo = locals.ludo
-  if (!ludo) throw error(403, 'Accès réservé au responsable')
-
+export const load: PageServerLoad = async ({ parent }) => {
+  const { ludo } = await parent()
   const members = await getMembersByLudo(ludo.id)
   return { members }
 }
