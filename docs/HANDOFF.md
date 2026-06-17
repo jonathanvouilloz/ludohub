@@ -11,4 +11,4 @@
 ## Reprendre ici
 
 **12-TESTS E2E** — Playwright sur les flows critiques (flows admin, shell 08, notifs 10, installer→check-up 13). Ajouter les nouveaux flows planning : swap membre, plages de fermeture, samedis passés repliés.
-Dernier commit : [à venir] feat(planning): timeline membre, swap membre, plages de fermeture
+Dernier commit : [7d099c2] feat(planning): timeline membre, swap membre, plages de fermeture

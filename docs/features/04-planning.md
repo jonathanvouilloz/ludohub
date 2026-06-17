@@ -18,7 +18,7 @@
 - **Ne jamais nommer une classe de composant comme un utilitaire Tailwind** (`collapse`, `hidden`, `flex`, `grid`…) : le scoped style n'override que ce qu'il déclare, le reste vient de Tailwind. Cf. mémoire `tailwind-class-name-collision`.
 - `pnpm db:push` requis (table `closure_periods`) — fait par Jonathan, validé en runtime.
 
-**Commit :** [à venir] feat(planning): timeline membre, swap membre, plages de fermeture
+**Commit :** [7d099c2] feat(planning): timeline membre, swap membre, plages de fermeture
 
 ---
 
