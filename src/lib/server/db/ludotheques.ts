@@ -25,3 +25,11 @@ export async function createLudo(data: LudothequeInsert): Promise<LudothequeRow>
   const [ludo] = await db.insert(ludotheques).values(data).returning()
   return ludo
 }
+
+export async function updateLudoById(
+  id: string,
+  data: Partial<LudothequeInsert>,
+): Promise<LudothequeRow> {
+  const [ludo] = await db.update(ludotheques).set(data).where(eq(ludotheques.id, id)).returning()
+  return ludo
+}
