@@ -12,3 +12,4 @@
 
 **13-THÈMES Installations & check-ups** — spec + PRD à jour, décisions tranchées (notif si item manquant, install par propriétaire OU emprunteur d'un prêt actif, pas de contrôle de fréquence). Démarrer **Phase 1** : 4 tables + enums dans `schema.ts` puis `pnpm db:push`.
 Voir le bloc « Etat session » et la « Carte du code » du fichier feature.
+Dernier commit : [23b5e97] docs(themes): cadre epic 13 (installations & check-ups thèmes)

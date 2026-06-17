@@ -12,7 +12,7 @@
 
 **Prochain :** Valider la spec, puis phase 1 = schema (4 tables) + `db:push`, puis services, puis pages.
 **Pièges :** Ne pas confondre `theme_items` (liste de référence complète, dans la caisse) et les items réellement **installés** (sous-ensemble sorti). Le check-up ne porte QUE sur le sous-ensemble installé.
-**Commit :** —
+**Commit :** [23b5e97] docs(themes): cadre epic 13 (installations & check-ups thèmes)
 
 ---
 
