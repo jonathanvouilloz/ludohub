@@ -10,4 +10,4 @@
 ## Reprendre ici
 
 **12-TESTS E2E** (prochain epic) — Playwright sur les flows critiques, incluant les flows admin (epic 11), le shell de navigation (reporté de 08) et les notifs (reporté de 10).
-Dernier commit (epic 11 clos) : [à venir] feat(admin): extraction composants réutilisables (epic 11 phase 4)
+Dernier commit (epic 11 clos) : [ddd9bbd] feat(admin): extraction composants réutilisables (epic 11 phase 4)

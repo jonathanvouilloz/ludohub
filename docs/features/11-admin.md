@@ -18,7 +18,7 @@
 
 **Pieges :** Le `:global(.actions-col)` reste déclaré dans `ludotheques/+page` (le `<Table.Head>` y vit) ; la `<Table.Cell>` déplacée dans `LudothequeCard` hérite du style global → pas de duplication. `:global(.meta-cell code)` part dans `ActivityLogTable`. `pnpm format` reformate tout le repo → cibler les fichiers (et les parenthèses de `(protected)` cassent les globs Prettier → chemins explicites).
 
-**Commit :** [à venir] feat(admin): extraction composants réutilisables (epic 11 phase 4)
+**Commit :** [ddd9bbd] feat(admin): extraction composants réutilisables (epic 11 phase 4)
 
 ---
 
