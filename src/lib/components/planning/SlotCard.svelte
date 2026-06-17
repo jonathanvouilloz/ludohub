@@ -3,13 +3,22 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { formatDateShort, isGenevaHoliday } from '$lib/utils/dates.js'
-  import type { AbsenceRow, AssignmentRow, MemberRow, SaturdaySlotRow } from '$lib/server/schema'
+  import type {
+    AbsenceRow,
+    AssignmentRow,
+    ClosurePeriodRow,
+    MemberRow,
+    SaturdaySlotRow,
+  } from '$lib/server/schema'
 
   type AssignmentWithMember = AssignmentRow & {
     member: MemberRow
     absence?: AbsenceRow | null
   }
-  type SlotWithAssignments = SaturdaySlotRow & { assignments: AssignmentWithMember[] }
+  type SlotWithAssignments = SaturdaySlotRow & {
+    closure?: ClosurePeriodRow | null
+    assignments: AssignmentWithMember[]
+  }
 
   const absenceLabels: Record<string, string> = {
     conge: 'Congé',
@@ -31,17 +40,20 @@
   const holiday = $derived(isGenevaHoliday(slot.date))
   // Effectif réel : un membre absent (absence approuvée) ne compte pas comme présent.
   const filled = $derived(slot.assignments.filter((a) => !a.absence).length)
-  const understaffed = $derived(!slot.isCancelled && filled < slot.requiredCount)
+  const understaffed = $derived(!slot.isCancelled && !slot.closure && filled < slot.requiredCount)
 </script>
 
-<div class="slot" class:cancelled={slot.isCancelled}>
+<div class="slot" class:cancelled={slot.isCancelled} class:closure={!!slot.closure}>
   <header class="slot-head">
     <div class="date">
       <strong>{formatDateShort(slot.date)}</strong>
-      {#if holiday}<span class="holiday">Férié</span>{/if}
+      {#if slot.closure}<span class="holiday">{slot.closure.label}</span>{/if}
+      {#if holiday && !slot.closure}<span class="holiday">Férié</span>{/if}
       {#if slot.isCancelled}<Badge variant="destructive">Annulé</Badge>{/if}
     </div>
-    <span class="count" class:warn={understaffed}>{filled}/{slot.requiredCount}</span>
+    {#if !slot.closure}
+      <span class="count" class:warn={understaffed}>{filled}/{slot.requiredCount}</span>
+    {/if}
   </header>
 
   {#if !slot.isCancelled}
@@ -99,6 +111,9 @@
   }
   .slot.cancelled {
     opacity: 0.6;
+  }
+  .slot.closure {
+    background: var(--warning-light);
   }
   .slot-head {
     display: flex;

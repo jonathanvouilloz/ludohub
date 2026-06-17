@@ -3,6 +3,8 @@ import { getActiveMembersByLudo } from '$lib/server/db/members.js'
 import {
   assignMember,
   cancelSlot,
+  createClosurePeriod,
+  deleteClosurePeriod,
   getSeasonGrid,
   PlanningServiceError,
   removeMember,
@@ -16,10 +18,10 @@ import type { Actions, PageServerLoad } from './$types'
 export const load: PageServerLoad = async ({ params, parent }) => {
   const { ludo, currentMember } = await parent()
   const responsable = isResponsable(currentMember)
-  const { season, slots } = await getSeasonGrid(params.id, ludo.id)
+  const { season, slots, closures } = await getSeasonGrid(params.id, ludo.id)
   // Liste des membres seulement utile aux responsables (dialog d'assignation).
   const members = responsable ? await getActiveMembersByLudo(ludo.id) : []
-  return { season, slots, members, responsable }
+  return { season, slots, closures, members, responsable }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -73,5 +75,23 @@ export const actions: Actions = {
         ludo.id,
       ),
     )
+  },
+
+  createClosure: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() =>
+      createClosurePeriod(String(event.params.id ?? ''), ludo.id, {
+        label: String(data.get('label') ?? ''),
+        startDate: String(data.get('startDate') ?? ''),
+        endDate: String(data.get('endDate') ?? ''),
+      }),
+    )
+  },
+
+  deleteClosure: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() => deleteClosurePeriod(String(data.get('closureId') ?? ''), ludo.id))
   },
 }

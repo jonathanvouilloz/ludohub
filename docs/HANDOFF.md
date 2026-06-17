@@ -2,14 +2,13 @@
 
 ## Features actives
 
-| Feature                       | Fichier                                                      | Statut     |
-| ----------------------------- | ------------------------------------------------------------ | ---------- |
-| 12 — TESTS E2E                | [features/12-tests-e2e.md](features/12-tests-e2e.md)         | TODO       |
-| 13 — THÈMES check-ups         | [features/13-themes-checkup.md](features/13-themes-checkup.md) | DONE       |
-| 11 — ADMIN                    | [features/11-admin.md](features/11-admin.md)                 | DONE       |
+| Feature               | Fichier                                                        | Statut             |
+| --------------------- | -------------------------------------------------------------- | ------------------ |
+| 12 — TESTS E2E        | [features/12-tests-e2e.md](features/12-tests-e2e.md)           | TODO               |
+| 04 — PLANNING         | [features/04-planning.md](features/04-planning.md)             | DONE (affiné 06-17) |
+| 13 — THÈMES check-ups | [features/13-themes-checkup.md](features/13-themes-checkup.md) | DONE               |
 
 ## Reprendre ici
 
-**12-TESTS E2E** — Playwright sur les flows critiques (inclut flows admin, shell de nav reporté de 08, notifs de 10, et le flow installer→check-up→historique reporté de 13).
-Voir le fichier feature 12 pour le détail.
-Dernier commit : [1cfcaf2] feat(themes): installations & check-ups (epic 13)
+**12-TESTS E2E** — Playwright sur les flows critiques (flows admin, shell 08, notifs 10, installer→check-up 13). Ajouter les nouveaux flows planning : swap membre, plages de fermeture, samedis passés repliés.
+Dernier commit : [à venir] feat(planning): timeline membre, swap membre, plages de fermeture

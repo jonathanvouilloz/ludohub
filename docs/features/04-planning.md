@@ -2,6 +2,26 @@
 
 **Epic :** 04 | **Taille :** L | **Statut :** DONE
 
+## Etat session 2026-06-17 (refonte vue membre + vacances + swap membre)
+
+**Fait :**
+
+- **Vue membre `/planning` refondue** en timeline (`PlanningTimeline.svelte`, remplace l'ancienne grille `readOnly` + `MySchedule` supprimé) : groupage par mois, **samedis passés repliés** (toggle « N samedis passés »), carte hero « Mon prochain samedi » (+ « dans N jours » + co-assignés), badge **PROCHAIN** + highlight, bg cream sur vacances/fériés, mise en avant de mes assignations, filtre « Tous les membres ».
+- **Swap initié par un membre** : icône ⇄ sur mon samedi → `MemberSwapDialog` (« Échanger un samedi »). Service `requestSwap` (autorisé si demandeur = partie A). Action `swap` sur `/planning` via `requireLudoContext`. Assigner/retirer/annuler restent responsable-only (ajoutés inline sur la timeline + action sur `/planning`).
+- **Plages de fermeture/vacances** : nouvelle table `closure_periods` (label + dates par saison), CRUD responsable dans `saisons/[id]` (`ClosurePeriodsPanel`). `getSeasonGrid` annote chaque slot d'une `closure` couvrante → bg cream, hors effectif. `SlotCard` rendu conscient des fermetures.
+- **Bug « espace vide / bouton invisible » résolu** : la classe `collapse` entrait en collision avec l'utilitaire Tailwind `collapse` (`visibility: collapse`) → élément invisible mais occupant la place. Renommée `past-toggle`.
+- `pnpm check` 0 erreur/warning ; ESLint clean ; Prettier ciblé.
+
+**Prochain :** Epic 04 complet. Reste l'epic **12-TESTS E2E** (Playwright) : ajouter flow « membre échange son samedi » + « plage de fermeture masque l'effectif » + « samedis passés repliés/dépliés ».
+**Pieges :**
+
+- **Ne jamais nommer une classe de composant comme un utilitaire Tailwind** (`collapse`, `hidden`, `flex`, `grid`…) : le scoped style n'override que ce qu'il déclare, le reste vient de Tailwind. Cf. mémoire `tailwind-class-name-collision`.
+- `pnpm db:push` requis (table `closure_periods`) — fait par Jonathan, validé en runtime.
+
+**Commit :** [à venir] feat(planning): timeline membre, swap membre, plages de fermeture
+
+---
+
 ## Etat session 2026-06-16 (suite — fix 403)
 
 **Fait :**
@@ -123,21 +143,26 @@ Gestion du planning des samedis. Saisons avec dates, génération automatique de
 
 ## Carte du code
 
-> Mise à jour : 2026-06-16 (suite)
+> Mise à jour : 2026-06-17
 
-| Fichier                                                   | Rôle                                                                             |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `src/lib/server/schema.ts`                                | Tables planning + `relations()` + `seasons.isArchived`                           |
-| `src/lib/server/db/planning.ts`                           | Queries saisons/slots/assignations, `swapAssignments` (db.batch)                 |
-| `src/lib/server/services/planning.ts`                     | Logique métier : gardes tenant, validation, blocage archivé, swap                |
-| `src/lib/utils/dates.ts`                                  | `getSwissSaturdays`, `isGenevaHoliday`, `toDateString`, `formatDate*`            |
-| `src/routes/[ludo]/planning/+page.server.ts`              | Load grille saison active + mes samedis (ouvert à tous)                          |
-| `src/routes/[ludo]/planning/saisons/+page.server.ts`      | Liste saisons + actions create/archive/delete (responsable)                      |
-| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Grille saison + actions assign/remove/cancel/swap (responsable)                  |
-| `src/lib/components/planning/*.svelte`                    | PlanningGrid, SlotCard, SeasonDialog, AssignMemberDialog, SwapDialog, MySchedule |
+| Fichier                                                   | Rôle                                                                                                |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `src/lib/server/schema.ts`                                | Tables planning + `relations()` + `seasons.isArchived` + **table `closure_periods`** + relations    |
+| `src/lib/server/db/planning.ts`                           | Queries saisons/slots/assignations, `swapAssignments` (db.batch), CRUD `closure_periods`            |
+| `src/lib/server/services/planning.ts`                     | Métier : gardes tenant, swap responsable + **`requestSwap`** (membre), annotation `closure`, CRUD plages |
+| `src/lib/utils/dates.ts`                                  | `getSwissSaturdays`, `isGenevaHoliday`, `formatDayMonth`, `formatMonthYear`, `daysBetween`          |
+| `src/routes/[ludo]/planning/+page.server.ts`              | Load timeline (slots+membres+today) + actions swap (membre) / assign-remove-cancel (responsable)    |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Grille saison + actions assign/remove/cancel/swap + **createClosure/deleteClosure** (responsable)   |
+| `src/lib/components/planning/PlanningTimeline.svelte`     | **Vue membre** : timeline mois, passés repliés, hero, badge PROCHAIN, filtre, swap, édition inline  |
+| `src/lib/components/planning/MemberSwapDialog.svelte`     | Dialog « Échanger un samedi » initié par un membre                                                  |
+| `src/lib/components/planning/ClosurePeriodsPanel.svelte`  | CRUD plages de fermeture/vacances (éditeur de saison)                                                |
+| `src/lib/components/planning/{PlanningGrid,SlotCard,SeasonDialog,AssignMemberDialog,SwapDialog}.svelte` | Grille responsable de l'éditeur de saison (SlotCard conscient des fermetures)        |
 
 ### Decisions cles
 
 - **`relations()` Drizzle obligatoires** pour l'API `with` — absentes initialement, plantaient au runtime.
 - **`neon-http` sans transaction interactive** → swap atomique via `db.batch()`.
-- **Ne jamais lire `locals.ludo`/`locals.currentMember` dans un `load` enfant** → `await parent()` (les `load` SvelteKit tournent en parallèle ; `locals` posé par le layout n'est pas garanti). C'était la cause du bug 403, résolu.
+- **Ne jamais lire `locals.ludo`/`locals.currentMember` dans un `load` enfant** → `await parent()` (cause du bug 403, résolu).
+- **Vacances/fermetures = données saisies par le responsable** (table `closure_periods`), pas un calendrier scolaire codé en dur : annotées au rendu, les slots ne sont pas supprimés.
+- **Swap membre** : un membre n'échange que SON samedi (`requestSwap` vérifie demandeur = partie A) ; assigner/retirer reste responsable-only.
+- **Piège classe CSS** : ne pas nommer une classe comme un utilitaire Tailwind (`collapse` → `visibility: collapse`). Cf. mémoire `tailwind-class-name-collision`.

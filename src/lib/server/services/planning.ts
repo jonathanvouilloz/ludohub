@@ -1,15 +1,19 @@
 import {
   archiveSeason as dbArchiveSeason,
   deleteAssignment,
+  deleteClosurePeriod as dbDeleteClosurePeriod,
   deleteSeason as dbDeleteSeason,
   getActiveSeasonByLudo,
   getAssignment,
+  getClosurePeriodById,
+  getClosurePeriodsBySeason,
   getSeasonById,
   getSeasonsByLudo,
   getSlotById,
   getSlotsBySeason,
   getUpcomingAssignmentsForMember,
   insertAssignment,
+  insertClosurePeriod,
   insertSeason,
   insertSlots,
   setSlotCancelled,
@@ -19,7 +23,7 @@ import { getMemberById } from '../db/members.js'
 import { getApprovedAbsencesByMember } from './absences.js'
 import { belongsToLudo, isActiveMember } from '$lib/utils/permissions.js'
 import { getSwissSaturdays, isDateInRange, toDateString } from '$lib/utils/dates.js'
-import type { AbsenceRow, SeasonRow } from '../schema.js'
+import type { AbsenceRow, ClosurePeriodRow, SeasonRow } from '../schema.js'
 
 /**
  * Erreur métier : message destiné à l'utilisateur (FR). Levée par le service,
@@ -89,16 +93,19 @@ export async function getSeasonGrid(seasonId: string, ludoId: string) {
     season.startDate,
     season.endDate,
   )
+  const closures = await getClosurePeriodsBySeason(seasonId)
 
   const enrichedSlots = slots.map((slot) => ({
     ...slot,
+    // Plage de fermeture couvrant ce samedi (vacances, fermeture été…) ou `null`.
+    closure: findCoveringClosure(closures, slot.date),
     assignments: slot.assignments.map((a) => ({
       ...a,
       absence: findCoveringAbsence(absencesByMember.get(a.memberId), slot.date),
     })),
   }))
 
-  return { season, slots: enrichedSlots }
+  return { season, slots: enrichedSlots, closures }
 }
 
 /** Première absence de la liste couvrant la date du samedi, sinon `null`. */
@@ -108,6 +115,14 @@ function findCoveringAbsence(
 ): AbsenceRow | null {
   if (!absences) return null
   return absences.find((ab) => isDateInRange(slotDate, ab.startDate, ab.endDate)) ?? null
+}
+
+/** Première plage de fermeture couvrant la date du samedi, sinon `null`. */
+function findCoveringClosure(
+  closures: ClosurePeriodRow[],
+  slotDate: string,
+): ClosurePeriodRow | null {
+  return closures.find((c) => isDateInRange(slotDate, c.startDate, c.endDate)) ?? null
 }
 
 export async function getMyUpcomingSaturdays(memberId: string) {
@@ -160,6 +175,40 @@ export async function archiveSeason(
 export async function deleteSeason(id: string, ludoId: string): Promise<void> {
   await requireSeasonInLudo(id, ludoId)
   await dbDeleteSeason(id)
+}
+
+// ─── Plages de fermeture / vacances ────────────────────────────────────────────
+
+export async function createClosurePeriod(
+  seasonId: string,
+  ludoId: string,
+  data: { label: string; startDate: string; endDate: string },
+): Promise<ClosurePeriodRow> {
+  const season = await requireSeasonInLudo(seasonId, ludoId)
+  if (season.isArchived) {
+    throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+  }
+  const label = data.label.trim()
+  if (!label) throw new PlanningServiceError('Le libellé de la plage est requis.')
+  const start = parseDate(data.startDate, 'de début')
+  const end = parseDate(data.endDate, 'de fin')
+  if (start > end) {
+    throw new PlanningServiceError('La date de début doit précéder la date de fin.')
+  }
+
+  return insertClosurePeriod({
+    seasonId,
+    label,
+    startDate: toDateString(start),
+    endDate: toDateString(end),
+  })
+}
+
+export async function deleteClosurePeriod(id: string, ludoId: string): Promise<void> {
+  const period = await getClosurePeriodById(id)
+  if (!period) throw new PlanningServiceError('Plage introuvable.')
+  await requireSeasonInLudo(period.seasonId, ludoId)
+  await dbDeleteClosurePeriod(id)
 }
 
 // ─── Assignations ──────────────────────────────────────────────────────────────
@@ -222,6 +271,25 @@ export async function swapMembers(
   }
 
   await swapAssignments(slotAId, memberAId, slotBId, memberBId)
+}
+
+/**
+ * Échange initié par un membre : il propose d'échanger SON samedi (slotA) contre
+ * celui d'un·e collègue (slotB). Autorisé seulement si le demandeur est bien la
+ * personne assignée au slotA (ou un·e responsable, qui passe par `swapMembers`).
+ */
+export async function requestSwap(
+  requestingMemberId: string,
+  slotAId: string,
+  memberAId: string,
+  slotBId: string,
+  memberBId: string,
+  ludoId: string,
+): Promise<void> {
+  if (requestingMemberId !== memberAId) {
+    throw new PlanningServiceError('Vous ne pouvez échanger que votre propre samedi.')
+  }
+  await swapMembers(slotAId, memberAId, slotBId, memberBId, ludoId)
 }
 
 // ─── Samedis (annulation) ────────────────────────────────────────────────────────

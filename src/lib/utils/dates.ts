@@ -43,6 +43,32 @@ export function formatDateShort(date: Date | string): string {
 }
 
 /**
+ * Formate « jour mois » sans année (ex. « 20 juin »). Pour les lignes de samedi.
+ */
+export function formatDayMonth(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d.toLocaleDateString('fr-CH', { day: 'numeric', month: 'long' })
+}
+
+/**
+ * Clé/libellé mois-année (ex. « juin 2026 »), pour grouper la timeline par mois.
+ */
+export function formatMonthYear(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  return d.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
+}
+
+/**
+ * Nombre de jours entiers entre deux dates ISO `YYYY-MM-DD` (to - from).
+ * Positif si `to` est dans le futur. Sert au « dans N jours ».
+ */
+export function daysBetween(from: string, to: string): number {
+  const a = new Date(`${from}T12:00:00`)
+  const b = new Date(`${to}T12:00:00`)
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000)
+}
+
+/**
  * Retourne true si une date est un samedi.
  */
 export function isSaturday(date: Date): boolean {

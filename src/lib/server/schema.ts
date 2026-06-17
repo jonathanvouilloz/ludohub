@@ -141,6 +141,22 @@ export const assignments = pgTable(
   (t) => [unique().on(t.slotId, t.memberId)],
 )
 
+/**
+ * Plages de fermeture / vacances saisies par le responsable, par saison.
+ * Un samedi tombant dans une plage est affiché « fermé » (bg vacances, hors
+ * effectif). On ne supprime pas le slot : on l'annote au moment du rendu.
+ */
+export const closurePeriods = pgTable('closure_periods', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  seasonId: uuid('season_id')
+    .notNull()
+    .references(() => seasons.id, { onDelete: 'cascade' }),
+  label: text('label').notNull(),
+  startDate: date('start_date').notNull(),
+  endDate: date('end_date').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
 // ─── Relations (API relationnelle Drizzle : `db.query.*.findMany({ with })`) ──
 
 export const membersRelations = relations(members, ({ many }) => ({
@@ -150,6 +166,14 @@ export const membersRelations = relations(members, ({ many }) => ({
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
   slots: many(saturdaySlots),
+  closurePeriods: many(closurePeriods),
+}))
+
+export const closurePeriodsRelations = relations(closurePeriods, ({ one }) => ({
+  season: one(seasons, {
+    fields: [closurePeriods.seasonId],
+    references: [seasons.id],
+  }),
 }))
 
 export const saturdaySlotsRelations = relations(saturdaySlots, ({ one, many }) => ({
@@ -604,6 +628,8 @@ export type SaturdaySlotRow = typeof saturdaySlots.$inferSelect
 export type SaturdaySlotInsert = typeof saturdaySlots.$inferInsert
 export type AssignmentRow = typeof assignments.$inferSelect
 export type AssignmentInsert = typeof assignments.$inferInsert
+export type ClosurePeriodRow = typeof closurePeriods.$inferSelect
+export type ClosurePeriodInsert = typeof closurePeriods.$inferInsert
 export type AbsenceRow = typeof absences.$inferSelect
 export type AbsenceInsert = typeof absences.$inferInsert
 export type ThemeRow = typeof themes.$inferSelect

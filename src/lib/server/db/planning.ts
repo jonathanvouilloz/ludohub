@@ -2,10 +2,13 @@ import { and, eq, gte } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   assignments,
+  closurePeriods,
   saturdaySlots,
   seasons,
   type AssignmentInsert,
   type AssignmentRow,
+  type ClosurePeriodInsert,
+  type ClosurePeriodRow,
   type SaturdaySlotInsert,
   type SaturdaySlotRow,
   type SeasonInsert,
@@ -129,6 +132,28 @@ export async function swapAssignments(
       .set({ memberId: memberAId })
       .where(and(eq(assignments.slotId, slotBId), eq(assignments.memberId, memberBId))),
   ])
+}
+
+// ─── Plages de fermeture / vacances ──────────────────────────────────────────
+
+export async function getClosurePeriodsBySeason(seasonId: string): Promise<ClosurePeriodRow[]> {
+  return db.query.closurePeriods.findMany({
+    where: eq(closurePeriods.seasonId, seasonId),
+    orderBy: (c, { asc }) => asc(c.startDate),
+  })
+}
+
+export async function insertClosurePeriod(data: ClosurePeriodInsert): Promise<ClosurePeriodRow> {
+  const [period] = await db.insert(closurePeriods).values(data).returning()
+  return period
+}
+
+export async function getClosurePeriodById(id: string): Promise<ClosurePeriodRow | undefined> {
+  return db.query.closurePeriods.findFirst({ where: eq(closurePeriods.id, id) })
+}
+
+export async function deleteClosurePeriod(id: string): Promise<void> {
+  await db.delete(closurePeriods).where(eq(closurePeriods.id, id))
 }
 
 /** Prochains samedis d'un membre (date >= fromDate, non annulés), triés par date. */

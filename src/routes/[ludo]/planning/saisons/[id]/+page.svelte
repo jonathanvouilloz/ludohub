@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge/index.js'
   import PlanningGrid from '$lib/components/planning/PlanningGrid.svelte'
+  import ClosurePeriodsPanel from '$lib/components/planning/ClosurePeriodsPanel.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
   let { data, form } = $props()
@@ -34,6 +35,11 @@
   <PlanningGrid
     slots={data.slots}
     members={data.members}
+    readOnly={data.season.isArchived || !data.responsable}
+  />
+
+  <ClosurePeriodsPanel
+    closures={data.closures}
     readOnly={data.season.isArchived || !data.responsable}
   />
 </main>
