@@ -12,4 +12,4 @@
 
 **12-TESTS E2E** — Playwright sur les flows critiques (inclut flows admin, shell de nav reporté de 08, notifs de 10, et le flow installer→check-up→historique reporté de 13).
 Voir le fichier feature 12 pour le détail.
-Dernier commit : [à renseigner après commit] feat(themes): installations & check-ups (epic 13)
+Dernier commit : [1cfcaf2] feat(themes): installations & check-ups (epic 13)

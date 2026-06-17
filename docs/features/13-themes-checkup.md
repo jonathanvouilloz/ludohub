@@ -14,7 +14,7 @@
 
 **Prochain :** Epic terminé. Flows e2e (installer → check-up manquant → historique) reportés à l'epic 12-TESTS. Optionnel : exposer l'install côté ludo emprunteuse (le service l'autorise déjà, mais la fiche thème est owner-only).
 **Pièges :** Les notifications ne stockent pas de `metadata` (table sans colonne) → les 4 nouveaux types de notif pointent vers `/[slug]/themes` (liste), pas vers l'installation précise. Le `themeId` est dans `activity_log.metadata` uniquement.
-**Commit :** [à renseigner après commit] feat(themes): installations & check-ups (epic 13)
+**Commit :** [1cfcaf2] feat(themes): installations & check-ups (epic 13)
 
 ---
 
