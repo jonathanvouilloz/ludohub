@@ -262,6 +262,7 @@ export const themeImages = pgTable('theme_images', {
     .references(() => themes.id, { onDelete: 'cascade' }),
   url: text('url').notNull(),
   storageKey: text('storage_key').notNull(),
+  isCover: boolean('is_cover').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

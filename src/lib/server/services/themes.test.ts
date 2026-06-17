@@ -31,19 +31,31 @@ beforeEach(() => {
 })
 
 describe('registerImage', () => {
-  it('enregistre une image sous la limite de 3', async () => {
+  it('enregistre une image sous la limite (non-cover)', async () => {
     vi.mocked(countThemeImages).mockResolvedValue(2)
     await registerImage(THEME, LUDO, 'https://blob/x.jpg', 'themes/x.jpg')
     expect(addThemeImage).toHaveBeenCalledWith({
       themeId: THEME,
       url: 'https://blob/x.jpg',
       storageKey: 'themes/x.jpg',
+      isCover: false,
     })
   })
 
-  it('refuse au-delà de 3 photos', async () => {
-    vi.mocked(countThemeImages).mockResolvedValue(3)
-    await expect(registerImage(THEME, LUDO, 'u', 'k')).rejects.toThrow(/Maximum 3/)
+  it('marque la première image comme couverture', async () => {
+    vi.mocked(countThemeImages).mockResolvedValue(0)
+    await registerImage(THEME, LUDO, 'https://blob/x.jpg', 'themes/x.jpg')
+    expect(addThemeImage).toHaveBeenCalledWith({
+      themeId: THEME,
+      url: 'https://blob/x.jpg',
+      storageKey: 'themes/x.jpg',
+      isCover: true,
+    })
+  })
+
+  it('refuse au-delà de 6 photos', async () => {
+    vi.mocked(countThemeImages).mockResolvedValue(6)
+    await expect(registerImage(THEME, LUDO, 'u', 'k')).rejects.toThrow(/Maximum 6/)
     expect(addThemeImage).not.toHaveBeenCalled()
   })
 

@@ -1,15 +1,18 @@
 import {
   addThemeImage,
   addThemeItem,
+  clearCoverForTheme,
   countThemeImages,
   createTheme,
   deleteThemeImage,
   deleteThemeItem,
+  getFirstThemeImage,
   getShareableThemes,
   getThemeById,
   getThemeImageById,
   getThemeItemById,
   getThemesByLudo,
+  markImageAsCover,
   updateTheme,
 } from '../db/themes.js'
 import type { ThemeImageRow, ThemeItemRow, ThemeRow } from '../schema.js'
@@ -20,7 +23,7 @@ import type { ThemeImageRow, ThemeItemRow, ThemeRow } from '../schema.js'
  */
 export class ThemeServiceError extends Error {}
 
-const MAX_IMAGES = 3
+const MAX_IMAGES = 6
 
 function parseName(value: string): string {
   const trimmed = value.trim()
@@ -151,7 +154,17 @@ export async function registerImage(
   if (count >= MAX_IMAGES) {
     throw new ThemeServiceError(`Maximum ${MAX_IMAGES} photos par thème.`)
   }
-  return addThemeImage({ themeId, url, storageKey })
+  // La première image d'un thème devient automatiquement la couverture.
+  return addThemeImage({ themeId, url, storageKey, isCover: count === 0 })
+}
+
+/** Définit l'image de couverture du thème (une seule à la fois). */
+export async function setCover(imageId: string, ludoId: string): Promise<void> {
+  const image = await getThemeImageById(imageId)
+  if (!image) throw new ThemeServiceError('Photo introuvable.')
+  await requireWritableTheme(image.themeId, ludoId)
+  await clearCoverForTheme(image.themeId)
+  await markImageAsCover(imageId)
 }
 
 /** Vérifie l'appartenance puis renvoie l'image (pour suppression Blob + DB). */
@@ -162,8 +175,13 @@ export async function getImageForDeletion(imageId: string, ludoId: string): Prom
   return image
 }
 
-export async function unregisterImage(imageId: string): Promise<void> {
-  await deleteThemeImage(imageId)
+export async function unregisterImage(image: ThemeImageRow): Promise<void> {
+  await deleteThemeImage(image.id)
+  // Si on supprime la couverture, promouvoir la plus ancienne image restante.
+  if (image.isCover) {
+    const next = await getFirstThemeImage(image.themeId)
+    if (next) await markImageAsCover(next.id)
+  }
 }
 
 // ─── Lectures ────────────────────────────────────────────────────────────────

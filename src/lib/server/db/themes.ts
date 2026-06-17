@@ -11,10 +11,15 @@ import {
 
 // ─── Thèmes ────────────────────────────────────────────────────────────────
 
+// Images ordonnées cover d'abord, puis par date : `images[0]` = vignette/couverture.
 export async function getThemesByLudo(ludoId: string) {
   return db.query.themes.findMany({
     where: and(eq(themes.ownerLudoId, ludoId), eq(themes.isArchived, false)),
-    with: { items: true, images: true, loans: true },
+    with: {
+      items: true,
+      images: { orderBy: (img, { asc, desc }) => [desc(img.isCover), asc(img.createdAt)] },
+      loans: true,
+    },
     orderBy: (t, { asc }) => asc(t.name),
   })
 }
@@ -26,7 +31,12 @@ export async function getShareableThemes(excludeLudoId: string) {
       eq(themes.isArchived, false),
       ne(themes.ownerLudoId, excludeLudoId),
     ),
-    with: { items: true, images: true, ownerLudo: true, loans: { with: { toLudo: true } } },
+    with: {
+      items: true,
+      images: { orderBy: (img, { asc, desc }) => [desc(img.isCover), asc(img.createdAt)] },
+      ownerLudo: true,
+      loans: { with: { toLudo: true } },
+    },
     orderBy: (t, { asc }) => asc(t.name),
   })
 }
@@ -36,7 +46,7 @@ export async function getThemeById(id: string) {
     where: eq(themes.id, id),
     with: {
       items: { orderBy: (i, { asc }) => asc(i.name) },
-      images: { orderBy: (img, { asc }) => asc(img.createdAt) },
+      images: { orderBy: (img, { asc, desc }) => [desc(img.isCover), asc(img.createdAt)] },
       ownerLudo: true,
       loans: { with: { toLudo: true }, orderBy: (l, { desc }) => desc(l.createdAt) },
     },
@@ -92,4 +102,22 @@ export async function getThemeImageById(id: string) {
 
 export async function deleteThemeImage(id: string): Promise<void> {
   await db.delete(themeImages).where(eq(themeImages.id, id))
+}
+
+/** Retire le flag cover de toutes les images d'un thème. */
+export async function clearCoverForTheme(themeId: string): Promise<void> {
+  await db.update(themeImages).set({ isCover: false }).where(eq(themeImages.themeId, themeId))
+}
+
+/** Marque une image comme cover. */
+export async function markImageAsCover(imageId: string): Promise<void> {
+  await db.update(themeImages).set({ isCover: true }).where(eq(themeImages.id, imageId))
+}
+
+/** Première image restante d'un thème (par date) — pour promouvoir une cover. */
+export async function getFirstThemeImage(themeId: string) {
+  return db.query.themeImages.findFirst({
+    where: eq(themeImages.themeId, themeId),
+    orderBy: (img, { asc }) => asc(img.createdAt),
+  })
 }

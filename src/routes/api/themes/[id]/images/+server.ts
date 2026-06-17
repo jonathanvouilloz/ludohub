@@ -5,6 +5,7 @@ import { requireSessionContext } from '$lib/server/ludo-context.js'
 import {
   getImageForDeletion,
   registerImage,
+  setCover,
   ThemeServiceError,
   unregisterImage,
 } from '$lib/server/services/themes.js'
@@ -54,6 +55,21 @@ export const POST: RequestHandler = async (event) => {
   }
 }
 
+// Définition de la photo de couverture. `imageId` en query string.
+export const PATCH: RequestHandler = async (event) => {
+  const { ludo } = await requireSessionContext(event)
+  const imageId = event.url.searchParams.get('imageId')
+  if (!imageId) throw error(400, 'Identifiant de photo manquant.')
+
+  try {
+    await setCover(imageId, ludo.id)
+    return json({ ok: true })
+  } catch (err) {
+    if (err instanceof ThemeServiceError) throw error(400, err.message)
+    throw err
+  }
+}
+
 // Suppression d'une photo (Blob + DB). `imageId` en query string.
 export const DELETE: RequestHandler = async (event) => {
   const { ludo } = await requireSessionContext(event)
@@ -63,7 +79,7 @@ export const DELETE: RequestHandler = async (event) => {
   try {
     const image = await getImageForDeletion(imageId, ludo.id)
     await del(image.storageKey, { token: blobToken() })
-    await unregisterImage(imageId)
+    await unregisterImage(image)
     return json({ ok: true })
   } catch (err) {
     if (err instanceof ThemeServiceError) throw error(400, err.message)
