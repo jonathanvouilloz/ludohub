@@ -1,5 +1,6 @@
 import { auth } from '$lib/server/auth.js'
 import { readLudoSession } from '$lib/server/services/auth.js'
+import { readAdminSession } from '$lib/server/services/admin-auth.js'
 import type { Handle } from '@sveltejs/kit'
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -10,6 +11,11 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   // Lire la session ludo (cookie signé) et l'attacher aux locals
   event.locals.ludoSession = await readLudoSession(event.cookies)
+
+  // Session admin : lue uniquement sous /admin (évite un HMAC sur chaque requête)
+  event.locals.adminSession = event.url.pathname.startsWith('/admin')
+    ? await readAdminSession(event.cookies)
+    : null
 
   return resolve(event)
 }
