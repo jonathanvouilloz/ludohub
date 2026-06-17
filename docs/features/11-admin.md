@@ -1,6 +1,26 @@
 # Feature : ADMIN — Super administration
 
-**Epic :** 11 | **Taille :** M | **Statut :** EN COURS
+**Epic :** 11 | **Taille :** M | **Statut :** TERMINÉ
+
+## Etat session 2026-06-17 (phase 4)
+
+**Fait :**
+
+- Phase 4 (extraction composants) terminée — 3 composants créés sous `src/lib/components/admin/` :
+  - `ColorPicker.svelte` : Label + `<input type="color">` + champ hexa (`value` en `$bindable`). Réutilisé 3× (dialog création + form édition `[id]`).
+  - `LudothequeCard.svelte` : rend une `<Table.Row>` (nom/slug/swatch/adresse/date/Gérer). Le tableau est conservé (extraction pure, choix validé vs grille de cartes).
+  - `ActivityLogTable.svelte` : bloc filtres GET + table journal + helpers internes (`formatDateTime`, `summarizeMetadata`, `ludoNames`).
+- 3 routes allégées : CSS migré retiré (zéro sélecteur orphelin), le `<script>` de `logs/+page` passe de ~30 à 4 lignes. Aucun changement visuel ni de comportement.
+- `pnpm check` **0 erreur / 0 warning**, ESLint + Prettier OK sur les fichiers touchés, **85 tests verts**.
+- Toutes les cases de l'epic 11 cochées → epic **TERMINÉ**.
+
+**Prochain :** Epic 12 (tests E2E Playwright), incluant les flows admin + le shell (reporté de 08) + notifs (reporté de 10).
+
+**Pieges :** Le `:global(.actions-col)` reste déclaré dans `ludotheques/+page` (le `<Table.Head>` y vit) ; la `<Table.Cell>` déplacée dans `LudothequeCard` hérite du style global → pas de duplication. `:global(.meta-cell code)` part dans `ActivityLogTable`. `pnpm format` reformate tout le repo → cibler les fichiers (et les parenthèses de `(protected)` cassent les globs Prettier → chemins explicites).
+
+**Commit :** [à venir] feat(admin): extraction composants réutilisables (epic 11 phase 4)
+
+---
 
 ## Etat session 2026-06-17 (phase 3)
 
@@ -73,9 +93,9 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 
 ### Composants
 
-- [ ] `LudothequeCard.svelte` (admin)
-- [ ] `ActivityLogTable.svelte`
-- [ ] `ColorPicker.svelte` — sélection couleur par ludo
+- [x] `LudothequeCard.svelte` (admin)
+- [x] `ActivityLogTable.svelte`
+- [x] `ColorPicker.svelte` — sélection couleur par ludo
 
 ## Critères d'acceptation
 
@@ -87,10 +107,13 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 
 ## Carte du code
 
-> Mise a jour : 2026-06-17
+> Mise a jour : 2026-06-17 (phase 4)
 
 | Fichier                                 | Role                                                                      |
 | --------------------------------------- | ------------------------------------------------------------------------- |
+| `src/lib/components/admin/ColorPicker.svelte`      | Label + input couleur natif + champ hexa (`value` `$bindable`)            |
+| `src/lib/components/admin/LudothequeCard.svelte`   | Rend une `<Table.Row>` d'une ludothèque (swatch/slug/adresse/date/Gérer)  |
+| `src/lib/components/admin/ActivityLogTable.svelte` | Filtres GET + table journal + helpers `formatDateTime`/`summarizeMetadata` |
 | `src/lib/utils/slug.ts`                 | `normalizeSlug` — dérive/normalise un slug d'URL depuis un nom            |
 | `src/lib/server/db/ludotheques.ts`      | `updateLudoById` (+ `getAllLudos`/`createLudo` réutilisés)                |
 | `src/lib/server/db/activity_log.ts`     | `getGlobalActivityLog` — lecture journal global, filtres ludo/action      |
@@ -111,6 +134,7 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 - **Groupe de routes `(protected)`** pour garder `/admin/*` tout en laissant `/admin/login` public → évite la boucle de redirection. Les groupes n'affectent pas l'URL.
 - **Slug non éditable après création** (URLs + sessions en dépendent).
 - **Pas d'audit des actions admin** : `activity_log` reste alimenté uniquement par `emitEvent` ; l'admin se contente de lire.
+- **LudothequeCard garde le tableau** (rend une `<Table.Row>`) plutôt qu'une grille de cartes : extraction pure, zéro régression visuelle (choix validé phase 4).
 
 ## Notes
 

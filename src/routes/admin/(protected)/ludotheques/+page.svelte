@@ -5,7 +5,8 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
-  import { formatDateShort } from '$lib/utils/dates.js'
+  import LudothequeCard from '$lib/components/admin/LudothequeCard.svelte'
+  import ColorPicker from '$lib/components/admin/ColorPicker.svelte'
 
   let { data, form } = $props()
 
@@ -57,21 +58,7 @@
     </Table.Header>
     <Table.Body>
       {#each data.ludos as ludo (ludo.id)}
-        <Table.Row>
-          <Table.Cell class="name-cell">{ludo.name}</Table.Cell>
-          <Table.Cell><code>{ludo.slug}</code></Table.Cell>
-          <Table.Cell>
-            <span class="color-cell">
-              <span class="swatch" style="background:{ludo.color}"></span>
-              <code>{ludo.color}</code>
-            </span>
-          </Table.Cell>
-          <Table.Cell>{ludo.address ?? '—'}</Table.Cell>
-          <Table.Cell>{formatDateShort(ludo.createdAt)}</Table.Cell>
-          <Table.Cell class="actions-col">
-            <Button variant="ghost" size="sm" href={`/admin/ludotheques/${ludo.id}`}>Gérer</Button>
-          </Table.Cell>
-        </Table.Row>
+        <LudothequeCard {ludo} />
       {/each}
     </Table.Body>
   </Table.Root>
@@ -113,18 +100,7 @@
         <Input id="ludo-slug" name="slug" placeholder="dérivé du nom" />
       </div>
 
-      <div class="field">
-        <Label for="ludo-color">Couleur</Label>
-        <div class="color-input">
-          <input
-            id="ludo-color"
-            type="color"
-            bind:value={color}
-            aria-label="Sélecteur de couleur"
-          />
-          <Input name="color" bind:value={color} placeholder="#0073e6" required />
-        </div>
-      </div>
+      <ColorPicker bind:value={color} name="color" label="Couleur" id="ludo-color" required />
 
       <div class="field">
         <Label for="ludo-password">Mot de passe initial</Label>
@@ -199,35 +175,10 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
   }
-  .color-cell {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  .swatch {
-    width: 16px;
-    height: 16px;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-strong);
-  }
   .field {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-  }
-  .color-input {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  .color-input input[type='color'] {
-    width: 44px;
-    height: 38px;
-    padding: 2px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    background: var(--bg-card);
-    cursor: pointer;
   }
   .error {
     margin: 0;

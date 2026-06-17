@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import ColorPicker from '$lib/components/admin/ColorPicker.svelte'
 
   let { data, form } = $props()
 
@@ -56,13 +57,7 @@
       <Input id="ludo-name" name="name" value={data.ludo.name} required />
     </div>
 
-    <div class="field">
-      <Label for="ludo-color">Couleur</Label>
-      <div class="color-input">
-        <input id="ludo-color" type="color" bind:value={color} aria-label="Sélecteur de couleur" />
-        <Input name="color" bind:value={color} placeholder="#0073e6" required />
-      </div>
-    </div>
+    <ColorPicker bind:value={color} name="color" label="Couleur" id="ludo-color" required />
 
     <div class="field">
       <Label for="ludo-address">Adresse</Label>
@@ -195,20 +190,6 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-  }
-  .color-input {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-  }
-  .color-input input[type='color'] {
-    width: 44px;
-    height: 38px;
-    padding: 2px;
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    background: var(--bg-card);
-    cursor: pointer;
   }
   .actions {
     display: flex;

@@ -2,12 +2,12 @@
 
 ## Features actives
 
-| Feature        | Fichier                                              | Statut       |
-| -------------- | ---------------------------------------------------- | ------------ |
-| 11 — ADMIN     | [features/11-admin.md](features/11-admin.md)         | **EN COURS** |
-| 12 — TESTS E2E | [features/12-tests-e2e.md](features/12-tests-e2e.md) | EN ATTENTE   |
+| Feature        | Fichier                                              | Statut     |
+| -------------- | ---------------------------------------------------- | ---------- |
+| 11 — ADMIN     | [features/11-admin.md](features/11-admin.md)         | **DONE**   |
+| 12 — TESTS E2E | [features/12-tests-e2e.md](features/12-tests-e2e.md) | TODO       |
 
 ## Reprendre ici
 
-**11-ADMIN** — Phases 1-3 faites (socle + auth + pages métier ludothèques/logs/dashboard). Prochaine étape : phase 4, extraction des composants réutilisables (`LudothequeCard`, `ActivityLogTable`, `ColorPicker`) + polish, puis epic 12.
-Commit : [ab628bd] feat(admin): pages métier super-admin (epic 11 phase 3)
+**12-TESTS E2E** (prochain epic) — Playwright sur les flows critiques, incluant les flows admin (epic 11), le shell de navigation (reporté de 08) et les notifs (reporté de 10).
+Dernier commit (epic 11 clos) : [à venir] feat(admin): extraction composants réutilisables (epic 11 phase 4)
