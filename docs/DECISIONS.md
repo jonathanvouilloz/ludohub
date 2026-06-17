@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-17 | Thèmes : séparer « contenu complet » (référence) et « installé » (sous-ensemble contrôlé)
+
+**Contexte :** `theme_items` était une liste plate. Or un thème complet vit dans une caisse ; à chaque animation on n'en sort qu'un sous-ensemble (~70-80 %), et seul ce sous-ensemble fait l'objet de check-ups quotidiens. Fonctionnalité présente sur samediLudoV2, jamais portée. (Spec : epic 13.)
+
+**Décision :** Garder `theme_items` comme liste de référence (jamais modifiée à l'install). Ajouter `theme_installations` (événement daté, sous-ensemble sorti, statut `en_cours`/`cloturee`, une seule active par thème) + `theme_installation_items`, puis `theme_checkups` + `theme_checkup_items` (statut `present`/`manquant`, quantité affichée dans le label, pas en input). Notif si ≥1 item manquant (`emitEvent`). Install autorisée au propriétaire OU à l'emprunteur d'un prêt actif. Pas de contrôle de fréquence.
+
+**Alternatives :** Quantité partielle par item (rejeté : trop lourd au quotidien) ; installation comme état booléen sur l'item sans historique (rejeté : perd la traçabilité datée) ; check-up libre sans rattachement à une installation (rejeté : pas de base de comparaison).
+
+---
+
 ## 2026-06-17 | Session super-admin = cookie signé distinct + groupe de routes `(protected)`
 
 **Contexte :** L'epic 11 protège `/admin` par `SUPER_ADMIN_PASSWORD`, séparé des sessions ludo. Il faut une page de login publique sans créer de boucle de redirection avec la garde.

@@ -16,6 +16,7 @@
 | 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log        | M      | **DONE**     | [10-notifications.md](features/10-notifications.md)           |
 | 11  | ADMIN — Super admin (CRUD ludos, logs)                           | M      | **DONE**     | [11-admin.md](features/11-admin.md)                           |
 | 12  | TESTS E2E — Playwright flows critiques                           | M      | TODO         | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
+| 13  | THÈMES — Installations & check-ups                               | M-L    | **SPEC**     | [13-themes-checkup.md](features/13-themes-checkup.md)         |
 
 ## Prochaines étapes prioritaires
 
@@ -25,6 +26,9 @@
 3. **11-ADMIN** : super admin (CRUD ludos + consultation `activity_log` peuplé par le dispatcher).
 4. **12-TESTS E2E** : Playwright sur les flows critiques (transversal, à consolider en fin).
    Inclut les 3 tests du shell de navigation (08) reportés ici.
+5. **13-THÈMES Installations & check-ups** : feature cadrée (spec + PRD à jour),
+   prête à coder. Étend l'epic 06 : notion d'installation (sous-ensemble sorti, daté)
+   + check-ups quotidiens présent/manquant. Repris de samediLudoV2, jamais porté jusqu'ici.
 
 ## Ordre de dépendances
 

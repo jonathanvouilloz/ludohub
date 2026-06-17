@@ -2,12 +2,13 @@
 
 ## Features actives
 
-| Feature        | Fichier                                              | Statut     |
-| -------------- | ---------------------------------------------------- | ---------- |
-| 11 — ADMIN     | [features/11-admin.md](features/11-admin.md)         | **DONE**   |
-| 12 — TESTS E2E | [features/12-tests-e2e.md](features/12-tests-e2e.md) | TODO       |
+| Feature                       | Fichier                                                      | Statut     |
+| ----------------------------- | ------------------------------------------------------------ | ---------- |
+| 13 — THÈMES check-ups         | [features/13-themes-checkup.md](features/13-themes-checkup.md) | **SPEC**   |
+| 12 — TESTS E2E                | [features/12-tests-e2e.md](features/12-tests-e2e.md)         | TODO       |
+| 11 — ADMIN                    | [features/11-admin.md](features/11-admin.md)                 | DONE       |
 
 ## Reprendre ici
 
-**12-TESTS E2E** (prochain epic) — Playwright sur les flows critiques, incluant les flows admin (epic 11), le shell de navigation (reporté de 08) et les notifs (reporté de 10).
-Dernier commit (epic 11 clos) : [ddd9bbd] feat(admin): extraction composants réutilisables (epic 11 phase 4)
+**13-THÈMES Installations & check-ups** — spec + PRD à jour, décisions tranchées (notif si item manquant, install par propriétaire OU emprunteur d'un prêt actif, pas de contrôle de fréquence). Démarrer **Phase 1** : 4 tables + enums dans `schema.ts` puis `pnpm db:push`.
+Voir le bloc « Etat session » et la « Carte du code » du fichier feature.

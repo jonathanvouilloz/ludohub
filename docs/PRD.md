@@ -214,6 +214,38 @@ Crée et configure les ludothèques initiales. Accès global pour debug. Les lud
 
 ---
 
+### THÈMES — Installations & check-ups *(epic 13, à faire)*
+
+**En tant que** membre **je veux** suivre ce qui est réellement sorti d'un thème et le contrôler chaque jour **afin de** ne rien perdre du matériel mis à disposition.
+
+> **Contexte métier.** `theme_items` est la **liste de référence complète** du thème (tout le contenu de la grosse caisse plastique). Quand on **installe** un thème pour une animation, on ne sort pas tout : on choisit un **sous-ensemble** (~70-80 %). Les **check-ups quotidiens** portent uniquement sur ce sous-ensemble installé (ce qui circule) ; ce qui reste dans la caisse ne bouge pas et n'est pas contrôlé.
+
+**Flow — Installer :**
+
+1. Fiche thème → "Installer dans la ludo" (bloqué si une installation est déjà en cours)
+2. Cocher le sous-ensemble d'items sortis + note optionnelle → Confirmer
+3. Installation datée et historisée (qui, quand, quels items)
+
+**Flow — Check-up quotidien :**
+
+1. Sur l'installation en cours → "Nouveau check-up"
+2. Pour chaque item installé : label `Nom (×quantité)` + toggle présent / manquant
+3. Enregistrer → check-up daté + historique consultable
+
+**Flow — Clôturer :** remise en caisse → installation `cloturee`, historique figé.
+
+**Critères d'acceptation :**
+
+- [ ] Une seule installation active par thème
+- [ ] Sous-ensemble (≥1 item) daté et historisé
+- [ ] Check-up présent/manquant par item installé, quantité affichée dans le label
+- [ ] Les items restés en caisse n'apparaissent pas dans les check-ups
+- [ ] Historique des installations et check-ups consultable
+
+> Détail complet : `docs/features/13-themes-checkup.md`.
+
+---
+
 ### DEMANDES D'AIDE — Remplacements cross-ludo
 
 **En tant que** membre de Pâquis **je veux** publier une demande de remplacement **afin de** trouver rapidement quelqu'un d'une autre ludo disponible.
@@ -294,6 +326,14 @@ theme_items     (id, theme_id, name, quantity, is_archived)
 theme_images    (id, theme_id, url, storage_key, created_at)
 theme_loans     (id, theme_id, from_ludo_id, to_ludo_id,
                  status, notes, created_at)
+
+-- Thèmes : installations & check-ups (epic 13, à faire)
+theme_installations      (id, theme_id, ludo_id, installed_by_member_id,
+                          installed_at, closed_at, status, notes, created_at)
+theme_installation_items (id, installation_id, theme_item_id)
+theme_checkups           (id, installation_id, checked_by_member_id,
+                          checked_at, notes, created_at)
+theme_checkup_items      (id, checkup_id, installation_item_id, status, note)
 
 -- Cross-ludo
 help_requests   (id, ludo_id, date, slot_info, notes, status, created_at)
