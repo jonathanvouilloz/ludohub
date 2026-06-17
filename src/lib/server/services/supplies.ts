@@ -83,7 +83,7 @@ export async function createSupplyRequest(
   })
 }
 
-/** Changement de statut : réservé aux responsables (garde côté action). */
+/** Changement de statut : ouvert à tout membre actif (garde côté action). */
 export async function updateSupplyStatus(
   id: string,
   ludoId: string,

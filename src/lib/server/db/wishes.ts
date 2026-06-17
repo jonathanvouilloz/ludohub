@@ -7,7 +7,7 @@ import { gameWishes, type GameWishInsert } from '../schema.js'
 export async function getWishesByLudo(ludoId: string) {
   return db.query.gameWishes.findMany({
     where: eq(gameWishes.ludoId, ludoId),
-    with: { buyer: true },
+    with: { buyer: true, addedBy: true },
     orderBy: (w, { desc }) => desc(w.createdAt),
   })
 }
@@ -15,7 +15,7 @@ export async function getWishesByLudo(ludoId: string) {
 export async function getWishById(id: string) {
   return db.query.gameWishes.findFirst({
     where: eq(gameWishes.id, id),
-    with: { buyer: true },
+    with: { buyer: true, addedBy: true },
   })
 }
 

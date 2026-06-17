@@ -52,12 +52,14 @@ export async function listGameWishes(ludoId: string) {
 export async function createGameWish(
   ludoId: string,
   data: { title: string; link?: string; priceChf?: string },
+  addedById: string,
 ): Promise<GameWishRow> {
   return createWish({
     ludoId,
     title: parseTitle(data.title),
     link: parseLink(data.link ?? ''),
     priceChf: parsePriceChf(data.priceChf ?? ''),
+    addedById,
   })
 }
 

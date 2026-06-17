@@ -508,6 +508,7 @@ export const gameWishes = pgTable('game_wishes', {
   link: text('link'),
   priceChf: integer('price_chf'), // en centimes
   status: gameWishStatus('status').notNull().default('souhaite'),
+  addedById: uuid('added_by_id').references(() => members.id),
   buyerId: uuid('buyer_id').references(() => members.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
@@ -540,9 +541,15 @@ export const supplyRequests = pgTable('supply_requests', {
 })
 
 export const gameWishesRelations = relations(gameWishes, ({ one }) => ({
+  addedBy: one(members, {
+    fields: [gameWishes.addedById],
+    references: [members.id],
+    relationName: 'gameWishAddedBy',
+  }),
   buyer: one(members, {
     fields: [gameWishes.buyerId],
     references: [members.id],
+    relationName: 'gameWishBuyer',
   }),
 }))
 

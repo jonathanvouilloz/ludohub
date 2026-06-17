@@ -13,6 +13,7 @@ import { createGameWish, deleteGameWish, setBought, WishServiceError } from './w
 
 const LUDO = 'ludo-a'
 const WISH = 'wish-1'
+const AUTHOR = 'member-author'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -21,35 +22,38 @@ beforeEach(() => {
 
 describe('createGameWish', () => {
   it('crée un souhait minimal (titre seul)', async () => {
-    await createGameWish(LUDO, { title: 'Catan' })
+    await createGameWish(LUDO, { title: 'Catan' }, AUTHOR)
     expect(createWish).toHaveBeenCalledWith({
       ludoId: LUDO,
       title: 'Catan',
       link: null,
       priceChf: null,
+      addedById: AUTHOR,
     })
   })
 
   it('convertit le prix CHF en centimes', async () => {
-    await createGameWish(LUDO, { title: 'Catan', priceChf: '12.50' })
+    await createGameWish(LUDO, { title: 'Catan', priceChf: '12.50' }, AUTHOR)
     expect(createWish).toHaveBeenCalledWith(expect.objectContaining({ priceChf: 1250 }))
   })
 
   it('accepte une virgule décimale', async () => {
-    await createGameWish(LUDO, { title: 'Catan', priceChf: '9,90' })
+    await createGameWish(LUDO, { title: 'Catan', priceChf: '9,90' }, AUTHOR)
     expect(createWish).toHaveBeenCalledWith(expect.objectContaining({ priceChf: 990 }))
   })
 
   it('refuse un titre vide', async () => {
-    await expect(createGameWish(LUDO, { title: '  ' })).rejects.toThrow(/titre est requis/)
+    await expect(createGameWish(LUDO, { title: '  ' }, AUTHOR)).rejects.toThrow(/titre est requis/)
   })
 
   it('refuse un lien non http', async () => {
-    await expect(createGameWish(LUDO, { title: 'X', link: 'ftp://x' })).rejects.toThrow(/http/)
+    await expect(createGameWish(LUDO, { title: 'X', link: 'ftp://x' }, AUTHOR)).rejects.toThrow(
+      /http/,
+    )
   })
 
   it('refuse un prix négatif', async () => {
-    await expect(createGameWish(LUDO, { title: 'X', priceChf: '-5' })).rejects.toThrow(
+    await expect(createGameWish(LUDO, { title: 'X', priceChf: '-5' }, AUTHOR)).rejects.toThrow(
       WishServiceError,
     )
   })

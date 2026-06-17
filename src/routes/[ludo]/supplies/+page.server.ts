@@ -6,7 +6,7 @@ import {
   SupplyServiceError,
   updateSupplyStatus,
 } from '$lib/server/services/supplies.js'
-import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
+import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -41,9 +41,9 @@ export const actions: Actions = {
     )
   },
 
-  // Changement de statut : responsables uniquement.
+  // Changement de statut : tout membre actif.
   updateStatus: async (event) => {
-    const { ludo } = await requireResponsableContext(event)
+    const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
     return run(() =>
       updateSupplyStatus(String(data.get('id') ?? ''), ludo.id, String(data.get('status') ?? '')),

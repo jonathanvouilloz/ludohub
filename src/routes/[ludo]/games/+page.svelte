@@ -4,13 +4,16 @@
   import NewGameWishDialog from '$lib/components/games/NewGameWishDialog.svelte'
   import type { GameWishRow, MemberRow } from '$lib/server/schema'
 
-  type WishWithBuyer = GameWishRow & { buyer?: MemberRow | null }
+  type WishWithMembers = GameWishRow & {
+    buyer?: MemberRow | null
+    addedBy?: MemberRow | null
+  }
 
   let { data, form } = $props()
 
   let newOpen = $state(false)
 
-  const wishes = $derived(data.wishes as WishWithBuyer[])
+  const wishes = $derived(data.wishes as WishWithMembers[])
   const wanted = $derived(wishes.filter((w) => w.status === 'souhaite'))
   const bought = $derived(wishes.filter((w) => w.status === 'achete'))
 </script>

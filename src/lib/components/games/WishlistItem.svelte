@@ -4,12 +4,18 @@
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
+  import CheckIcon from '@lucide/svelte/icons/check'
+  import Undo2Icon from '@lucide/svelte/icons/undo-2'
+  import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import { formatDateShort } from '$lib/utils/dates.js'
   import type { GameWishRow, MemberRow } from '$lib/server/schema'
 
-  type WishWithBuyer = GameWishRow & { buyer?: MemberRow | null }
+  type WishWithMembers = GameWishRow & {
+    buyer?: MemberRow | null
+    addedBy?: MemberRow | null
+  }
 
-  let { wish }: { wish: WishWithBuyer } = $props()
+  let { wish }: { wish: WishWithMembers } = $props()
 
   const bought = $derived(wish.status === 'achete')
 
@@ -23,39 +29,69 @@
   <div class="body">
     <div class="title-row">
       <h3>{wish.title}</h3>
-      {#if bought}<Badge>Acheté</Badge>{/if}
-    </div>
-
-    <div class="meta">
-      {#if wish.priceChf != null}<span class="price">{formatPrice(wish.priceChf)}</span>{/if}
+      {#if wish.priceChf != null}
+        <Badge variant="secondary">{formatPrice(wish.priceChf)}</Badge>
+      {/if}
+      {#if bought}<Badge class="bought-badge">Acheté</Badge>{/if}
       {#if wish.link}
-        <a href={wish.link} target="_blank" rel="noopener" class="link">
-          Voir <ExternalLinkIcon size={14} aria-hidden="true" />
+        <a href={wish.link} target="_blank" rel="noopener" class="link" title="Voir le jeu">
+          <ExternalLinkIcon size={16} aria-hidden="true" />
+          <span class="sr-only">Voir le jeu (nouvel onglet)</span>
         </a>
       {/if}
     </div>
 
-    {#if bought && wish.buyer}
-      <p class="muted">Acheté par {wish.buyer.name} le {formatDateShort(wish.createdAt)}</p>
-    {/if}
+    <p class="byline">
+      Ajouté par {wish.addedBy?.name ?? '—'}
+      {#if bought && wish.buyer}
+        <span class="sep">·</span> Acheté par {wish.buyer.name} le {formatDateShort(wish.createdAt)}
+      {/if}
+    </p>
   </div>
 
   <div class="actions">
     {#if bought}
       <form method="POST" action="?/markWanted" use:enhance>
         <input type="hidden" name="id" value={wish.id} />
-        <Button type="submit" variant="ghost" size="sm">Annuler l'achat</Button>
+        <Button type="submit" variant="ghost" size="icon-sm" title="Annuler l'achat">
+          <Undo2Icon aria-hidden="true" />
+          <span class="sr-only">Annuler l'achat</span>
+        </Button>
       </form>
     {:else}
-      <form method="POST" action="?/markBought" use:enhance>
-        <input type="hidden" name="id" value={wish.id} />
-        <Button type="submit" variant="ghost" size="sm">Marquer acheté</Button>
-      </form>
+      <AlertDialog.Root>
+        <AlertDialog.Trigger
+          class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+          title="Marquer comme acheté"
+        >
+          <CheckIcon aria-hidden="true" />
+          <span class="sr-only">Marquer comme acheté</span>
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Title>Marquer « {wish.title} » comme acheté ?</AlertDialog.Title>
+            <AlertDialog.Description>
+              Le jeu sera déplacé dans la liste des achats. Réversible à tout moment.
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+          <form method="POST" action="?/markBought" use:enhance>
+            <input type="hidden" name="id" value={wish.id} />
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
+              <button type="submit" class={buttonVariants()}>Confirmer l'achat</button>
+            </AlertDialog.Footer>
+          </form>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
     {/if}
 
     <AlertDialog.Root>
-      <AlertDialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-        Supprimer
+      <AlertDialog.Trigger
+        class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+        title="Supprimer"
+      >
+        <Trash2Icon class="danger-icon" aria-hidden="true" />
+        <span class="sr-only">Supprimer</span>
       </AlertDialog.Trigger>
       <AlertDialog.Content>
         <AlertDialog.Header>
@@ -81,7 +117,7 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    gap: var(--space-4);
+    gap: var(--space-3);
     padding: var(--space-4);
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -105,41 +141,42 @@
   h3 {
     margin: 0;
     color: var(--text-main);
-    font-size: var(--text-body);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-bold);
+    line-height: 1.2;
   }
-  .meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-  }
-  .price {
-    font-weight: var(--weight-medium);
-    color: var(--text-main);
+  .item :global(.bought-badge) {
+    background: var(--success);
   }
   .link {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    color: var(--primary, var(--text-main));
+    color: var(--text-muted);
     text-decoration: none;
-    font-size: var(--text-small);
+    transition: color var(--dur-fast) var(--ease-out-strong);
   }
   .link:hover {
-    text-decoration: underline;
+    color: var(--primary);
   }
-  .muted {
+  .byline {
     margin: 0;
     color: var(--text-muted);
     font-size: var(--text-small);
   }
+  .sep {
+    margin: 0 var(--space-1);
+    color: var(--text-subtle);
+  }
   .actions {
     display: flex;
     gap: var(--space-1);
-    flex-wrap: wrap;
+    flex-shrink: 0;
     justify-content: flex-end;
   }
   .actions form {
-    display: inline;
+    display: inline-flex;
+  }
+  .actions :global(.danger-icon) {
+    color: var(--danger);
   }
 </style>

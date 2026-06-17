@@ -29,14 +29,18 @@ async function run(fn: () => Promise<unknown>) {
 export const actions: Actions = {
   // Tout membre actif peut gérer la wishlist.
   add: async (event) => {
-    const { ludo } = await requireLudoContext(event)
+    const { ludo, member } = await requireLudoContext(event)
     const data = await event.request.formData()
     return run(() =>
-      createGameWish(ludo.id, {
-        title: String(data.get('title') ?? ''),
-        link: String(data.get('link') ?? ''),
-        priceChf: String(data.get('priceChf') ?? ''),
-      }),
+      createGameWish(
+        ludo.id,
+        {
+          title: String(data.get('title') ?? ''),
+          link: String(data.get('link') ?? ''),
+          priceChf: String(data.get('priceChf') ?? ''),
+        },
+        member.id,
+      ),
     )
   },
 
