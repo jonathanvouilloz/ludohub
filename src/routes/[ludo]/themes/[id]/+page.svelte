@@ -227,7 +227,8 @@
   }
   h2 {
     color: var(--text-main);
-    font-size: var(--text-body);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-semibold);
     margin: var(--space-6) 0 var(--space-3);
   }
   .col h2:first-child {
@@ -266,7 +267,8 @@
   }
   .requests h2 {
     margin: 0 0 var(--space-3);
-    font-size: var(--text-body);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-semibold);
     color: var(--text-main);
   }
   .request {

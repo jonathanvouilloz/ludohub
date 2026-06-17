@@ -46,6 +46,7 @@
   --color-destructive: var(--danger);
   --color-destructive-foreground: var(--text-inverse);
   --color-border: var(--border);
+  --color-border-outline: var(--border-outline);
   --color-input: var(--border);
   --color-ring: var(--primary);
 
@@ -73,6 +74,26 @@
      Les composants shadcn utilisent `border` nu → on remet notre token. */
   * {
     @apply border-border;
+  }
+
+  /* Le preflight Tailwind v4 réinitialise les titres à `font-size: inherit`
+     (→ taille du corps). On rétablit l'échelle typo du design system pour que
+     tout titre sans style explicite garde sa hiérarchie. Les styles scopés
+     des composants (non-layered) priment toujours sur ces valeurs par défaut. */
+  h1 {
+    font-size: var(--text-h1);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+  }
+  h2 {
+    font-size: var(--text-h2);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
+  }
+  h3 {
+    font-size: var(--text-h3);
+    font-weight: var(--weight-semibold);
+    line-height: var(--leading-tight);
   }
 }
 

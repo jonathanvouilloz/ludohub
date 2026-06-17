@@ -67,6 +67,12 @@
     border-color: var(--ludo-color);
     color: var(--text-inverse);
   }
+  /* Onglet actif au survol : garder un fond foncé (sinon le texte blanc
+     devient illisible sur le fond clair du hover générique). */
+  .reseau-tab--active:hover {
+    background: color-mix(in srgb, var(--ludo-color) 88%, black);
+    color: var(--text-inverse);
+  }
   .reseau-tab:focus-visible {
     outline: none;
     box-shadow: var(--shadow-focus);

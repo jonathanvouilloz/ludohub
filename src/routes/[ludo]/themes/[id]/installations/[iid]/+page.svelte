@@ -89,7 +89,8 @@
   }
   h2 {
     color: var(--text-main);
-    font-size: var(--text-body);
+    font-size: var(--text-h2);
+    font-weight: var(--weight-semibold);
     margin: 0 0 var(--space-3);
   }
   .banner-ok {

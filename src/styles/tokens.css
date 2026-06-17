@@ -24,6 +24,7 @@
     --bg-hover: #f5f8fc;
     --border: #dde3ee;
     --border-strong: #c4cdd9;
+    --border-outline: #f1f5fa; /* bordure des boutons/badges outline */
 
     /* ─── Ink (texte) ────────────────────────────────────── */
     --text-main: #25324b;
