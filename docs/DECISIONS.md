@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-17 | Session super-admin = cookie signé distinct + groupe de routes `(protected)`
+
+**Contexte :** L'epic 11 protège `/admin` par `SUPER_ADMIN_PASSWORD`, séparé des sessions ludo. Il faut une page de login publique sans créer de boucle de redirection avec la garde.
+
+**Décision :** Cookie signé dédié `ludohub_admin` (calque de `auth.ts`, signé `BETTER_AUTH_SECRET`, 7 j), lu par `hooks.server.ts` uniquement sous `/admin`. La garde vit dans un groupe de routes SvelteKit `(protected)` ; `/admin/login` reste hors groupe donc public. Les groupes `(…)` n'affectent pas l'URL. Slug de ludo non éditable après création (URLs/sessions en dépendent).
+
+**Alternatives :** Better Auth pour l'admin (machinerie superflue), garde par test de `pathname` dans un layout `/admin` unique (fragile), HTTP Basic Auth (UX pauvre, pas de logout propre).
+
+---
+
 ## 2026-06-15 | Auth par mot de passe partagé par ludo (Better Auth)
 
 **Contexte :** Les ludothèques ont un staff peu technique. Créer un compte individuel par membre crée de la friction et des mots de passe oubliés. Le modèle existant (`samediLudoV2`) utilisait localStorage — non sécurisé et non scalable.

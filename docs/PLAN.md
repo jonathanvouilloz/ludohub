@@ -2,20 +2,20 @@
 
 ## Epics actives
 
-| #   | Feature                                                     | Taille | Statut   | Fichier                                                       |
-| --- | ----------------------------------------------------------- | ------ | -------- | ------------------------------------------------------------- |
-| 01  | SETUP — Socle technique (schema, Drizzle, env, auth base)   | M      | **DONE** | [01-setup.md](features/01-setup.md)                           |
-| 02  | AUTH — Connexion multi-tenant (slug, password, member pick) | M      | **DONE** | [02-auth.md](features/02-auth.md)                             |
-| 03  | MEMBRES — CRUD membres + rôles                              | S      | **DONE** | [03-membres.md](features/03-membres.md)                       |
-| 04  | PLANNING — Saisons, samedis, assignations, swap             | L      | **DONE** | [04-planning.md](features/04-planning.md)                     |
-| 05  | ABSENCES — Demande, approbation, intégration planning       | M      | **DONE** | [05-absences.md](features/05-absences.md)                     |
-| 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts        | L      | **DONE** | [06-themes.md](features/06-themes.md)                         |
-| 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull thèmes      | M      | **DONE** | [07-reseau.md](features/07-reseau.md)                         |
-| 08  | NAVIGATION — Shell applicatif (sidebar desktop + tab bar mobile) | M | **DONE** | [08-navigation.md](features/08-navigation.md)                 |
-| 09  | WISHLIST + MATÉRIEL — Listes internes simples               | S      | **DONE** | [09-wishlist-materiaux.md](features/09-wishlist-materiaux.md) |
-| 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log   | M      | **DONE** | [10-notifications.md](features/10-notifications.md)           |
-| 11  | ADMIN — Super admin (CRUD ludos, logs)                      | M      | TODO     | [11-admin.md](features/11-admin.md)                           |
-| 12  | TESTS E2E — Playwright flows critiques                      | M      | TODO     | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
+| #   | Feature                                                          | Taille | Statut       | Fichier                                                       |
+| --- | ---------------------------------------------------------------- | ------ | ------------ | ------------------------------------------------------------- |
+| 01  | SETUP — Socle technique (schema, Drizzle, env, auth base)        | M      | **DONE**     | [01-setup.md](features/01-setup.md)                           |
+| 02  | AUTH — Connexion multi-tenant (slug, password, member pick)      | M      | **DONE**     | [02-auth.md](features/02-auth.md)                             |
+| 03  | MEMBRES — CRUD membres + rôles                                   | S      | **DONE**     | [03-membres.md](features/03-membres.md)                       |
+| 04  | PLANNING — Saisons, samedis, assignations, swap                  | L      | **DONE**     | [04-planning.md](features/04-planning.md)                     |
+| 05  | ABSENCES — Demande, approbation, intégration planning            | M      | **DONE**     | [05-absences.md](features/05-absences.md)                     |
+| 06  | THÈMES — Catalogue, items, photos Vercel Blob, prêts             | L      | **DONE**     | [06-themes.md](features/06-themes.md)                         |
+| 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull thèmes           | M      | **DONE**     | [07-reseau.md](features/07-reseau.md)                         |
+| 08  | NAVIGATION — Shell applicatif (sidebar desktop + tab bar mobile) | M      | **DONE**     | [08-navigation.md](features/08-navigation.md)                 |
+| 09  | WISHLIST + MATÉRIEL — Listes internes simples                    | S      | **DONE**     | [09-wishlist-materiaux.md](features/09-wishlist-materiaux.md) |
+| 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log        | M      | **DONE**     | [10-notifications.md](features/10-notifications.md)           |
+| 11  | ADMIN — Super admin (CRUD ludos, logs)                           | M      | **EN COURS** | [11-admin.md](features/11-admin.md)                           |
+| 12  | TESTS E2E — Playwright flows critiques                           | M      | TODO         | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
 
 ## Prochaines étapes prioritaires
 
@@ -61,15 +61,15 @@
 
 ## Archive
 
-| #   | Feature                                          | Terminée le |
-| --- | ------------------------------------------------ | ----------- |
-| 01  | SETUP — Socle technique                          | 2026-06-15  |
-| 02  | AUTH — Connexion multi-tenant                    | 2026-06-15  |
-| 03  | MEMBRES — CRUD membres + rôles                   | 2026-06-15  |
-| 04  | PLANNING — Saisons, samedis, assignations, swap  | 2026-06-16  |
-| 05  | ABSENCES — Demande, approbation, warnings        | 2026-06-16  |
-| 06  | THÈMES — Catalogue, items, photos Blob, prêts    | 2026-06-16  |
-| 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull  | 2026-06-16  |
-| 08  | NAVIGATION — Shell (sidebar desktop + tab bar mobile) | 2026-06-16 |
-| 09  | WISHLIST + MATÉRIEL — Listes internes simples    | 2026-06-16  |
-| 10  | NOTIFICATIONS — Notifs in-app + dispatcher       | 2026-06-16  |
+| #   | Feature                                               | Terminée le |
+| --- | ----------------------------------------------------- | ----------- |
+| 01  | SETUP — Socle technique                               | 2026-06-15  |
+| 02  | AUTH — Connexion multi-tenant                         | 2026-06-15  |
+| 03  | MEMBRES — CRUD membres + rôles                        | 2026-06-15  |
+| 04  | PLANNING — Saisons, samedis, assignations, swap       | 2026-06-16  |
+| 05  | ABSENCES — Demande, approbation, warnings             | 2026-06-16  |
+| 06  | THÈMES — Catalogue, items, photos Blob, prêts         | 2026-06-16  |
+| 07  | RÉSEAU — Demandes d'aide cross-ludo + flow pull       | 2026-06-16  |
+| 08  | NAVIGATION — Shell (sidebar desktop + tab bar mobile) | 2026-06-16  |
+| 09  | WISHLIST + MATÉRIEL — Listes internes simples         | 2026-06-16  |
+| 10  | NOTIFICATIONS — Notifs in-app + dispatcher            | 2026-06-16  |

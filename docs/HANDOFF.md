@@ -1,14 +1,13 @@
-# HANDOFF — 2026-06-16
+# HANDOFF — 2026-06-17
 
 ## Features actives
 
-| Feature            | Fichier                                                      | Statut       |
-| ------------------ | ------------------------------------------------------------ | ------------ |
-| 10 — NOTIFICATIONS | [features/10-notifications.md](features/10-notifications.md) | **DONE**     |
-| 11 — ADMIN         | [features/11-admin.md](features/11-admin.md)                 | EN ATTENTE   |
+| Feature        | Fichier                                              | Statut       |
+| -------------- | ---------------------------------------------------- | ------------ |
+| 11 — ADMIN     | [features/11-admin.md](features/11-admin.md)         | **EN COURS** |
+| 12 — TESTS E2E | [features/12-tests-e2e.md](features/12-tests-e2e.md) | EN ATTENTE   |
 
 ## Reprendre ici
 
-**11-ADMIN** — Prochain epic : super admin (CRUD ludos + consultation `activity_log`, désormais peuplé par le dispatcher de l'epic 10). Protégé par `SUPER_ADMIN_PASSWORD`, routes `src/routes/admin/*`.
-Épic 10 terminé : notifs in-app + dispatcher unique (`emitEvent` → `activity_log` + fan-out notifications), badge dans le shell, page `/reseau/notifications`. Fix régression epic 08 (catalogue `/reseau/themes` réaccessible via sous-nav réseau). 64 tests verts, check/lint OK. Tests E2E reportés à l'epic 12.
-Commit : [0ffac48] feat(notifs): notifications in-app + dispatcher (epic 10)
+**11-ADMIN** — Socle serveur + auth admin de bout en bout faits (phases 1-2). Prochaine étape : phase 3, pages métier sous `src/routes/admin/(protected)/` (ludotheques liste/création/édition + reset password, logs avec filtres), branchées sur le service `admin.ts`. Puis phase 4 composants.
+Commit : [9daa59d] feat(admin): auth super-admin de bout en bout (epic 11)

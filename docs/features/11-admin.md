@@ -1,6 +1,23 @@
 # Feature : ADMIN — Super administration
 
-**Epic :** 09 | **Taille :** M | **Statut :** TODO
+**Epic :** 11 | **Taille :** M | **Statut :** EN COURS
+
+## Etat session 2026-06-17
+
+**Fait :**
+
+- Phase 1 (socle serveur) : `normalizeSlug` + util, `db.updateLudoById`, `db.getGlobalActivityLog` (filtres ludo/action), service `admin.ts` (createLudotheque/updateLudotheque/resetLudoPassword/getGlobalActivityLog/list/get), service `admin-auth.ts` (cookie signé `ludohub_admin`, `verifyAdminPassword`).
+- Phase 2 (auth de bout en bout) : `requireAdminContext` + `locals.adminSession` posé dans `hooks.server.ts` (sous `/admin`), routes `/admin/login` (+action), `/admin/logout`, garde via groupe `(protected)` (URLs inchangées), dashboard stub.
+- Tests : `slug.test.ts` (6), `admin.test.ts` (9), `admin-auth.test.ts` (6). **85 tests verts**, `pnpm check` + lint OK.
+- Slug non éditable après création (décision : protège URLs/sessions).
+
+**Prochain :** Phase 3 — pages métier sous `src/routes/admin/(protected)/` : `ludotheques/+page` (liste + création), `ludotheques/[id]/+page` (édition couleur/adresse + reset password), `logs/+page` (lecture `getGlobalActivityLog` + filtres). Brancher les actions sur le service `admin.ts`. Puis phase 4 composants (`LudothequeCard`, `ActivityLogTable`, `ColorPicker`).
+
+**Pieges :** Login HORS du layout gardé (sinon boucle de redirection) → c'est le rôle du groupe `(protected)`. `SUPER_ADMIN_PASSWORD` doit être dans l'env local pour tester. `pnpm format` reformate tout le repo → cibler les fichiers.
+
+**Commit :** [9daa59d] feat(admin): auth super-admin de bout en bout (epic 11)
+
+---
 
 ## Description
 
@@ -10,26 +27,29 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 
 ### Pages
 
-- [ ] `src/routes/admin/+layout.server.ts` — vérification SUPER_ADMIN_PASSWORD
-- [ ] `src/routes/admin/+page.svelte` — dashboard admin
-- [ ] `src/routes/admin/ludotheques/+page.svelte` — liste + création
-- [ ] `src/routes/admin/ludotheques/[id]/+page.svelte` — édition (couleur, password reset)
-- [ ] `src/routes/admin/logs/+page.svelte` — logs d'activité globaux
+- [x] Garde `SUPER_ADMIN_PASSWORD` — `src/routes/admin/(protected)/+layout.server.ts` (via `requireAdminContext`)
+- [x] `src/routes/admin/login/` + `logout/` — auth admin (cookie distinct)
+- [~] `src/routes/admin/(protected)/+page.svelte` — dashboard (stub, à enrichir phase 3)
+- [ ] `src/routes/admin/(protected)/ludotheques/+page.svelte` — liste + création
+- [ ] `src/routes/admin/(protected)/ludotheques/[id]/+page.svelte` — édition (couleur, password reset)
+- [ ] `src/routes/admin/(protected)/logs/+page.svelte` — logs d'activité globaux
 
 ### Services
 
-- [ ] `src/lib/server/services/admin.ts`
-  - `createLudotheque(data)` → LudoRow
-  - `updateLudotheque(id, data)` → LudoRow
+- [x] `src/lib/server/services/admin.ts`
+  - `createLudotheque(data)` → LudothequeRow
+  - `updateLudotheque(id, data)` → LudothequeRow
   - `resetLudoPassword(id, newPassword)` → void
-  - `getGlobalActivityLog(limit)` → ActivityLogRow[]
+  - `getGlobalActivityLog(opts)` → ActivityLogRow[] ; + `listLudotheques`, `getLudotheque`
+- [x] `src/lib/server/services/admin-auth.ts` — session admin (cookie signé)
 
 ### DB queries
 
-- [ ] `src/lib/server/db/ludotheques.ts` (étendre)
-  - `getAllLudos()` → LudoRow[]
-  - `insertLudo(data)` → LudoRow
-  - `updateLudoById(id, data)` → LudoRow
+- [x] `src/lib/server/db/ludotheques.ts` (étendre)
+  - `getAllLudos()` → existait ; `createLudo` → existait (couvre `insertLudo`)
+  - `updateLudoById(id, data)` → ajouté
+- [x] `src/lib/server/db/activity_log.ts` — `getGlobalActivityLog(opts)` (filtres ludo/action)
+- [x] `src/lib/utils/slug.ts` — `normalizeSlug`
 
 ### Composants
 
@@ -39,11 +59,35 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 
 ## Critères d'acceptation
 
-- [ ] Accès `/admin` protégé par `SUPER_ADMIN_PASSWORD` (session admin distincte)
-- [ ] CRUD complet des ludothèques
-- [ ] Reset mot de passe d'une ludo
-- [ ] Logs d'activité consultables avec filtres ludo + type
-- [ ] Slugs validés : lowercase, sans accents, sans espaces, uniques
+- [x] Accès `/admin` protégé par `SUPER_ADMIN_PASSWORD` (session admin distincte)
+- [ ] CRUD complet des ludothèques (service prêt ; UI phase 3)
+- [ ] Reset mot de passe d'une ludo (service prêt ; UI phase 3)
+- [ ] Logs d'activité consultables avec filtres ludo + type (DB/service prêts ; UI phase 3)
+- [x] Slugs validés : lowercase, sans accents, sans espaces, uniques
+
+## Carte du code
+
+> Mise a jour : 2026-06-17
+
+| Fichier                                 | Role                                                                      |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| `src/lib/utils/slug.ts`                 | `normalizeSlug` — dérive/normalise un slug d'URL depuis un nom            |
+| `src/lib/server/db/ludotheques.ts`      | `updateLudoById` (+ `getAllLudos`/`createLudo` réutilisés)                |
+| `src/lib/server/db/activity_log.ts`     | `getGlobalActivityLog` — lecture journal global, filtres ludo/action      |
+| `src/lib/server/services/admin.ts`      | Logique métier : CRUD ludothèques, reset password, lecture logs           |
+| `src/lib/server/services/admin-auth.ts` | Session super-admin : cookie signé `ludohub_admin`, `verifyAdminPassword` |
+| `src/lib/server/admin-context.ts`       | `requireAdminContext` — garde de route (redirect `/admin/login`)          |
+| `src/hooks.server.ts`                   | Pose `locals.adminSession` (lue uniquement sous `/admin`)                 |
+| `src/routes/admin/login/`               | Page + action login (mot de passe → cookie)                               |
+| `src/routes/admin/logout/+server.ts`    | POST logout (clear cookie)                                                |
+| `src/routes/admin/(protected)/`         | Zone gardée : layout (garde) + dashboard stub                             |
+
+### Decisions cles
+
+- **Cookie admin distinct** (`ludohub_admin`), pas Better Auth — calque du mécanisme session ludo (`auth.ts`), signé avec `BETTER_AUTH_SECRET`, 7 j.
+- **Groupe de routes `(protected)`** pour garder `/admin/*` tout en laissant `/admin/login` public → évite la boucle de redirection. Les groupes n'affectent pas l'URL.
+- **Slug non éditable après création** (URLs + sessions en dépendent).
+- **Pas d'audit des actions admin** : `activity_log` reste alimenté uniquement par `emitEvent` ; l'admin se contente de lire.
 
 ## Notes
 
