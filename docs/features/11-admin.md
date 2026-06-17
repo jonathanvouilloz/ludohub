@@ -18,7 +18,7 @@
 
 **Pieges :** `<input type="color">` n'émet que `#rrggbb` lowercase ; le champ hexa libre reste source de vérité pour la validation serveur. Pour les forms multi-actions sur `[id]`, feedback dédié par clé (`error`/`success` vs `passwordError`/`passwordSuccess`) pour ne pas mélanger les bannières.
 
-**Commit :** (à venir — phase 3)
+**Commit :** [ab628bd] feat(admin): pages métier super-admin (epic 11 phase 3)
 
 ---
 

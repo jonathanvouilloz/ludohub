@@ -9,5 +9,5 @@
 
 ## Reprendre ici
 
-**11-ADMIN** — Socle serveur + auth admin de bout en bout faits (phases 1-2). Prochaine étape : phase 3, pages métier sous `src/routes/admin/(protected)/` (ludotheques liste/création/édition + reset password, logs avec filtres), branchées sur le service `admin.ts`. Puis phase 4 composants.
-Commit : [9daa59d] feat(admin): auth super-admin de bout en bout (epic 11)
+**11-ADMIN** — Phases 1-3 faites (socle + auth + pages métier ludothèques/logs/dashboard). Prochaine étape : phase 4, extraction des composants réutilisables (`LudothequeCard`, `ActivityLogTable`, `ColorPicker`) + polish, puis epic 12.
+Commit : [ab628bd] feat(admin): pages métier super-admin (epic 11 phase 3)
