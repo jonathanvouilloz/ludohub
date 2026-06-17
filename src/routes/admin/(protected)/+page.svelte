@@ -19,9 +19,14 @@
   </header>
 
   <nav class="links">
-    <!-- Écrans métier branchés en phase 3 -->
-    <span class="todo">Ludothèques (à venir)</span>
-    <span class="todo">Journal d'activité (à venir)</span>
+    <a class="link" href="/admin/ludotheques">
+      <span class="link-title">Ludothèques</span>
+      <span class="link-sub">Créer, configurer et réinitialiser les accès</span>
+    </a>
+    <a class="link" href="/admin/logs">
+      <span class="link-title">Journal d'activité</span>
+      <span class="link-sub">Consulter les événements de toutes les ludothèques</span>
+    </a>
   </nav>
 </main>
 
@@ -69,12 +74,27 @@
     flex-direction: column;
     gap: var(--space-3);
   }
-  .todo {
+  .link {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
     padding: var(--space-4);
-    font-size: var(--text-body);
-    color: var(--text-muted);
+    text-decoration: none;
     background: var(--bg-card);
-    border: 1px dashed var(--border-strong);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
+    transition: border-color var(--dur-fast) var(--ease-out-strong);
+  }
+  .link:hover {
+    border-color: var(--border-strong);
+  }
+  .link-title {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    color: var(--text-main);
+  }
+  .link-sub {
+    font-size: var(--text-small);
+    color: var(--text-muted);
   }
 </style>

@@ -2,7 +2,27 @@
 
 **Epic :** 11 | **Taille :** M | **Statut :** EN COURS
 
-## Etat session 2026-06-17
+## Etat session 2026-06-17 (phase 3)
+
+**Fait :**
+
+- Phase 3 (pages métier) terminée. 3 écrans branchés sur `admin.ts` :
+  - `ludotheques/+page` : liste (table nom/slug/couleur+pastille/adresse/date) + état vide + dialog de création inline (calque `MemberDialog`). Action `create`.
+  - `ludotheques/[id]/+page` : load `getLudotheque` (→ `error(404)` si introuvable), form « Informations » (nom/couleur/adresse, action `update`) + form « Reset password » séparé (action `resetPassword`, vérifie confirmation, feedback dédié `passwordError`/`passwordSuccess`). Slug affiché en lecture seule (Badge « non modifiable »).
+  - `logs/+page` : filtres en `method="GET"` (select ludo + input action), table date/ludo/action/entité/métadonnées, résolution id→nom via Map, limite 200 signalée.
+- Dashboard `(protected)/+page` : les 2 `todo` remplacés par de vrais liens-cartes vers `/admin/ludotheques` et `/admin/logs`.
+- Couleur : `<input type="color">` natif + champ hexa liés via `$state` (le service valide `#RRGGBB`).
+- `pnpm check` **0 erreur / 0 warning**, eslint OK, **85 tests verts** (aucune logique métier nouvelle).
+
+**Prochain :** Phase 4 — extraction composants réutilisables (`LudothequeCard`, `ActivityLogTable`, `ColorPicker`) + polish. Puis epic 12 (tests E2E, dont flows admin).
+
+**Pieges :** `<input type="color">` n'émet que `#rrggbb` lowercase ; le champ hexa libre reste source de vérité pour la validation serveur. Pour les forms multi-actions sur `[id]`, feedback dédié par clé (`error`/`success` vs `passwordError`/`passwordSuccess`) pour ne pas mélanger les bannières.
+
+**Commit :** (à venir — phase 3)
+
+---
+
+## Etat session 2026-06-17 (phases 1-2)
 
 **Fait :**
 
@@ -29,10 +49,10 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 
 - [x] Garde `SUPER_ADMIN_PASSWORD` — `src/routes/admin/(protected)/+layout.server.ts` (via `requireAdminContext`)
 - [x] `src/routes/admin/login/` + `logout/` — auth admin (cookie distinct)
-- [~] `src/routes/admin/(protected)/+page.svelte` — dashboard (stub, à enrichir phase 3)
-- [ ] `src/routes/admin/(protected)/ludotheques/+page.svelte` — liste + création
-- [ ] `src/routes/admin/(protected)/ludotheques/[id]/+page.svelte` — édition (couleur, password reset)
-- [ ] `src/routes/admin/(protected)/logs/+page.svelte` — logs d'activité globaux
+- [x] `src/routes/admin/(protected)/+page.svelte` — dashboard (liens actifs vers ludothèques + logs)
+- [x] `src/routes/admin/(protected)/ludotheques/+page.svelte` — liste + création (dialog)
+- [x] `src/routes/admin/(protected)/ludotheques/[id]/+page.svelte` — édition (couleur, adresse) + reset password
+- [x] `src/routes/admin/(protected)/logs/+page.svelte` — logs d'activité globaux + filtres
 
 ### Services
 
@@ -60,9 +80,9 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 ## Critères d'acceptation
 
 - [x] Accès `/admin` protégé par `SUPER_ADMIN_PASSWORD` (session admin distincte)
-- [ ] CRUD complet des ludothèques (service prêt ; UI phase 3)
-- [ ] Reset mot de passe d'une ludo (service prêt ; UI phase 3)
-- [ ] Logs d'activité consultables avec filtres ludo + type (DB/service prêts ; UI phase 3)
+- [x] CRUD complet des ludothèques (liste + création dialog + édition page)
+- [x] Reset mot de passe d'une ludo (form dédié sur la page `[id]`)
+- [x] Logs d'activité consultables avec filtres ludo + action
 - [x] Slugs validés : lowercase, sans accents, sans espaces, uniques
 
 ## Carte du code
@@ -80,7 +100,10 @@ Interface super admin pour Jonathan. Création et configuration des ludothèques
 | `src/hooks.server.ts`                   | Pose `locals.adminSession` (lue uniquement sous `/admin`)                 |
 | `src/routes/admin/login/`               | Page + action login (mot de passe → cookie)                               |
 | `src/routes/admin/logout/+server.ts`    | POST logout (clear cookie)                                                |
-| `src/routes/admin/(protected)/`         | Zone gardée : layout (garde) + dashboard stub                             |
+| `src/routes/admin/(protected)/`         | Zone gardée : layout (garde) + dashboard (liens ludothèques/logs)         |
+| `src/routes/admin/(protected)/ludotheques/`      | Liste + dialog création (load `listLudotheques`, action `create`)         |
+| `src/routes/admin/(protected)/ludotheques/[id]/` | Édition (nom/couleur/adresse) + reset password (`update`/`resetPassword`) |
+| `src/routes/admin/(protected)/logs/`             | Journal global + filtres GET (ludo/action), résolution id→nom             |
 
 ### Decisions cles
 
