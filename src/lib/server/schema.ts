@@ -79,6 +79,11 @@ export const ludotheques = pgTable('ludotheques', {
   passwordHash: text('password_hash').notNull(),
   color: text('color').notNull().default('#0073E6'),
   address: text('address'),
+  // Contact public (source : fiches Ville de Genève — voir docs/data/ludotheques-geneve.json)
+  phone: text('phone'),
+  email: text('email'),
+  website: text('website'),
+  responsible: text('responsible'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 

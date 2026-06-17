@@ -1,0 +1,478 @@
+{
+  "source": {
+    "name": "Ville de Genève - Ludothèques",
+    "url": "https://www.geneve.ch/themes/structures-accueil-enfance-activites-extrascolaires/lieux-loisirs/ludotheques",
+    "last_checked": "2026-06-17",
+    "notes": "Les horaires de vacances peuvent changer; contacter directement la ludothèque concernée."
+  },
+  "common_info": {
+    "access": "Libre et gratuit",
+    "loan_fee": "CHF 30/an par famille",
+    "services": [
+      "Jeu sur place",
+      "Emprunt de jeux et jouets",
+      "Conseils par des ludothécaires",
+      "Animations selon les lieux et les périodes"
+    ]
+  },
+  "ludotheques": [
+    {
+      "name": "Ludothèque 1-2-3 Planète",
+      "address": {
+        "street": "Avenue d'Aïre 42",
+        "postal_code": "1203",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 344 06 52",
+      "email": "ludoplanete@sunrise.ch",
+      "responsible": "Mme Diane Jolidon",
+      "source_url": "https://www.geneve.ch/ludotheque-1-2-3-planete",
+      "description": "Espace de jeu libre et emprunt de jeux/jouets pour petits et grands. Intégrée à l'école de l'Europe, en face de l'espace de quartier Le 99.",
+      "collection": {
+        "games_and_toys_count": 2000
+      },
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": ["16:30-18:30"],
+        "tuesday": ["09:30-11:30, 0-4 ans"],
+        "wednesday": ["10:00-12:00", "14:00-16:00"],
+        "thursday": ["09:30-11:30, 0-4 ans", "16:30-18:30"],
+        "friday": [],
+        "saturday": ["09:00-12:00"],
+        "sunday": []
+      },
+      "holiday_hours": "Contacter directement la ludothèque.",
+      "accessibility": {
+        "wheelchair_access": "Non accessible",
+        "wheelchair_toilets": "Non accessibles",
+        "accessible_parking": "Non",
+        "sign_language_offer": true,
+        "intellectual_disability_accommodations": true
+      }
+    },
+    {
+      "name": "Ludothèque des Eaux-Vives",
+      "address": {
+        "street": "Rue du Nant 27",
+        "postal_code": "1207",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 735 36 26",
+      "email": "ludo-ev@bluewin.ch",
+      "responsible": "M. Cédric Nicolas",
+      "source_url": "https://www.geneve.ch/ludotheque-eaux-vives",
+      "description": "Grand espace destiné aux enfants dès 2 mois et aux adultes sans limite d'âge. Animations à l'intérieur et à l'extérieur pendant les vacances selon la saison.",
+      "age_conditions": [
+        "Enfants de moins de 8 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": ["09:30-11:30", "16:00-18:00"],
+        "tuesday": ["16:00-18:00"],
+        "wednesday": ["14:00-18:00"],
+        "thursday": ["16:00-18:00, uniquement plus de 6 ans"],
+        "friday": [],
+        "saturday": ["09:30-12:30"],
+        "sunday": []
+      },
+      "holiday_hours": "Petites vacances: horaires habituels. Été: contacter la ludothèque.",
+      "accessibility": {
+        "wheelchair_access": "Non accessible",
+        "wheelchair_toilets": "Non accessibles",
+        "sign_language_offer": true
+      }
+    },
+    {
+      "name": "Ludothèque La Marelle",
+      "address": {
+        "street": "Route des Franchises 54A",
+        "postal_code": "1203",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 345 03 33",
+      "email": "ludomarelle@bluewin.ch",
+      "responsible": "M. David Abbet",
+      "source_url": "https://www.geneve.ch/ludotheque-marelle",
+      "description": "Lieu convivial centré sur le jeu, implanté à côté de l'école des Franchises depuis 1983.",
+      "collection": {
+        "games_and_toys_count": "Plusieurs milliers"
+      },
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": [],
+        "tuesday": ["10:00-12:00"],
+        "wednesday": ["10:00-12:00", "14:30-17:30"],
+        "thursday": ["16:00-18:30"],
+        "friday": ["16:00-18:30"],
+        "saturday": ["09:30-12:30"],
+        "sunday": []
+      },
+      "holiday_hours": {
+        "school_holidays": ["Monday-Thursday 14:30-17:30"],
+        "summer": ["Monday-Thursday 09:30-12:30"]
+      },
+      "accessibility": {
+        "wheelchair_access": "Non accessible",
+        "wheelchair_toilets": "Non accessibles",
+        "accessible_parking": "Non"
+      }
+    },
+    {
+      "name": "Ludothèque de Saint-Jean",
+      "address": {
+        "street": "Rue de Saint-Jean 12",
+        "postal_code": "1203",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 344 07 00",
+      "email": "ludo-stjean@bluewin.ch",
+      "website": "https://www.ludo-stjean.ch",
+      "responsible": "Madame Jeanne Grand",
+      "source_url": "https://www.geneve.ch/ludotheque-saint-jean",
+      "description": "Ludothèque ouverte en 1987, avec six espaces répartis sur deux étages et le préau.",
+      "collection": {
+        "games_and_toys_count": 2000
+      },
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": [],
+        "tuesday": ["16:00-18:30"],
+        "wednesday": ["09:30-11:30", "14:30-17:30"],
+        "thursday": ["16:00-18:30"],
+        "friday": ["09:30-11:30"],
+        "saturday": ["09:30-12:30"],
+        "sunday": []
+      },
+      "holiday_hours": {
+        "school_holidays": ["Tuesday-Friday 14:30-17:30"],
+        "summer": "Contacter directement la ludothèque."
+      },
+      "accessibility": {
+        "details_url": "Pro Infirmis"
+      }
+    },
+    {
+      "name": "Ludothèque Pré-Picot",
+      "address": {
+        "street": "Chemin Frank-Thomas 31",
+        "postal_code": "1223",
+        "city": "Cologny",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 700 66 64",
+      "email": "pre-picot@bluewin.ch",
+      "responsible": "Mme Rossella Rizzi",
+      "source_url": "https://www.geneve.ch/ludotheque-pre-picot",
+      "description": "Située dans les locaux de l'école Pré-Picot. Activités: soirées jeux, marché aux jouets, location de costumes, activités de Noël, chasse aux œufs.",
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": ["15:30-18:00"],
+        "tuesday": ["09:30-11:30"],
+        "wednesday": [
+          "15:00-18:00, enfants dès l'âge scolaire",
+          "14:00-18:00, salle Mario du para, enfants dès 7 ans, durant l'année scolaire"
+        ],
+        "thursday": ["09:30-11:30", "15:30-18:00, enfants dès l'âge scolaire"],
+        "friday": [],
+        "saturday": ["10:00-13:00"],
+        "sunday": []
+      },
+      "holiday_hours": "Horaires identiques en semaine, samedi fermé.",
+      "accessibility": {
+        "wheelchair_access": "Non accessible",
+        "wheelchair_toilets": "Non accessibles"
+      }
+    },
+    {
+      "name": "Ludothèque Prêt-Ludes",
+      "address": {
+        "street": "Rue Le-Corbusier 6",
+        "postal_code": "1208",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 346 46 86",
+      "email": "ludo.pretludes@bluewin.ch",
+      "responsible": "Mme Rossella Rizzi",
+      "source_url": "https://www.geneve.ch/ludotheque-pret-ludes",
+      "description": "Située dans l'école Le Corbusier. Jeux classiques et jeux coopératifs récents. Accueil personnalisé et participation à la vie du quartier.",
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "space_ludotheque": {
+          "monday": ["14:00-18:00"],
+          "wednesday": ["14:00-17:00"],
+          "thursday": ["15:30-18:00"],
+          "friday": ["09:30-12:00"],
+          "saturday": ["09:30-12:30"]
+        },
+        "local_children_7_plus": {
+          "wednesday": ["14:00-17:00"],
+          "thursday": ["16:00-18:00"],
+          "saturday": ["13:00-16:00"]
+        }
+      },
+      "holiday_hours": {
+        "monday": ["14:00-17:00"],
+        "tuesday": ["14:00-17:00"],
+        "wednesday": ["09:00-12:00"],
+        "thursday": ["09:00-12:00"],
+        "friday": [],
+        "saturday": []
+      },
+      "accessibility": {
+        "wheelchair_access": "Accessible",
+        "wheelchair_toilets": "Non accessibles",
+        "visual_impairment_accommodations": true
+      }
+    },
+    {
+      "name": "Ludothèque du Petit-Saconnex",
+      "address": {
+        "street": "Chemin des Genêts 14",
+        "postal_code": "1202",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 734 32 77",
+      "email": "ludopetitsaconnex@bluewin.ch",
+      "responsible": "Mme Marina Gobet-Rampini",
+      "source_url": "https://www.geneve.ch/ludotheque-petit-saconnex",
+      "description": "Espace de jeux et de rencontre pour enfants, adolescent·es et adultes. Située dans une maison de maître à côté de l'école des Genêts.",
+      "collection": {
+        "games_count": "Plus de 1300"
+      },
+      "activities": [
+        "Soirées jeux ouvertes à toutes et tous tous les deux mois"
+      ],
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": [],
+        "tuesday": ["09:30-11:30", "16:00-18:00"],
+        "wednesday": ["09:30-11:30", "14:00-18:00"],
+        "thursday": ["16:00-18:00"],
+        "friday": [],
+        "saturday": ["09:00-12:00"],
+        "sunday": []
+      },
+      "holiday_hours": {
+        "tuesday": ["14:00-18:00"],
+        "wednesday": ["14:00-18:00"],
+        "thursday": ["14:00-18:00"]
+      },
+      "accessibility": {
+        "wheelchair_access": "Accessible",
+        "wheelchair_toilets": "Non accessibles"
+      }
+    },
+    {
+      "name": "Ludothèque de la Servette",
+      "address": {
+        "street": "Rue Jean-Robert-Chouet 8",
+        "postal_code": "1202",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 733 29 96",
+      "email": "ludoservette@bluewin.ch",
+      "responsible": "Mme Nolwenn Pirossetti",
+      "source_url": "https://www.geneve.ch/ludotheque-servette",
+      "description": "Située dans le préau supérieur de l'école des Grottes. Grand espace de jeu pour petits et grands, en lien avec les institutions du quartier.",
+      "activities": [
+        "Jeux d'extérieur le mercredi après-midi si la météo le permet",
+        "Accueil familles le samedi matin",
+        "Location de costumes pour l'Escalade",
+        "Collaboration avec Autisme Genève",
+        "Jeux spécifiques pour institutions et familles concernées"
+      ],
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": [],
+        "tuesday": ["15:00-18:00"],
+        "wednesday": ["09:30-11:30", "15:00-18:00"],
+        "thursday": ["16:00-18:00"],
+        "friday": ["09:30-11:30"],
+        "saturday": ["09:30-12:30"],
+        "sunday": []
+      },
+      "holiday_hours": "Contacter directement la ludothèque.",
+      "accessibility": {
+        "wheelchair_access": "Partiellement accessible",
+        "wheelchair_toilets": "Non accessibles",
+        "accessible_parking": "Non"
+      }
+    },
+    {
+      "name": "Ludothèque des Pâquis",
+      "address": {
+        "street": "Rue de Berne 50",
+        "postal_code": "1201",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 731 20 09",
+      "email": "lu.paquissecheron@fase.ch",
+      "responsible": "Mme Alessia Ditta",
+      "source_url": "https://www.geneve.ch/ludotheque-paquis",
+      "description": "Ludothèque de quartier dans une arcade de l'école de Pâquis-Centre. Équipe multiculturelle, forte implication dans les manifestations du quartier.",
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": ["09:30-11:30"],
+        "tuesday": ["16:30-18:30"],
+        "wednesday": ["09:30-11:30", "14:30-17:30"],
+        "thursday": ["09:30-11:30", "16:30-18:30"],
+        "friday": ["16:00-18:30, 1 fois par mois Pré-Ados"],
+        "saturday": ["09:00-12:00"],
+        "sunday": []
+      },
+      "holiday_hours": "Contacter directement la ludothèque.",
+      "accessibility": {
+        "wheelchair_access": "Accessible",
+        "wheelchair_toilets": "Non accessibles"
+      }
+    },
+    {
+      "name": "Ludothèque de Sécheron",
+      "address": {
+        "street": "Anne-Torcapel 2",
+        "postal_code": "1202",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 731 94 65",
+      "email": "lu.paquissecheron@fase.ch",
+      "responsible": "Mme Alessia Ditta",
+      "source_url": "https://www.geneve.ch/ludotheque-secheron",
+      "description": "Annexe située dans l'espace de quartier Sécheron. Espace conçu pour les jeunes enfants, jeux géants en bois, prêt de jeux en développement.",
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": [],
+        "tuesday": ["16:00-18:30"],
+        "wednesday": ["09:30-11:30", "14:30-17:30"],
+        "thursday": [],
+        "friday": ["16:30-19:00, 1 fois par mois accueil jeux et goûter"],
+        "saturday": ["09:00-10:30"],
+        "sunday": []
+      },
+      "holiday_hours": "Contacter directement la ludothèque.",
+      "accessibility": {
+        "wheelchair_access": "Accessible",
+        "wheelchair_toilets": "Partiellement accessibles",
+        "accessible_parking": "Non"
+      }
+    },
+    {
+      "name": "Ludothèque Plainpalais-Jonction",
+      "address": {
+        "street": "Avenue de Sainte-Clotilde 1",
+        "postal_code": "1205",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 328 93 63",
+      "email": "ludo-jonction@sunrise.ch",
+      "responsible": "Mme Christelle Badel",
+      "source_url": "https://www.geneve.ch/ludotheque-plainpalais-jonction",
+      "description": "Arcade spacieuse indépendante des établissements scolaires. Jeux sur place et emprunt; espaces régulièrement réaménagés par thème.",
+      "collection": {
+        "games_count": "Plus de 1500"
+      },
+      "activities": [
+        "Soirée jeux chaque premier vendredi du mois durant l'année scolaire"
+      ],
+      "age_conditions": [
+        "Enfants de moins de 12 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": [],
+        "tuesday": ["15:30-18:00"],
+        "wednesday": ["09:00-11:30", "15:30-18:00"],
+        "thursday": ["09:00-11:30", "15:30-18:00"],
+        "friday": [],
+        "saturday": ["09:00-12:00"],
+        "sunday": []
+      },
+      "holiday_hours": {
+        "tuesday": ["09:00-11:30", "15:30-18:00"],
+        "wednesday": ["09:00-11:30", "15:30-18:00"],
+        "thursday": ["09:00-11:30", "15:30-18:00"]
+      },
+      "accessibility": {
+        "wheelchair_access": "Non accessible",
+        "wheelchair_toilets": "Non accessibles",
+        "accessible_parking": "Non"
+      }
+    },
+    {
+      "name": "Ludothèque centre et vieille-ville",
+      "address": {
+        "street": "Rue Julienne-Piachaud 4",
+        "postal_code": "1204",
+        "city": "Genève",
+        "country": "Suisse"
+      },
+      "phone": "+41 22 310 19 08",
+      "email": "ludocvv.ge@bluewin.ch",
+      "website": "https://www.ludovieilleville.ch",
+      "responsible": "M. Guillaume Tiran",
+      "source_url": "https://www.geneve.ch/ludotheque-centre-vieille-ville",
+      "description": "Située dans les locaux du Manège en Ville, dans des espaces réaménagés pour accueillir le public.",
+      "rules": [
+        "Chaussures non admises dans la ludothèque; elles doivent être enlevées à l'entrée"
+      ],
+      "age_conditions": [
+        "Enfants de moins de 6 ans accompagnés par un adulte"
+      ],
+      "regular_hours": {
+        "monday": ["16:00-18:00, dès 6 ans"],
+        "tuesday": ["15:00-18:00"],
+        "wednesday": ["09:30-11:30", "15:00-18:00"],
+        "thursday": ["09:30-11:30"],
+        "friday": [],
+        "saturday": ["09:30-12:30"],
+        "sunday": []
+      },
+      "holiday_hours": {
+        "monday": ["14:00-17:00"],
+        "tuesday": ["14:00-17:00"],
+        "wednesday": ["14:00-17:00"],
+        "thursday": ["09:00-12:00"]
+      },
+      "accessibility": {
+        "wheelchair_access": "Accessible",
+        "wheelchair_toilets": "Accessibles",
+        "accessible_parking": "Non"
+      }
+    }
+  ],
+  "ludobus": {
+    "count": 2,
+    "names": ["Ludobus rouge", "Ludobus bleu"],
+    "description": "Deux ludobus parcourent parcs et préaux l'été et l'hiver avec des jeux adaptés aux activités en plein air.",
+    "summer_schedule": {
+      "may_and_september": "Préaux d'écoles, lundi-jeudi, 16:00-18:30",
+      "july_and_august": "Parcs, lundi-jeudi, 15:30-19:00"
+    },
+    "winter_schedule": "Après les vacances d'automne jusqu'aux vacances de Pâques, mercredi 14:30-17:00, en alternance dans les préaux des écoles Geisendorf et Hugo-de-Senger."
+  }
+}
