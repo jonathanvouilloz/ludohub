@@ -25,6 +25,10 @@ const DOMAIN_OF: Record<NotificationType, NotificationDomain> = {
   absence_request: 'absences',
   absence_approved: 'absences',
   absence_refused: 'absences',
+  theme_installed: 'themes',
+  installation_closed: 'themes',
+  checkup_recorded: 'themes',
+  checkup_missing_item: 'themes',
 }
 
 const DOMAIN_ORDER: NotificationDomain[] = ['themes', 'reseau', 'absences']

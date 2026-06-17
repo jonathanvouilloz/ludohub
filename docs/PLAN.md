@@ -16,7 +16,7 @@
 | 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log        | M      | **DONE**     | [10-notifications.md](features/10-notifications.md)           |
 | 11  | ADMIN — Super admin (CRUD ludos, logs)                           | M      | **DONE**     | [11-admin.md](features/11-admin.md)                           |
 | 12  | TESTS E2E — Playwright flows critiques                           | M      | TODO         | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
-| 13  | THÈMES — Installations & check-ups                               | M-L    | **SPEC**     | [13-themes-checkup.md](features/13-themes-checkup.md)         |
+| 13  | THÈMES — Installations & check-ups                               | M-L    | **DONE**     | [13-themes-checkup.md](features/13-themes-checkup.md)         |
 
 ## Prochaines étapes prioritaires
 
@@ -77,3 +77,4 @@
 | 08  | NAVIGATION — Shell (sidebar desktop + tab bar mobile) | 2026-06-16  |
 | 09  | WISHLIST + MATÉRIEL — Listes internes simples         | 2026-06-16  |
 | 10  | NOTIFICATIONS — Notifs in-app + dispatcher            | 2026-06-16  |
+| 13  | THÈMES — Installations & check-ups (« mini theme kit ») | 2026-06-17  |

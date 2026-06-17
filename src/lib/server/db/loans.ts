@@ -8,6 +8,17 @@ export async function getActiveLoanForTheme(themeId: string) {
   })
 }
 
+/** Prêt actif d'un thème vers une ludo donnée (autorise l'installation côté emprunteur). */
+export async function getActiveLoanToLudo(themeId: string, toLudoId: string) {
+  return db.query.themeLoans.findFirst({
+    where: and(
+      eq(themeLoans.themeId, themeId),
+      eq(themeLoans.toLudoId, toLudoId),
+      eq(themeLoans.status, 'actif'),
+    ),
+  })
+}
+
 /** Prêt « ouvrant » : actif ou en attente de confirmation. Bloque push & pull. */
 export async function getOpenLoanForTheme(themeId: string) {
   return db.query.themeLoans.findFirst({

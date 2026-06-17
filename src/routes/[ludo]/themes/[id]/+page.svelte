@@ -8,6 +8,7 @@
   import ThemeItemList from '$lib/components/themes/ThemeItemList.svelte'
   import ThemeImageGallery from '$lib/components/themes/ThemeImageGallery.svelte'
   import LoanDialog from '$lib/components/themes/LoanDialog.svelte'
+  import InstallDialog from '$lib/components/themes/InstallDialog.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
   let { data, form } = $props()
@@ -19,7 +20,10 @@
   // L'historique exclut les demandes en attente (affichées dans leur section dédiée).
   const history = $derived((theme.loans ?? []).filter((l) => l.status !== 'en_attente'))
 
+  const activeInstallation = $derived(data.activeInstallation)
+
   let loanOpen = $state(false)
+  let installOpen = $state(false)
 
   const statusLabels: Record<string, string> = {
     actif: 'En prêt',
@@ -43,6 +47,9 @@
       </h1>
     </div>
     <div class="head-actions">
+      {#if editable && !activeInstallation}
+        <Button variant="outline" onclick={() => (installOpen = true)}>Installer</Button>
+      {/if}
       {#if editable && !activeLoan}
         <Button onclick={() => (loanOpen = true)}>Prêter</Button>
       {/if}
@@ -97,6 +104,25 @@
       <form method="POST" action="?/returnLoan" use:enhance>
         <input type="hidden" name="loanId" value={activeLoan.id} />
         <Button type="submit" variant="outline" size="sm">Marquer comme retourné</Button>
+      </form>
+    </section>
+  {/if}
+
+  {#if activeInstallation}
+    <section class="loan-active">
+      <div>
+        <strong>Installé</strong> depuis le {formatDateShort(activeInstallation.installedAt)}
+        <span class="muted"> · {activeInstallation.items.length} item(s) sortis</span>
+        <a
+          class="install-link"
+          href="/{data.ludo.slug}/themes/{theme.id}/installations/{activeInstallation.id}"
+        >
+          Voir / check-up
+        </a>
+      </div>
+      <form method="POST" action="?/closeInstallation" use:enhance>
+        <input type="hidden" name="installationId" value={activeInstallation.id} />
+        <Button type="submit" variant="outline" size="sm">Clôturer l'installation</Button>
       </form>
     </section>
   {/if}
@@ -170,6 +196,7 @@
   </div>
 
   <LoanDialog bind:open={loanOpen} themeId={theme.id} ludos={data.ludos} />
+  <InstallDialog bind:open={installOpen} items={theme.items ?? []} />
 </main>
 
 <style>
@@ -323,5 +350,10 @@
   }
   .muted {
     color: var(--text-muted);
+  }
+  .install-link {
+    margin-left: var(--space-2);
+    color: var(--ludo-color, var(--primary));
+    font-size: var(--text-small);
   }
 </style>

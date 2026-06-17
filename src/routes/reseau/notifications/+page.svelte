@@ -27,6 +27,10 @@
       absence_request: `/${slug}/absences`,
       absence_approved: `/${slug}/absences`,
       absence_refused: `/${slug}/absences`,
+      theme_installed: `/${slug}/themes`,
+      installation_closed: `/${slug}/themes`,
+      checkup_recorded: `/${slug}/themes`,
+      checkup_missing_item: `/${slug}/themes`,
     }
     return byType[n.type]
   }

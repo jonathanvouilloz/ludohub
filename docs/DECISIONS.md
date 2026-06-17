@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-17 | Notifs check-up : deep-link vers la liste thèmes (pas l'installation précise)
+
+**Contexte :** La table `notifications` ne stocke pas de `metadata` (seul `activity_log` l'a). Les 4 nouveaux types de notif liés aux installations (`theme_installed`, `installation_closed`, `checkup_recorded`, `checkup_missing_item`) n'ont donc pas accès au `themeId` pour construire l'URL `/[slug]/themes/[themeId]/installations/[iid]`.
+
+**Décision :** Faire pointer ces notifs vers la liste `/[slug]/themes` (domaine `themes`). Suffisant pour le MVP : la notif actionnable (`checkup_missing_item`) attire l'attention, l'utilisateur navigue ensuite.
+
+**Alternatives :** Ajouter une colonne `metadata jsonb` à `notifications` (rejeté pour l'instant : surdimensionné pour un seul cas) ; stocker `entityId = themeId` au lieu de `installationId` (rejeté : casse la cohérence `entityType=installation`).
+
+---
+
 ## 2026-06-17 | Thèmes : séparer « contenu complet » (référence) et « installé » (sous-ensemble contrôlé)
 
 **Contexte :** `theme_items` était une liste plate. Or un thème complet vit dans une caisse ; à chaque animation on n'en sort qu'un sous-ensemble (~70-80 %), et seul ce sous-ensemble fait l'objet de check-ups quotidiens. Fonctionnalité présente sur samediLudoV2, jamais portée. (Spec : epic 13.)

@@ -1,6 +1,22 @@
 # Feature : THÈMES — Installations & check-ups
 
-**Epic :** 13 | **Taille :** M-L | **Statut :** SPEC (à faire)
+**Epic :** 13 | **Taille :** M-L | **Statut :** DONE
+
+## Etat session 2026-06-17 (b)
+
+**Fait :**
+
+- Implémentation complète des 4 phases (schema → DB/services → pages/composants → tests).
+- Schema : 2 enums + 4 tables (`theme_installations`, `theme_installation_items`, `theme_checkups`, `theme_checkup_items`) + relations + types + 4 nouveaux `notificationType`. `db:push` joué par Jonathan.
+- Services : `installTheme` / `closeInstallationForLudo` / `recordCheckup` (notif responsables si item manquant via `emitEvent`, autorisation owner OU prêt actif). `db/installations.ts` + `getActiveLoanToLudo`.
+- UI : bouton « Installer » + bloc « Installé depuis… » sur la fiche thème, route détail `installations/[iid]`, composants `InstallDialog` / `CheckupForm` / `CheckupHistory`. Tweak : input number quantité retiré du form d'ajout d'item (quantité visuelle, schema conservé).
+- Tests : `installations.test.ts` 15/15 ; suite complète 100/100 ; `pnpm check` + lint + prettier verts.
+
+**Prochain :** Epic terminé. Flows e2e (installer → check-up manquant → historique) reportés à l'epic 12-TESTS. Optionnel : exposer l'install côté ludo emprunteuse (le service l'autorise déjà, mais la fiche thème est owner-only).
+**Pièges :** Les notifications ne stockent pas de `metadata` (table sans colonne) → les 4 nouveaux types de notif pointent vers `/[slug]/themes` (liste), pas vers l'installation précise. Le `themeId` est dans `activity_log.metadata` uniquement.
+**Commit :** [à renseigner après commit] feat(themes): installations & check-ups (epic 13)
+
+---
 
 ## Etat session 2026-06-17
 
@@ -18,29 +34,34 @@
 
 ## Carte du code
 
-> À compléter lors de l'implémentation. Fichiers cibles prévus ci-dessous.
+> Mise à jour : 2026-06-17
 
-| Fichier (prévu)                                              | Role                                                            |
-| ----------------------------------------------------------- | -------------------------------------------------------------- |
-| `src/lib/server/schema.ts`                                  | + tables `theme_installations`, `theme_installation_items`, `theme_checkups`, `theme_checkup_items` + enums + relations + types |
-| `src/lib/server/db/installations.ts`                        | Queries installations + check-ups                              |
-| `src/lib/server/services/installations.ts`                  | Logique : installer (sélection sous-ensemble), clôturer, enregistrer un check-up |
-| `src/routes/[ludo]/themes/[id]/+page.server.ts`             | + actions installer/clôturer (réutilise la fiche thème existante) |
-| `src/routes/[ludo]/themes/[id]/installations/+page.*`       | Historique des installations d'un thème (option)               |
-| `src/routes/[ludo]/themes/[id]/installations/[iid]/+page.*` | Détail installation : sous-ensemble + check-ups + bouton « nouveau check-up » |
-| `src/lib/components/themes/InstallDialog.svelte`            | Sélection du sous-ensemble d'items à sortir                    |
-| `src/lib/components/themes/CheckupForm.svelte`              | Checklist présent/manquant (quantité dans le label)            |
-| `src/lib/components/themes/CheckupHistory.svelte`           | Historique des check-ups d'une installation                    |
+| Fichier                                                          | Role                                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `src/lib/server/schema.ts`                                      | 2 enums (`installation_status`, `checkup_item_status`) + 4 tables + relations + types + 4 nouveaux `notificationType` |
+| `src/lib/server/db/installations.ts`                            | Queries : `getActiveInstallation`, `getInstallationDetail`, `createInstallation`, `closeInstallation`, `createCheckup`, `listInstallations` |
+| `src/lib/server/db/loans.ts`                                    | + `getActiveLoanToLudo(themeId, toLudoId)` (autorisation install côté emprunteur)          |
+| `src/lib/server/services/installations.ts`                      | `installTheme`, `closeInstallationForLudo`, `recordCheckup` + lectures ; garde-fous + `emitEvent` |
+| `src/lib/server/services/events.ts`                             | + mappings `SEVERITY` des 4 nouveaux types (`checkup_missing_item` = `action_required`)     |
+| `src/lib/server/services/notifications.ts`                      | + `DOMAIN_OF` des 4 types (domaine `themes`)                                                |
+| `src/routes/[ludo]/themes/[id]/+page.server.ts`                 | load `activeInstallation` + actions `installTheme` / `closeInstallation`                    |
+| `src/routes/[ludo]/themes/[id]/+page.svelte`                    | Bouton « Installer » + bloc « Installé depuis… » + `InstallDialog` monté                    |
+| `src/routes/[ludo]/themes/[id]/installations/[iid]/+page.*`     | Détail installation : sous-ensemble + nouveau check-up + historique ; action `recordCheckup` |
+| `src/lib/components/themes/InstallDialog.svelte`                | Cases à cocher du sous-ensemble (tout coché par défaut), items archivés exclus              |
+| `src/lib/components/themes/CheckupForm.svelte`                  | Toggle présent/manquant par item (label `Nom ×quantité`) + note                             |
+| `src/lib/components/themes/CheckupHistory.svelte`              | Table date / auteur / présents / manquants                                                 |
+| `src/lib/components/themes/ThemeItemList.svelte`                | Input number quantité retiré du form d'ajout (quantité visuelle ; schema conservé)          |
+| `src/lib/server/services/installations.test.ts`                | 15 tests (1 install en cours, sous-ensemble vide/hors thème refusé, autorisation, check-up clôturé) |
+| `src/routes/reseau/notifications/+page.svelte`                  | + deep-links des 4 nouveaux types (→ `/[slug]/themes`)                                      |
 
 ### Décisions clés (à respecter)
 
-- **`theme_items` = liste de référence complète** (contenu total du thème, ce qui dort dans la grosse boîte plastique). On NE la modifie PAS lors d'une installation.
-- **Installation = sous-ensemble sorti** pour l'animation (souvent 70-80% du contenu). Historisée et datée (qui, quand). Une seule installation `en_cours` par thème à la fois.
-- **Check-up = contrôle quotidien** rattaché à une installation. Porte uniquement sur les items installés (ce qui bouge). Ce qui reste en caisse ne bouge pas → pas de check-up dessus.
-- **Granularité check-up = présent / manquant par item** (binaire). La quantité de l'item s'affiche dans le **label** (ex. « Cartes (×52) »), pas en input chiffré.
-- **Tous les membres actifs** peuvent installer / clôturer / faire un check-up (cohérent avec epic 06 : actions via `requireLudoContext`, pas responsable).
-- **Installation par le propriétaire OU l'emprunteur d'un prêt actif** (voir Décisions tranchées). `ludo_id` = ludo où le thème est physiquement installé.
-- Réutiliser le dispatcher `emitEvent` (epic 10) pour journaliser install/clôture/check-up dans `activity_log`. **Check-up avec ≥1 item manquant → notif** aux membres de la ludo.
+- **`theme_items` = liste de référence complète** (contenu total de la caisse). JAMAIS modifiée par une installation.
+- **Installation = sous-ensemble sorti**, daté/historisé. Une seule `en_cours` par thème (bouton « Installer » masqué sinon).
+- **Check-up = présent / manquant binaire** par item installé. Quantité dans le **label**, pas en input.
+- **Autorisation install : propriétaire OU emprunteur d'un prêt actif** (`getActiveLoanToLudo`). En pratique la fiche thème est owner-only (le `load` 404 sinon), donc la branche emprunteur n'est pas exposée par l'UI pour l'instant.
+- **`emitEvent` (epic 10)** journalise install/clôture/check-up dans `activity_log` ; **check-up avec ≥1 manquant → notif `action_required` aux responsables** (`recipientResponsablesOf`).
+- **Notifications sans `metadata`** : les 4 types pointent vers la liste `/[slug]/themes`, pas vers l'installation précise (le `themeId` n'est dispo que dans `activity_log.metadata`).
 
 ## Description
 
@@ -113,30 +134,30 @@ theme_checkup_items       (id, checkup_id, installation_item_id, status, note)
 
 ### Phase 1 — Schema
 
-- [ ] 4 tables + 3 enums (`installation_status`, `checkup_item_status`) dans `schema.ts`
-- [ ] Relations Drizzle + types (`ThemeInstallationRow`, `ThemeCheckupRow`, …)
-- [ ] `pnpm db:push` vers Neon
+- [x] 4 tables + 2 enums (`installation_status`, `checkup_item_status`) dans `schema.ts`
+- [x] Relations Drizzle + types (`ThemeInstallationRow`, `ThemeCheckupRow`, …)
+- [x] `pnpm db:push` vers Neon
 
 ### Phase 2 — DB + Services
 
-- [ ] `db/installations.ts` : créer installation + items, lister, détail (with check-ups), check-up actif
-- [ ] `services/installations.ts` :
+- [x] `db/installations.ts` : créer installation + items, lister, détail (with check-ups), check-up actif
+- [x] `services/installations.ts` :
   - `installTheme(themeId, ludoId, memberId, itemIds[], note?)` → refuse si installation `en_cours` existe ; refuse si `itemIds` vide / hors thème
-  - `closeInstallation(installationId, ludoId)`
-  - `recordCheckup(installationId, memberId, statuses[], note?)` → refuse si installation clôturée
-  - `getInstallationDetail`, `listInstallations(themeId)`
-- [ ] Journalisation via `emitEvent` (install / clôture / check-up)
+  - `closeInstallationForLudo(installationId, ludoId)`
+  - `recordCheckup(installationId, ludoId, memberId, statuses[], note?)` → refuse si installation clôturée
+  - `getInstallationForLudo`, `listInstallationsForTheme(themeId)`
+- [x] Journalisation via `emitEvent` (install / clôture / check-up)
 
 ### Phase 3 — Pages & composants
 
-- [ ] Actions installer/clôturer sur `[ludo]/themes/[id]/+page.server.ts` + bloc « Installation en cours » sur la fiche
-- [ ] Route détail installation (sous-ensemble + check-ups + nouveau check-up)
-- [ ] `InstallDialog.svelte`, `CheckupForm.svelte`, `CheckupHistory.svelte`
+- [x] Actions installer/clôturer sur `[ludo]/themes/[id]/+page.server.ts` + bloc « Installation en cours » sur la fiche
+- [x] Route détail installation (sous-ensemble + check-ups + nouveau check-up)
+- [x] `InstallDialog.svelte`, `CheckupForm.svelte`, `CheckupHistory.svelte`
 
 ### Phase 4 — Tests
 
-- [ ] `services/installations.test.ts` (1 seule installation en cours, sous-ensemble vide refusé, check-up sur installation clôturée refusé)
-- [ ] e2e : installer → check-up avec un item manquant → historique
+- [x] `services/installations.test.ts` (1 seule installation en cours, sous-ensemble vide refusé, check-up sur installation clôturée refusé) — 15 tests
+- [ ] e2e : installer → check-up avec un item manquant → historique (reporté à l'epic 12)
 
 ## Edge cases
 

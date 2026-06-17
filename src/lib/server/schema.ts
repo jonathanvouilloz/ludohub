@@ -267,6 +267,7 @@ export const themesRelations = relations(themes, ({ one, many }) => ({
   items: many(themeItems),
   images: many(themeImages),
   loans: many(themeLoans),
+  installations: many(themeInstallations),
 }))
 
 export const themeItemsRelations = relations(themeItems, ({ one }) => ({
@@ -295,6 +296,121 @@ export const themeLoansRelations = relations(themeLoans, ({ one }) => ({
   toLudo: one(ludotheques, {
     fields: [themeLoans.toLudoId],
     references: [ludotheques.id],
+  }),
+}))
+
+// ─── Thèmes : installations & check-ups ──────────────────────────────────────
+// Une installation = sous-ensemble d'items d'un thème sorti pour une animation
+// (le « mini theme kit »). Un check-up = contrôle daté présent/manquant des items
+// installés. La liste de référence `theme_items` (contenu total de la caisse)
+// n'est jamais modifiée par ces tables. Voir docs/features/13-themes-checkup.md.
+
+export const installationStatus = pgEnum('installation_status', ['en_cours', 'cloturee'])
+
+export const checkupItemStatus = pgEnum('checkup_item_status', ['present', 'manquant'])
+
+export const themeInstallations = pgTable('theme_installations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  themeId: uuid('theme_id')
+    .notNull()
+    .references(() => themes.id, { onDelete: 'cascade' }),
+  // Ludo où le thème est physiquement installé (propriétaire ou emprunteuse).
+  ludoId: uuid('ludo_id')
+    .notNull()
+    .references(() => ludotheques.id),
+  installedByMemberId: uuid('installed_by_member_id')
+    .notNull()
+    .references(() => members.id),
+  installedAt: timestamp('installed_at').notNull().defaultNow(),
+  closedAt: timestamp('closed_at'),
+  status: installationStatus('status').notNull().default('en_cours'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const themeInstallationItems = pgTable('theme_installation_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  installationId: uuid('installation_id')
+    .notNull()
+    .references(() => themeInstallations.id, { onDelete: 'cascade' }),
+  themeItemId: uuid('theme_item_id')
+    .notNull()
+    .references(() => themeItems.id, { onDelete: 'cascade' }),
+})
+
+export const themeCheckups = pgTable('theme_checkups', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  installationId: uuid('installation_id')
+    .notNull()
+    .references(() => themeInstallations.id, { onDelete: 'cascade' }),
+  checkedByMemberId: uuid('checked_by_member_id')
+    .notNull()
+    .references(() => members.id),
+  checkedAt: timestamp('checked_at').notNull().defaultNow(),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const themeCheckupItems = pgTable('theme_checkup_items', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  checkupId: uuid('checkup_id')
+    .notNull()
+    .references(() => themeCheckups.id, { onDelete: 'cascade' }),
+  installationItemId: uuid('installation_item_id')
+    .notNull()
+    .references(() => themeInstallationItems.id, { onDelete: 'cascade' }),
+  status: checkupItemStatus('status').notNull(),
+  note: text('note'),
+})
+
+export const themeInstallationsRelations = relations(themeInstallations, ({ one, many }) => ({
+  theme: one(themes, {
+    fields: [themeInstallations.themeId],
+    references: [themes.id],
+  }),
+  ludo: one(ludotheques, {
+    fields: [themeInstallations.ludoId],
+    references: [ludotheques.id],
+  }),
+  installedBy: one(members, {
+    fields: [themeInstallations.installedByMemberId],
+    references: [members.id],
+  }),
+  items: many(themeInstallationItems),
+  checkups: many(themeCheckups),
+}))
+
+export const themeInstallationItemsRelations = relations(themeInstallationItems, ({ one }) => ({
+  installation: one(themeInstallations, {
+    fields: [themeInstallationItems.installationId],
+    references: [themeInstallations.id],
+  }),
+  themeItem: one(themeItems, {
+    fields: [themeInstallationItems.themeItemId],
+    references: [themeItems.id],
+  }),
+}))
+
+export const themeCheckupsRelations = relations(themeCheckups, ({ one, many }) => ({
+  installation: one(themeInstallations, {
+    fields: [themeCheckups.installationId],
+    references: [themeInstallations.id],
+  }),
+  checkedBy: one(members, {
+    fields: [themeCheckups.checkedByMemberId],
+    references: [members.id],
+  }),
+  items: many(themeCheckupItems),
+}))
+
+export const themeCheckupItemsRelations = relations(themeCheckupItems, ({ one }) => ({
+  checkup: one(themeCheckups, {
+    fields: [themeCheckupItems.checkupId],
+    references: [themeCheckups.id],
+  }),
+  installationItem: one(themeInstallationItems, {
+    fields: [themeCheckupItems.installationItemId],
+    references: [themeInstallationItems.id],
   }),
 }))
 
@@ -438,6 +554,10 @@ export const notificationType = pgEnum('notification_type', [
   'absence_request',
   'absence_approved',
   'absence_refused',
+  'theme_installed',
+  'installation_closed',
+  'checkup_recorded',
+  'checkup_missing_item',
 ])
 
 export const notificationSeverity = pgEnum('notification_severity', ['info', 'action_required'])
@@ -494,6 +614,14 @@ export type ThemeImageRow = typeof themeImages.$inferSelect
 export type ThemeImageInsert = typeof themeImages.$inferInsert
 export type ThemeLoanRow = typeof themeLoans.$inferSelect
 export type ThemeLoanInsert = typeof themeLoans.$inferInsert
+export type ThemeInstallationRow = typeof themeInstallations.$inferSelect
+export type ThemeInstallationInsert = typeof themeInstallations.$inferInsert
+export type ThemeInstallationItemRow = typeof themeInstallationItems.$inferSelect
+export type ThemeInstallationItemInsert = typeof themeInstallationItems.$inferInsert
+export type ThemeCheckupRow = typeof themeCheckups.$inferSelect
+export type ThemeCheckupInsert = typeof themeCheckups.$inferInsert
+export type ThemeCheckupItemRow = typeof themeCheckupItems.$inferSelect
+export type ThemeCheckupItemInsert = typeof themeCheckupItems.$inferInsert
 export type HelpRequestRow = typeof helpRequests.$inferSelect
 export type HelpResponseRow = typeof helpResponses.$inferSelect
 export type GameWishRow = typeof gameWishes.$inferSelect

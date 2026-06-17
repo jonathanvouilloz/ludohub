@@ -9,7 +9,6 @@
   let { items, editable }: { items: ThemeItem[]; editable: boolean } = $props()
 
   let name = $state('')
-  let quantity = $state('1')
   let adding = $state(false)
 </script>
 
@@ -43,7 +42,6 @@
         return async ({ update }) => {
           adding = false
           name = ''
-          quantity = '1'
           await update()
         }
       }}
@@ -51,10 +49,6 @@
       <div class="field grow">
         <Label for="item-name">Nouvel item</Label>
         <Input id="item-name" name="name" bind:value={name} placeholder="Nom de l'item" required />
-      </div>
-      <div class="field">
-        <Label for="item-qty">Quantité</Label>
-        <Input id="item-qty" name="quantity" type="number" min="1" bind:value={quantity} />
       </div>
       <Button type="submit" disabled={adding || !name.trim()}>Ajouter</Button>
     </form>
@@ -108,8 +102,5 @@
   }
   .field.grow {
     flex: 1;
-  }
-  .field :global(input[type='number']) {
-    width: 6rem;
   }
 </style>

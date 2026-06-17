@@ -17,6 +17,12 @@ import {
   returnTheme,
   LoanServiceError,
 } from '$lib/server/services/loans.js'
+import {
+  closeInstallationForLudo,
+  getActiveInstallationForTheme,
+  installTheme,
+  InstallationServiceError,
+} from '$lib/server/services/installations.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params, parent }) => {
@@ -24,8 +30,9 @@ export const load: PageServerLoad = async ({ params, parent }) => {
   const theme = await getThemeDetail(params.id, ludo.id).catch(() => null)
   if (!theme) throw error(404, 'Thème introuvable')
 
+  const activeInstallation = await getActiveInstallationForTheme(theme.id)
   const ludos = await getOtherLudos(ludo.id)
-  return { theme, ludos: ludos.map((l) => ({ id: l.id, name: l.name })) }
+  return { theme, activeInstallation, ludos: ludos.map((l) => ({ id: l.id, name: l.name })) }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -33,7 +40,11 @@ async function run(fn: () => Promise<unknown>) {
     await fn()
     return { success: true }
   } catch (err) {
-    if (err instanceof ThemeServiceError || err instanceof LoanServiceError) {
+    if (
+      err instanceof ThemeServiceError ||
+      err instanceof LoanServiceError ||
+      err instanceof InstallationServiceError
+    ) {
       return fail(400, { error: err.message })
     }
     throw err
@@ -114,5 +125,26 @@ export const actions: Actions = {
     const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
     return run(() => declineLoanRequest(String(data.get('loanId') ?? ''), ludo.id))
+  },
+
+  installTheme: async (event) => {
+    const { ludo, member } = await requireLudoContext(event)
+    const data = await event.request.formData()
+    const itemIds = data.getAll('itemIds').map(String)
+    return run(() =>
+      installTheme(
+        event.params.id as string,
+        ludo.id,
+        member.id,
+        itemIds,
+        String(data.get('notes') ?? ''),
+      ),
+    )
+  },
+
+  closeInstallation: async (event) => {
+    const { ludo } = await requireLudoContext(event)
+    const data = await event.request.formData()
+    return run(() => closeInstallationForLudo(String(data.get('installationId') ?? ''), ludo.id))
   },
 }
