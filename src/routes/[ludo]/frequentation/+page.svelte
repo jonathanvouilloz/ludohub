@@ -386,11 +386,13 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
-    padding: 0 var(--space-4) var(--space-4);
+    padding: var(--space-4);
     border-top: 1px solid var(--border);
+    /* Corps du mois teinté (le header reste sur fond carte) → contraste léger. */
+    background: var(--primary-light);
   }
   .group-body .breakdown {
-    margin-top: var(--space-3);
+    margin-top: 0;
   }
 
   /* Mobile : on masque les stats (Σ saison + répartitions par période) et on ne
@@ -402,6 +404,20 @@
     }
     .group-body {
       padding-top: var(--space-3);
+    }
+    /* Mois/semaine à gauche, sélecteur de saison sur la même ligne, à droite. */
+    .toolbar {
+      flex-wrap: nowrap;
+    }
+    .segmented {
+      order: 1;
+      flex-shrink: 0;
+    }
+    .season-select {
+      order: 2;
+      min-width: 0;
+      flex: 0 1 auto;
+      margin-left: auto;
     }
   }
 </style>

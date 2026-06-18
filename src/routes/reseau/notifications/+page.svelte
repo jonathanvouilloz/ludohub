@@ -224,7 +224,10 @@
     box-shadow: var(--shadow-focus);
   }
   .notif--unread .notif__btn {
-    border-left: 3px solid var(--ludo-color);
+    background: var(--primary-light);
+  }
+  .notif--unread .notif__btn:hover {
+    background: color-mix(in srgb, var(--primary-light) 70%, var(--bg-hover));
   }
   .notif__main {
     display: flex;

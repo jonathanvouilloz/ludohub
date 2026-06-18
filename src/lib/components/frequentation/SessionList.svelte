@@ -7,7 +7,7 @@
   import { DataCard } from '$lib/components/ui/data-card/index.js'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
-  import { formatDateShort } from '$lib/utils/dates.js'
+  import { formatDateShort, formatDayWeekday } from '$lib/utils/dates.js'
   import type { AttendanceRow } from '$lib/server/schema'
 
   let { records, onEdit }: { records: AttendanceRow[]; onEdit: (record: AttendanceRow) => void } =
@@ -109,7 +109,7 @@
           <li><span>Retours</span><strong>{r.returnsCount}</strong></li>
         </ul>
       {/snippet}
-      <DataCard title={formatDateShort(r.date)} accent="var(--ludo-color)" notes={counts}>
+      <DataCard title={formatDayWeekday(r.date)} spacedFooter notes={counts}>
         {#snippet byline()}{periodText(r)} · {weatherText(r)}{/snippet}
         {#snippet actions()}{@render rowActions(r)}{/snippet}
       </DataCard>

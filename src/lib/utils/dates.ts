@@ -51,6 +51,16 @@ export function formatDayMonth(date: Date | string): string {
 }
 
 /**
+ * Formate « Jour jj mois » (ex. « Lundi 6 juin »), 1re lettre capitalisée, sans
+ * année. Pour les titres de cartes (relevé de fréquentation).
+ */
+export function formatDayWeekday(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date
+  const s = d.toLocaleDateString('fr-CH', { weekday: 'long', day: 'numeric', month: 'long' })
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+/**
  * Clé/libellé mois-année (ex. « juin 2026 »), pour grouper la timeline par mois.
  */
 export function formatMonthYear(date: Date | string): string {
