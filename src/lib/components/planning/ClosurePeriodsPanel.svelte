@@ -3,14 +3,18 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import DatePicker from '$lib/components/ui/date-picker/DatePicker.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
+  import { geAcademicYear } from '$lib/utils/ge-vacances.js'
   import type { ClosurePeriodRow } from '$lib/server/schema'
 
   let {
     closures,
+    seasonStartDate = '',
     readOnly = false,
   }: {
     closures: ClosurePeriodRow[]
+    seasonStartDate?: string
     readOnly?: boolean
   } = $props()
 
@@ -19,13 +23,63 @@
   let endDate = $state('')
   let error = $state('')
   let submitting = $state(false)
+
+  // Import depuis ge.ch
+  let importing = $state(false)
+  let importCount = $state<number | null>(null)
+  let importError = $state('')
+
+  const academicYear = $derived(seasonStartDate ? geAcademicYear(seasonStartDate) : '')
 </script>
 
 <section class="panel">
-  <h2>Vacances & fermetures</h2>
-  <p class="hint">
-    Les samedis tombant dans une plage sont affichés « fermés » et ne comptent pas dans l'effectif.
-  </p>
+  <div class="panel-header">
+    <div>
+      <h2>Vacances & fermetures</h2>
+      <p class="hint">
+        Les samedis tombant dans une plage sont affichés « fermés » et ne comptent pas dans l'effectif.
+      </p>
+    </div>
+
+    {#if !readOnly && seasonStartDate}
+      <form
+        method="POST"
+        action="?/importFromGE"
+        use:enhance={() => {
+          importing = true
+          importCount = null
+          importError = ''
+          return async ({ result, update }) => {
+            importing = false
+            if (result.type === 'failure') {
+              importError = String(result.data?.error ?? "Erreur lors de l'import.")
+            } else if (result.type === 'success' && result.data) {
+              importCount = (result.data as { imported: number }).imported
+            }
+            await update()
+          }
+        }}
+      >
+        <div class="import-row">
+          <Button type="submit" variant="outline" size="sm" disabled={importing}>
+            {importing ? 'Import en cours…' : '↓ Importer ge.ch'}
+          </Button>
+          {#if academicYear}
+            <span class="import-year">{academicYear}</span>
+          {/if}
+        </div>
+      </form>
+    {/if}
+  </div>
+
+  {#if importCount !== null}
+    <p class="import-ok" role="status">
+      ✓ {importCount} période{importCount !== 1 ? 's' : ''} importée{importCount !== 1 ? 's' : ''} depuis ge.ch
+    </p>
+  {/if}
+  {#if importError}
+    <p class="error" role="alert">{importError}</p>
+  {/if}
 
   {#if closures.length === 0}
     <p class="muted">Aucune plage pour cette saison.</p>
@@ -75,12 +129,12 @@
         <Input id="closure-label" name="label" bind:value={label} placeholder="Vacances d'été" />
       </div>
       <div class="field">
-        <Label for="closure-start">Du</Label>
-        <Input id="closure-start" name="startDate" type="date" bind:value={startDate} />
+        <Label>Du</Label>
+        <DatePicker bind:value={startDate} name="startDate" placeholder="Date de début" />
       </div>
       <div class="field">
-        <Label for="closure-end">Au</Label>
-        <Input id="closure-end" name="endDate" type="date" bind:value={endDate} />
+        <Label>Au</Label>
+        <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" />
       </div>
       <Button type="submit" disabled={submitting || !label || !startDate || !endDate}>
         {submitting ? 'Ajout…' : 'Ajouter'}
@@ -98,19 +152,43 @@
     padding-top: var(--space-6);
     border-top: 1px solid var(--border);
   }
+  .panel-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+  }
   h2 {
     color: var(--text-main);
     margin: 0 0 var(--space-1);
     font-size: var(--text-h2);
   }
   .hint {
-    margin: 0 0 var(--space-4);
+    margin: 0;
     color: var(--text-muted);
     font-size: var(--text-small);
+  }
+  .import-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    white-space: nowrap;
+  }
+  .import-year {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+  .import-ok {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-small);
+    color: var(--success, #16a34a);
   }
   .muted {
     color: var(--text-muted);
     font-size: var(--text-small);
+    margin-bottom: var(--space-4);
   }
   .list {
     list-style: none;
@@ -126,7 +204,8 @@
     justify-content: space-between;
     gap: var(--space-4);
     padding: var(--space-3) var(--space-4);
-    background: var(--warning-light);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
   }
   .range {

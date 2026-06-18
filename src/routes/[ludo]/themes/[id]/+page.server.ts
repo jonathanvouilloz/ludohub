@@ -1,9 +1,11 @@
-import { error, fail } from '@sveltejs/kit'
+import { error, fail, redirect } from '@sveltejs/kit'
 import { getOtherLudos } from '$lib/server/db/ludotheques.js'
-import { requireLudoContext } from '$lib/server/ludo-context.js'
+import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
+import { isResponsable } from '$lib/utils/permissions.js'
 import {
   addItem,
   archiveTheme,
+  deleteThemeForLudo,
   editTheme,
   getThemeDetail,
   removeItem,
@@ -26,13 +28,18 @@ import {
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params, parent }) => {
-  const { ludo } = await parent()
+  const { ludo, currentMember } = await parent()
   const theme = await getThemeDetail(params.id, ludo.id).catch(() => null)
   if (!theme) throw error(404, 'Thème introuvable')
 
   const activeInstallation = await getActiveInstallationForTheme(theme.id)
   const ludos = await getOtherLudos(ludo.id)
-  return { theme, activeInstallation, ludos: ludos.map((l) => ({ id: l.id, name: l.name })) }
+  return {
+    theme,
+    activeInstallation,
+    responsable: isResponsable(currentMember),
+    ludos: ludos.map((l) => ({ id: l.id, name: l.name })),
+  }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -146,5 +153,17 @@ export const actions: Actions = {
     const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
     return run(() => closeInstallationForLudo(String(data.get('installationId') ?? ''), ludo.id))
+  },
+
+  // Suppression définitive du thème (responsables uniquement).
+  delete: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    try {
+      await deleteThemeForLudo(event.params.id as string, ludo.id)
+    } catch (err) {
+      if (err instanceof ThemeServiceError) return fail(400, { error: err.message })
+      throw err
+    }
+    throw redirect(303, `/${ludo.slug}/themes`)
   },
 }

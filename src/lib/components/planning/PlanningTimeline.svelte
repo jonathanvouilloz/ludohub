@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import * as Select from '$lib/components/ui/select/index.js'
+  import { Badge } from '$lib/components/ui/badge/index.js'
   import AssignMemberDialog from './AssignMemberDialog.svelte'
   import MemberSwapDialog from './MemberSwapDialog.svelte'
   import {
@@ -115,7 +116,7 @@
     <div class="row-main">
       <div class="date">
         <strong>{formatDayMonth(slot.date)}</strong>
-        {#if isNext}<span class="badge-next">Prochain</span>{/if}
+        {#if isNext}<Badge>Prochain</Badge>{/if}
         {#if isGenevaHoliday(slot.date) && !slot.closure}<span class="tag holiday">Férié</span>{/if}
         {#if slot.isCancelled}<span class="tag cancel">Annulé</span>{/if}
       </div>
@@ -389,15 +390,8 @@
     color: var(--text-main);
     text-transform: capitalize;
   }
-  .badge-next {
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-size: var(--text-label);
-    font-weight: var(--weight-bold);
-    color: var(--text-inverse);
-    background: var(--ludo-color);
-    padding: 2px var(--space-2);
-    border-radius: var(--radius-pill);
+  .date strong {
+    font-size: var(--text-h3);
   }
   .tag {
     text-transform: uppercase;

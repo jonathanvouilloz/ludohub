@@ -53,15 +53,18 @@
   /* ─── Typo, radius, ombres ─── */
   --font-family-sans: var(--font-sans);
 
-  --radius-sm: var(--radius-sm);
-  --radius-md: var(--radius-md);
-  --radius-lg: var(--radius-lg);
-  --radius-xl: var(--radius-xl);
-  --radius-pill: var(--radius-pill);
+  /* Radius : valeurs littérales (les utilitaires Tailwind rounded-* génèrent
+     border-radius: var(--radius-*). On ne peut pas auto-référencer le token
+     :root du même nom dans @theme — ça casse la résolution. Source = tokens.css. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
 
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
+  --shadow-sm: 0 2px 8px rgba(30, 50, 80, 0.06);
+  --shadow-md: 0 8px 24px rgba(30, 50, 80, 0.08);
+  --shadow-lg: 0 16px 40px rgba(30, 50, 80, 0.12);
 }
 
 :root {

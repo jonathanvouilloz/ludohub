@@ -1,6 +1,58 @@
 # Feature : PLANNING — Saisons et samedis
 
-**Epic :** 04 | **Taille :** L | **Statut :** DONE
+**Epic :** 04 | **Taille :** L | **Statut :** DONE (itératif)
+
+## Etat session 2026-06-18 (auto-génération planning + wizard + saison active + import ge.ch)
+
+**Fait :**
+
+- **Auto-génération du planning** : nouvelle table `season_member_settings` (isPermanent par saison), service `generatePlanning` (phase 1 permanents → phase 2 pool équitable, contrainte pas 2 samedis consécutifs, auto-annulation fériés GE), action `?/generatePlanning` avec `requiredCount` configurable (défaut 3).
+- **Wizard 3 étapes** sur la page de détail saison (avant génération) : Étape 1 Vacances & fermetures → Étape 2 Config membres (DataTable + DatePicker shadcn) → Étape 3 Stats + effectif + Générer. Après génération : PlanningGrid seul, plus de wizard.
+- **Saison active explicite** : colonne `is_active` sur `seasons`, `activateSeason` (archive atomiquement l'ancienne via `db.batch()`), 3 états (Active/En préparation/Archivée), badge ⚡ Activer, case « Activer immédiatement » dans SeasonDialog, `SeasonDialog` migré vers DatePicker shadcn.
+- **Import vacances ge.ch** : scraping HTML `ge.ch/vacances-scolaires-YYYY-YYYY` (attribut `title=` sur `<a href="*/telecharger">`), parsing 3 patterns de dates françaises, gestion multi-années scolaires, bouton « ↓ Importer ge.ch » dans ClosurePeriodsPanel (8 périodes importées sur 2026-2027).
+- **Polish UI** : steps wizard fond bleu primaire + texte blanc, cards fermetures fond `--bg-card` (blanc) au lieu du jaune.
+
+**Prochain :** Epic 04 complet. Prochain epic : **12-TESTS E2E** (Playwright). Penser à activer une saison manuellement depuis `/planning/saisons` (toutes les saisons existantes ont `isActive=false` après migration).
+
+**Pièges :**
+
+- `db.batch()` requis pour les mutations multi-tables atomiques (neon-http sans transaction interactive) — voir `activateSeasonInDb` et `swapAssignments`.
+- Import ge.ch : utiliser l'attribut `title="..."` du `<a>`, PAS le contenu textuel (contient un `<span>` imbriqué qui casse `[^<]+`). Tester avec un `.mjs` standalone, pas un heredoc bash (les backslashes se perdent).
+- Regex `new RegExp(pattern)` avec `\\s`/`\\d` : valide en TypeScript compilé, mais les heredocs bash dropent un niveau de backslash → tester via fichier.
+- `geAcademicYears(startDate, endDate)` → peut retourner 2 URLs si la saison couvre deux années scolaires.
+
+**Commit :** (à renseigner)
+
+---
+
+## Carte du code
+
+> Mise à jour : 2026-06-18
+
+| Fichier | Rôle |
+|---------|------|
+| `src/lib/server/schema.ts` | Tables `season_member_settings` (isPermanent) + colonne `seasons.isActive` + `seasons.requiredCount` default 3 |
+| `src/lib/server/db/planning.ts` | `upsertMemberSetting`, `getMemberSettingsBySeason`, `clearAssignmentsBySeason`, `updateSlotsRequiredCount`, `activateSeasonInDb`, `archiveSeason` (+ deactivate) |
+| `src/lib/server/services/planning.ts` | `generatePlanning` (algo 2 phases), `saveMemberConfig`, `addMemberUnavailability`, `importGEVacations`, `activateSeason`, `createSeason` (activateNow) |
+| `src/lib/utils/ge-vacances.ts` | **Nouveau** — `parseGEVacancesHTML` (title attr + `<a href="*/telecharger">`), `geAcademicYear`, `geAcademicYears` |
+| `src/routes/[ludo]/planning/saisons/+page.server.ts` | Action `activate` + `create` lit `activateNow` |
+| `src/routes/[ludo]/planning/saisons/+page.svelte` | Badge 3 états (Active/En préparation/Archivée) + bouton ⚡ Activer |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Actions `saveMemberConfig`, `addUnavailability`, `generatePlanning` (lit `requiredCount`), `importFromGE` |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.svelte` | Bascule wizard ↔ grille selon `existingAssignmentsCount` |
+| `src/lib/components/planning/SeasonWizard.svelte` | **Nouveau** — wizard 3 étapes, step pills fond primaire bleu |
+| `src/lib/components/planning/SeasonMemberConfig.svelte` | DataTable + DatePicker shadcn + toggle permanent + ajout indispo inline |
+| `src/lib/components/planning/ClosurePeriodsPanel.svelte` | DatePicker shadcn + bouton import ge.ch + fond blanc cards |
+| `src/lib/components/planning/SeasonDialog.svelte` | DatePicker shadcn + case « Activer immédiatement » |
+
+### Décisions clés
+
+- **Permanent = par saison** (table `season_member_settings`), pas global sur le membre.
+- **Indisponibilités wizard → absences approuvées** (status `approuve` direct), réutilise le système existant + warnings planning.
+- **Saison active explicite** (`is_active` boolean) ; `activateSeason` archive atomiquement l'ancienne (`db.batch()`).
+- **Import ge.ch** : cibler `title=` sur `<a href="*/telecharger">` (le contenu texte contient un `<span class="material-icons">` qui casse `[^<]+`).
+- **Wizard disparaît** dès qu'il existe des assignations (`existingAssignmentsCount > 0`) — génération est une action unique, pas régénérable.
+
+---
 
 ## Etat session 2026-06-17 (refonte vue membre + vacances + swap membre)
 

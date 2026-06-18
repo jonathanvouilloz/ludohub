@@ -73,6 +73,7 @@
     --text-h1: 1.5rem; /* 24px — titres de section */
     --text-h2: 1.25rem; /* 20px — sous-titres, en-têtes card */
     --text-h3: 1rem; /* 16px — labels de groupe */
+    --text-card-title: 1.125rem; /* 18px — titre de carte (DataCard) */
     --text-body: 0.9375rem; /* 15px — corps standard */
     --text-small: 0.8125rem; /* 13px — métadonnées */
     --text-label: 0.75rem; /* 12px — nav labels, badges */

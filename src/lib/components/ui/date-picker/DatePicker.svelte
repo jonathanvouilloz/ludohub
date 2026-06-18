@@ -93,7 +93,7 @@
                         <Calendar.Day
                           class={cn(
                             buttonVariants({ variant: 'ghost' }),
-                            'size-9 rounded-md p-0 text-sm font-normal',
+                            'size-9 rounded-md border-transparent p-0 text-sm font-normal',
                             'data-today:bg-accent data-today:text-accent-foreground',
                             'data-selected:bg-primary data-selected:text-primary-foreground data-selected:hover:bg-primary data-selected:hover:text-primary-foreground',
                             'data-outside-month:text-muted-foreground/40 data-outside-month:pointer-events-none',

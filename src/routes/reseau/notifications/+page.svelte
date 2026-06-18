@@ -31,6 +31,7 @@
       installation_closed: `/${slug}/themes`,
       checkup_recorded: `/${slug}/themes`,
       checkup_missing_item: `/${slug}/themes`,
+      supply_request: `/${slug}/supplies`,
     }
     return byType[n.type]
   }

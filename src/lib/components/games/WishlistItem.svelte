@@ -1,9 +1,10 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
+  import { buttonVariants } from '$lib/components/ui/button/index.js'
+  import { Button } from '$lib/components/ui/button/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
-  import ExternalLinkIcon from '@lucide/svelte/icons/external-link'
+  import { DataCard } from '$lib/components/ui/data-card/index.js'
   import CheckIcon from '@lucide/svelte/icons/check'
   import Undo2Icon from '@lucide/svelte/icons/undo-2'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
@@ -25,31 +26,21 @@
   }
 </script>
 
-<article class="item" class:bought>
-  <div class="body">
-    <div class="title-row">
-      <h3>{wish.title}</h3>
-      {#if wish.priceChf != null}
-        <Badge variant="secondary">{formatPrice(wish.priceChf)}</Badge>
-      {/if}
-      {#if bought}<Badge class="bought-badge">Acheté</Badge>{/if}
-      {#if wish.link}
-        <a href={wish.link} target="_blank" rel="noopener" class="link" title="Voir le jeu">
-          <ExternalLinkIcon size={16} aria-hidden="true" />
-          <span class="sr-only">Voir le jeu (nouvel onglet)</span>
-        </a>
-      {/if}
-    </div>
+<DataCard title={wish.title} href={wish.link} linkTitle="Voir le jeu" muted={bought}>
+  {#snippet badge()}
+    {#if wish.priceChf != null}
+      <Badge variant="secondary">{formatPrice(wish.priceChf)}</Badge>
+    {/if}
+  {/snippet}
 
-    <p class="byline">
-      Ajouté par {wish.addedBy?.name ?? '—'}
-      {#if bought && wish.buyer}
-        <span class="sep">·</span> Acheté par {wish.buyer.name} le {formatDateShort(wish.createdAt)}
-      {/if}
-    </p>
-  </div>
+  {#snippet byline()}
+    Ajouté par {wish.addedBy?.name ?? '—'}
+    {#if bought && wish.buyer}
+      <span class="sep">·</span> Acheté par {wish.buyer.name} le {formatDateShort(wish.createdAt)}
+    {/if}
+  {/snippet}
 
-  <div class="actions">
+  {#snippet actions()}
     {#if bought}
       <form method="POST" action="?/markWanted" use:enhance>
         <input type="hidden" name="id" value={wish.id} />
@@ -109,74 +100,12 @@
         </form>
       </AlertDialog.Content>
     </AlertDialog.Root>
-  </div>
-</article>
+  {/snippet}
+</DataCard>
 
 <style>
-  .item {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
-  .item.bought {
-    opacity: 0.7;
-  }
-  .body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    min-width: 0;
-  }
-  .title-row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    flex-wrap: wrap;
-  }
-  h3 {
-    margin: 0;
-    color: var(--text-main);
-    font-size: var(--text-h2);
-    font-weight: var(--weight-bold);
-    line-height: 1.2;
-  }
-  .item :global(.bought-badge) {
-    background: var(--success);
-  }
-  .link {
-    display: inline-flex;
-    align-items: center;
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color var(--dur-fast) var(--ease-out-strong);
-  }
-  .link:hover {
-    color: var(--primary);
-  }
-  .byline {
-    margin: 0;
-    color: var(--text-muted);
-    font-size: var(--text-small);
-  }
   .sep {
     margin: 0 var(--space-1);
     color: var(--text-subtle);
-  }
-  .actions {
-    display: flex;
-    gap: var(--space-1);
-    flex-shrink: 0;
-    justify-content: flex-end;
-  }
-  .actions form {
-    display: inline-flex;
-  }
-  .actions :global(.danger-icon) {
-    color: var(--danger);
   }
 </style>

@@ -117,11 +117,14 @@ Scopes : `auth`, `planning`, `absences`, `themes`, `reseau`, `wishlist`, `suppli
 
 ## Tailwind + shadcn-svelte
 
-- Utiliser les composants shadcn-svelte en priorité (Button, Card, Dialog, etc.)
-- Ne jamais modifier les fichiers `src/lib/components/ui/` directement
-- Créer des composants wrapper dans `src/lib/components/[domaine]/` si customisation nécessaire
-- Tokens CSS définis dans `src/app.css` (généré par /init-design)
-- Tailwind v4 : pas de `tailwind.config.js` — config dans `app.css` via `@theme`
+- Utiliser les composants `src/lib/components/ui/` en priorité (Button, Badge, Dialog, etc.).
+- `ui/` = primitives shadcn **+ extensions maison validées** (variantes de `button`/`badge`, et composants `data-table`, `data-card`, `collapsible-section`, `StatusBadge`). On modifie une primitive `ui/` uniquement pour une règle **transversale** de la charte (ex. variantes de bouton), pas pour un besoin ponctuel.
+- Pour un besoin ponctuel/domaine : composant wrapper dans `src/lib/components/[domaine]/` (ex. `SupplyCard` = adaptateur de `DataCard`).
+- **Réutiliser, ne pas réinventer** (cf. `docs/DESIGN.md §9`) : tableau → `DataTable` ; carte de liste → `DataCard` ; statut → `StatusBadge` ; section masquable → `CollapsibleSection` ; suppression → `AlertDialog`.
+- Tokens CSS : `src/styles/tokens.css` (source) mappés via `@theme` dans `src/app.css`. **Tokens only**, aucune couleur/durée/radius en dur.
+- Tailwind v4 : pas de `tailwind.config.js` — config dans `app.css` via `@theme`. Ne jamais auto-référencer un token dans `@theme` (`--radius-lg: var(--radius-lg)` casse la résolution → valeurs littérales).
+- **Boutons** : `ghost`/`outline` texte = bordure visible ; boutons icône-only = sans bordure (géré par `compoundVariants`). Voir `docs/DESIGN.md §9.1`.
+- Collision de nommage : ne jamais nommer une classe Svelte comme un utilitaire Tailwind (`collapse`, `hidden`…) → élément invisible.
 
 ## Gestion des erreurs
 

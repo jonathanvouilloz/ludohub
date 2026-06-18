@@ -1,14 +1,16 @@
-# HANDOFF — 2026-06-17
+# HANDOFF — 2026-06-18
 
 ## Features actives
 
-| Feature               | Fichier                                                        | Statut             |
-| --------------------- | -------------------------------------------------------------- | ------------------ |
-| 12 — TESTS E2E        | [features/12-tests-e2e.md](features/12-tests-e2e.md)           | TODO               |
-| 04 — PLANNING         | [features/04-planning.md](features/04-planning.md)             | DONE (affiné 06-17) |
-| 13 — THÈMES check-ups | [features/13-themes-checkup.md](features/13-themes-checkup.md) | DONE               |
+| Feature              | Fichier                                              | Statut          |
+| -------------------- | ---------------------------------------------------- | --------------- |
+| 04 — PLANNING        | [features/04-planning.md](features/04-planning.md)   | DONE (itératif) |
+| 12 — TESTS E2E       | [features/10-tests-e2e.md](features/10-tests-e2e.md) | TODO            |
 
 ## Reprendre ici
 
-**12-TESTS E2E** — Playwright sur les flows critiques (flows admin, shell 08, notifs 10, installer→check-up 13). Ajouter les nouveaux flows planning : swap membre, plages de fermeture, samedis passés repliés.
-Dernier commit : [7d099c2] feat(planning): timeline membre, swap membre, plages de fermeture
+**⚠ Après migration** : activer une saison manuellement depuis `/planning/saisons` (bouton ⚡) — toutes les saisons existantes ont `isActive=false`.
+
+**Prochain epic : 12-TESTS E2E** (Playwright) — setup `playwright.config.ts` + seed DB test + helper auth, puis flows F1→F5.
+
+Commit : (à renseigner après commit)

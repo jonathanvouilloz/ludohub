@@ -5,6 +5,7 @@ import {
   getSupplyById,
   updateSupply,
 } from '../db/supplies.js'
+import { emitEvent } from './events.js'
 import { isResponsable } from '$lib/utils/permissions.js'
 import type { MemberRow, SupplyRequestRow } from '../schema.js'
 
@@ -14,11 +15,9 @@ import type { MemberRow, SupplyRequestRow } from '../schema.js'
  */
 export class SupplyServiceError extends Error {}
 
-const CATEGORIES = ['jeux', 'materiel', 'fournitures', 'autre'] as const
 const URGENCIES = ['normale', 'haute', 'critique'] as const
 const STATUSES = ['en_attente', 'commande', 'recu'] as const
 
-type SupplyCategory = (typeof CATEGORIES)[number]
 type SupplyUrgency = (typeof URGENCIES)[number]
 type SupplyStatus = (typeof STATUSES)[number]
 
@@ -32,18 +31,22 @@ function parseName(value: string): string {
   return trimmed
 }
 
-function parseCategory(value: string): SupplyCategory {
-  if (!CATEGORIES.includes(value as SupplyCategory)) {
-    throw new SupplyServiceError('Catégorie invalide.')
-  }
-  return value as SupplyCategory
-}
-
 function parseUrgency(value: string): SupplyUrgency {
   if (!URGENCIES.includes(value as SupplyUrgency)) {
     throw new SupplyServiceError('Urgence invalide.')
   }
   return value as SupplyUrgency
+}
+
+/** Lien optionnel : doit être une URL http(s) si fourni. */
+function parseLink(value: string): string | null {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (!/^https?:\/\//i.test(trimmed)) {
+    throw new SupplyServiceError('Le lien doit commencer par http:// ou https://.')
+  }
+  if (trimmed.length > 500) throw new SupplyServiceError('Le lien est trop long (500 max).')
+  return trimmed
 }
 
 function parseStatus(value: string): SupplyStatus {
@@ -71,16 +74,30 @@ export async function listSupplyRequests(ludoId: string) {
 export async function createSupplyRequest(
   ludoId: string,
   memberId: string,
-  data: { name: string; category: string; urgency: string; notes?: string },
+  data: { name: string; link?: string; urgency: string; notes?: string },
 ): Promise<SupplyRequestRow> {
-  return createSupply({
+  const supply = await createSupply({
     ludoId,
     memberId,
     name: parseName(data.name),
-    category: parseCategory(data.category),
+    link: parseLink(data.link ?? ''),
     urgency: parseUrgency(data.urgency),
     notes: data.notes?.trim() || null,
   })
+
+  // Notifie les responsables de la ludo (best-effort, n'échoue jamais la création).
+  await emitEvent({
+    type: 'supply_request',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'supply',
+    entityId: supply.id,
+    title: 'Nouvelle demande de matériel',
+    body: `« ${supply.name} » a été demandé.`,
+    recipientResponsablesOf: ludoId,
+  })
+
+  return supply
 }
 
 /** Changement de statut : ouvert à tout membre actif (garde côté action). */

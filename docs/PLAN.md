@@ -17,6 +17,7 @@
 | 11  | ADMIN — Super admin (CRUD ludos, logs)                           | M      | **DONE**     | [11-admin.md](features/11-admin.md)                           |
 | 12  | TESTS E2E — Playwright flows critiques                           | M      | TODO         | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
 | 13  | THÈMES — Installations & check-ups                               | M-L    | **DONE**     | [13-themes-checkup.md](features/13-themes-checkup.md)         |
+| 14  | DESIGN — Refonte UI transversale (système de composants)         | L      | **DONE**     | [14-design-refonte.md](features/14-design-refonte.md)         |
 
 ## Prochaines étapes prioritaires
 

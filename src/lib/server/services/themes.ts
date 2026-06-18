@@ -1,9 +1,12 @@
+import { del } from '@vercel/blob'
+import { env } from '$env/dynamic/private'
 import {
   addThemeImage,
   addThemeItem,
   clearCoverForTheme,
   countThemeImages,
   createTheme,
+  deleteTheme,
   deleteThemeImage,
   deleteThemeItem,
   getFirstThemeImage,
@@ -15,6 +18,7 @@ import {
   markImageAsCover,
   updateTheme,
 } from '../db/themes.js'
+import { getActiveInstallationForTheme } from './installations.js'
 import type { ThemeImageRow, ThemeItemRow, ThemeRow } from '../schema.js'
 
 /**
@@ -112,6 +116,36 @@ export async function archiveTheme(
 ): Promise<ThemeRow> {
   await requireThemeInLudo(id, ludoId)
   return updateTheme(id, { isArchived: archived })
+}
+
+/**
+ * Suppression définitive d'un thème et de tout son contenu (cascade FK :
+ * éléments, photos, prêts, installations, check-ups). Bloquée si le thème est
+ * actuellement prêté ou installé. Nettoie aussi les fichiers Vercel Blob.
+ */
+export async function deleteThemeForLudo(id: string, ludoId: string): Promise<void> {
+  const theme = await requireThemeInLudo(id, ludoId)
+
+  const hasActiveLoan = (theme.loans ?? []).some((l) => l.status === 'actif')
+  if (hasActiveLoan) {
+    throw new ThemeServiceError(
+      'Impossible de supprimer un thème actuellement prêté. Marquez-le comme retourné d’abord.',
+    )
+  }
+  const activeInstallation = await getActiveInstallationForTheme(id)
+  if (activeInstallation) {
+    throw new ThemeServiceError(
+      'Impossible de supprimer un thème installé. Clôturez l’installation d’abord.',
+    )
+  }
+
+  // Nettoyage des fichiers Blob (best-effort : la DB reste la source de vérité).
+  const token = env.BLOB_READ_WRITE_TOKEN
+  for (const image of theme.images ?? []) {
+    if (token) await del(image.storageKey, { token }).catch(() => {})
+  }
+
+  await deleteTheme(id)
 }
 
 // ─── Items ─────────────────────────────────────────────────────────────────

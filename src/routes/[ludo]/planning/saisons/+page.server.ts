@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit'
 import {
+  activateSeason,
   archiveSeason,
   createSeason,
   deleteSeason,
@@ -35,8 +36,15 @@ export const actions: Actions = {
         name: String(data.get('name') ?? ''),
         startDate: String(data.get('startDate') ?? ''),
         endDate: String(data.get('endDate') ?? ''),
+        activateNow: data.get('activateNow') === 'true',
       }),
     )
+  },
+
+  activate: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() => activateSeason(String(data.get('id') ?? ''), ludo.id))
   },
 
   archive: async (event) => {

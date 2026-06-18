@@ -2,9 +2,16 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import PlanningGrid from '$lib/components/planning/PlanningGrid.svelte'
   import ClosurePeriodsPanel from '$lib/components/planning/ClosurePeriodsPanel.svelte'
+  import SeasonWizard from '$lib/components/planning/SeasonWizard.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
   let { data, form } = $props()
+
+  // Avant génération (aucune assignation) → wizard guidé
+  // Après génération → grille de planification + fermetures éditables
+  const showWizard = $derived(
+    data.responsable && !data.season.isArchived && data.existingAssignmentsCount === 0,
+  )
 </script>
 
 <svelte:head>
@@ -32,16 +39,30 @@
     <p class="banner" role="alert">{form.error}</p>
   {/if}
 
-  <PlanningGrid
-    slots={data.slots}
-    members={data.members}
-    readOnly={data.season.isArchived || !data.responsable}
-  />
+  {#if showWizard}
+    <SeasonWizard
+      season={data.season}
+      closures={data.closures}
+      members={data.members}
+      memberSettings={data.memberSettings}
+      seasonAbsences={data.seasonAbsences}
+      workableSlotsCount={data.workableSlotsCount}
+      permanentCount={data.permanentCount}
+      poolCount={data.poolCount}
+    />
+  {:else}
+    <PlanningGrid
+      slots={data.slots}
+      members={data.members}
+      readOnly={data.season.isArchived || !data.responsable}
+    />
 
-  <ClosurePeriodsPanel
-    closures={data.closures}
-    readOnly={data.season.isArchived || !data.responsable}
-  />
+    <ClosurePeriodsPanel
+      closures={data.closures}
+      seasonStartDate={data.season.startDate}
+      readOnly={data.season.isArchived || !data.responsable}
+    />
+  {/if}
 </main>
 
 <style>

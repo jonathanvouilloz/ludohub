@@ -1,9 +1,10 @@
-import { and, eq, gte } from 'drizzle-orm'
+import { and, eq, gte, inArray } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   assignments,
   closurePeriods,
   saturdaySlots,
+  seasonMemberSettings,
   seasons,
   type AssignmentInsert,
   type AssignmentRow,
@@ -12,6 +13,8 @@ import {
   type SaturdaySlotInsert,
   type SaturdaySlotRow,
   type SeasonInsert,
+  type SeasonMemberSettingInsert,
+  type SeasonMemberSettingRow,
   type SeasonRow,
 } from '../schema.js'
 
@@ -28,12 +31,32 @@ export async function getSeasonById(id: string): Promise<SeasonRow | undefined> 
   return db.query.seasons.findFirst({ where: eq(seasons.id, id) })
 }
 
-/** Saison active par défaut : la plus récente non archivée de la ludo. */
+/** Saison active explicite : la saison avec `isActive = true` pour cette ludo. */
 export async function getActiveSeasonByLudo(ludoId: string): Promise<SeasonRow | undefined> {
   return db.query.seasons.findFirst({
-    where: and(eq(seasons.ludoId, ludoId), eq(seasons.isArchived, false)),
-    orderBy: (s, { desc }) => desc(s.startDate),
+    where: and(eq(seasons.ludoId, ludoId), eq(seasons.isActive, true)),
   })
+}
+
+/**
+ * Active une saison et archive atomiquement la précédente active (si elle existe).
+ * Utilise `db.batch()` pour l'atomicité (neon-http sans transaction interactive).
+ */
+export async function activateSeasonInDb(
+  seasonId: string,
+  previousActiveId: string | null,
+): Promise<void> {
+  if (previousActiveId) {
+    await db.batch([
+      db
+        .update(seasons)
+        .set({ isActive: false, isArchived: true })
+        .where(eq(seasons.id, previousActiveId)),
+      db.update(seasons).set({ isActive: true }).where(eq(seasons.id, seasonId)),
+    ])
+  } else {
+    await db.update(seasons).set({ isActive: true }).where(eq(seasons.id, seasonId))
+  }
 }
 
 export async function insertSeason(data: SeasonInsert): Promise<SeasonRow> {
@@ -41,10 +64,14 @@ export async function insertSeason(data: SeasonInsert): Promise<SeasonRow> {
   return season
 }
 
-export async function archiveSeason(id: string, archived: boolean): Promise<SeasonRow> {
+export async function archiveSeason(
+  id: string,
+  archived: boolean,
+  deactivate = false,
+): Promise<SeasonRow> {
   const [season] = await db
     .update(seasons)
-    .set({ isArchived: archived })
+    .set({ isArchived: archived, ...(deactivate ? { isActive: false } : {}) })
     .where(eq(seasons.id, id))
     .returning()
   return season
@@ -154,6 +181,52 @@ export async function getClosurePeriodById(id: string): Promise<ClosurePeriodRow
 
 export async function deleteClosurePeriod(id: string): Promise<void> {
   await db.delete(closurePeriods).where(eq(closurePeriods.id, id))
+}
+
+// ─── Configuration membres par saison ────────────────────────────────────────
+
+export async function getMemberSettingsBySeason(
+  seasonId: string,
+): Promise<SeasonMemberSettingRow[]> {
+  return db.query.seasonMemberSettings.findMany({
+    where: eq(seasonMemberSettings.seasonId, seasonId),
+  })
+}
+
+export async function upsertMemberSetting(
+  data: SeasonMemberSettingInsert,
+): Promise<SeasonMemberSettingRow> {
+  const [setting] = await db
+    .insert(seasonMemberSettings)
+    .values(data)
+    .onConflictDoUpdate({
+      target: [seasonMemberSettings.seasonId, seasonMemberSettings.memberId],
+      set: { isPermanent: data.isPermanent },
+    })
+    .returning()
+  return setting
+}
+
+export async function updateSlotsRequiredCount(
+  seasonId: string,
+  requiredCount: number,
+): Promise<void> {
+  await db
+    .update(saturdaySlots)
+    .set({ requiredCount })
+    .where(eq(saturdaySlots.seasonId, seasonId))
+}
+
+export async function clearAssignmentsBySeason(seasonId: string): Promise<void> {
+  const slotIds = (
+    await db
+      .select({ id: saturdaySlots.id })
+      .from(saturdaySlots)
+      .where(eq(saturdaySlots.seasonId, seasonId))
+  ).map((s) => s.id)
+
+  if (slotIds.length === 0) return
+  await db.delete(assignments).where(inArray(assignments.slotId, slotIds))
 }
 
 /** Prochains samedis d'un membre (date >= fromDate, non annulés), triés par date. */

@@ -1,5 +1,7 @@
 import {
+  activateSeasonInDb,
   archiveSeason as dbArchiveSeason,
+  clearAssignmentsBySeason,
   deleteAssignment,
   deleteClosurePeriod as dbDeleteClosurePeriod,
   deleteSeason as dbDeleteSeason,
@@ -7,6 +9,7 @@ import {
   getAssignment,
   getClosurePeriodById,
   getClosurePeriodsBySeason,
+  getMemberSettingsBySeason,
   getSeasonById,
   getSeasonsByLudo,
   getSlotById,
@@ -18,11 +21,15 @@ import {
   insertSlots,
   setSlotCancelled,
   swapAssignments,
+  updateSlotsRequiredCount,
+  upsertMemberSetting,
 } from '../db/planning.js'
-import { getMemberById } from '../db/members.js'
+import { getMemberById, getActiveMembersByLudo } from '../db/members.js'
+import { insertAbsence } from '../db/absences.js'
 import { getApprovedAbsencesByMember } from './absences.js'
 import { belongsToLudo, isActiveMember } from '$lib/utils/permissions.js'
-import { getSwissSaturdays, isDateInRange, toDateString } from '$lib/utils/dates.js'
+import { daysBetween, getSwissSaturdays, isDateInRange, isGenevaHoliday, toDateString } from '$lib/utils/dates.js'
+import { type GEPeriod, geAcademicYears, parseGEVacancesHTML } from '$lib/utils/ge-vacances.js'
 import type { AbsenceRow, ClosurePeriodRow, SeasonRow } from '../schema.js'
 
 /**
@@ -134,7 +141,13 @@ export async function getMyUpcomingSaturdays(memberId: string) {
  */
 export async function createSeason(
   ludoId: string,
-  data: { name: string; startDate: string; endDate: string; requiredCount?: number },
+  data: {
+    name: string
+    startDate: string
+    endDate: string
+    requiredCount?: number
+    activateNow?: boolean
+  },
 ): Promise<SeasonRow> {
   const name = parseSeasonName(data.name)
   const start = parseDate(data.startDate, 'de début')
@@ -142,7 +155,7 @@ export async function createSeason(
   if (start > end) {
     throw new PlanningServiceError('La date de début doit précéder la date de fin.')
   }
-  const requiredCount = data.requiredCount ?? 2
+  const requiredCount = data.requiredCount ?? 3
 
   const season = await insertSeason({
     ludoId,
@@ -160,7 +173,21 @@ export async function createSeason(
     })),
   )
 
+  if (data.activateNow) {
+    const current = await getActiveSeasonByLudo(ludoId)
+    await activateSeasonInDb(season.id, current?.id ?? null)
+  }
+
   return season
+}
+
+/** Active une saison et archive automatiquement la précédente active. */
+export async function activateSeason(seasonId: string, ludoId: string): Promise<void> {
+  const season = await requireSeasonInLudo(seasonId, ludoId)
+  if (season.isArchived) throw new PlanningServiceError("Impossible d'activer une saison archivée.")
+  if (season.isActive) return
+  const current = await getActiveSeasonByLudo(ludoId)
+  await activateSeasonInDb(seasonId, current?.id ?? null)
 }
 
 export async function archiveSeason(
@@ -168,7 +195,11 @@ export async function archiveSeason(
   ludoId: string,
   archived: boolean,
 ): Promise<SeasonRow> {
-  await requireSeasonInLudo(id, ludoId)
+  const season = await requireSeasonInLudo(id, ludoId)
+  // Si on archive une saison active, la désactiver en même temps
+  if (archived && season.isActive) {
+    return dbArchiveSeason(id, archived, true)
+  }
   return dbArchiveSeason(id, archived)
 }
 
@@ -202,6 +233,63 @@ export async function createClosurePeriod(
     startDate: toDateString(start),
     endDate: toDateString(end),
   })
+}
+
+/**
+ * Importe les vacances scolaires genevoises depuis ge.ch et les crée comme
+ * closure_periods pour la saison. Filtre les périodes qui ne chevauchent pas
+ * la saison. Retourne le nombre de périodes créées.
+ */
+export async function importGEVacations(seasonId: string, ludoId: string): Promise<number> {
+  const season = await requireSeasonInLudo(seasonId, ludoId)
+  if (season.isArchived) throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+
+  // Déterminer les années académiques couvertes par la saison (1 ou 2 si la saison chevauche deux années scolaires)
+  const academicYears = geAcademicYears(season.startDate, season.endDate)
+
+  const allPeriods: GEPeriod[] = []
+  for (const ay of academicYears) {
+    const url = `https://www.ge.ch/vacances-scolaires-jours-feries/vacances-scolaires-${ay}`
+    let html: string
+    try {
+      const response = await fetch(url)
+      if (!response.ok) {
+        throw new PlanningServiceError(
+          `Impossible de contacter ge.ch pour ${ay} (erreur ${response.status}).`,
+        )
+      }
+      html = await response.text()
+    } catch (err) {
+      if (err instanceof PlanningServiceError) throw err
+      throw new PlanningServiceError('Impossible de contacter ge.ch. Vérifiez la connexion réseau.')
+    }
+    allPeriods.push(...parseGEVacancesHTML(html))
+  }
+
+  // Dédupliquer par (label + startDate) si deux années académiques fournissent le même résultat
+  const seen = new Set<string>()
+  const periods = allPeriods.filter((p) => {
+    const key = `${p.label}|${p.startDate}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+
+  // Garder seulement les périodes qui chevauchent la plage de la saison
+  const overlapping = periods.filter(
+    (p) => p.startDate <= season.endDate && p.endDate >= season.startDate,
+  )
+
+  for (const p of overlapping) {
+    await insertClosurePeriod({
+      seasonId,
+      label: p.label,
+      startDate: p.startDate,
+      endDate: p.endDate,
+    })
+  }
+
+  return overlapping.length
 }
 
 export async function deleteClosurePeriod(id: string, ludoId: string): Promise<void> {
@@ -302,4 +390,189 @@ export async function cancelSlot(slotId: string, ludoId: string): Promise<void> 
 export async function reopenSlot(slotId: string, ludoId: string): Promise<void> {
   await requireWritableSlot(slotId, ludoId)
   await setSlotCancelled(slotId, false)
+}
+
+// ─── Configuration membres par saison ────────────────────────────────────────
+
+export async function saveMemberConfig(
+  seasonId: string,
+  ludoId: string,
+  memberId: string,
+  isPermanent: boolean,
+): Promise<void> {
+  await requireSeasonInLudo(seasonId, ludoId)
+  const member = await getMemberById(memberId)
+  if (!member || !belongsToLudo(member, ludoId)) {
+    throw new PlanningServiceError('Membre introuvable.')
+  }
+  await upsertMemberSetting({ seasonId, memberId, isPermanent })
+}
+
+/**
+ * Crée une indisponibilité pré-planifiée pour un membre sur une saison.
+ * Insérée directement avec status='approuve' car c'est le/la responsable qui la saisit.
+ * Elle apparaît dans la vue planning (warnings d'absence) comme toute absence approuvée.
+ */
+export async function addMemberUnavailability(
+  seasonId: string,
+  ludoId: string,
+  memberId: string,
+  startDate: string,
+  endDate: string,
+): Promise<void> {
+  const season = await requireSeasonInLudo(seasonId, ludoId)
+  if (season.isArchived) throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+
+  const member = await getMemberById(memberId)
+  if (!member || !belongsToLudo(member, ludoId)) {
+    throw new PlanningServiceError('Membre introuvable.')
+  }
+
+  const start = new Date(`${startDate}T12:00:00`)
+  const end = new Date(`${endDate}T12:00:00`)
+  if (Number.isNaN(start.getTime())) throw new PlanningServiceError('Date de début invalide.')
+  if (Number.isNaN(end.getTime())) throw new PlanningServiceError('Date de fin invalide.')
+  if (start > end) throw new PlanningServiceError('La date de début doit précéder la date de fin.')
+
+  await insertAbsence({
+    ludoId,
+    memberId,
+    type: 'vacances',
+    startDate: toDateString(start),
+    endDate: toDateString(end),
+    status: 'approuve',
+    notes: `Indisponibilité saisie lors de la configuration de la saison « ${season.name} »`,
+  })
+}
+
+// ─── Génération automatique du planning ──────────────────────────────────────
+
+export type GenerateResult = {
+  slotsGenerated: number
+  assignmentsCreated: number
+  slotsAutoCancelled: number
+}
+
+/**
+ * Génère automatiquement les assignations pour une saison.
+ *
+ * Algorithme :
+ *   1. Auto-annule les samedis fériés GE (isGenevaHoliday).
+ *   2. Exclut les samedis en plage de fermeture.
+ *   3. Phase permanents : assigne les membres permanents sur tous les samedis
+ *      travaillables (sauf absence approuvée).
+ *   4. Phase pool : distribue les membres non-permanents équitablement.
+ *      Contraintes : pas 2 samedis consécutifs d'affilée, priorité aux moins
+ *      chargés, ordre aléatoire à égalité.
+ *
+ * Appeler clearAssignmentsBySeason() avant si on regénère (fait par l'action).
+ */
+export async function generatePlanning(
+  seasonId: string,
+  ludoId: string,
+  requiredCount?: number,
+): Promise<GenerateResult> {
+  const season = await requireSeasonInLudo(seasonId, ludoId)
+  if (season.isArchived) throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+
+  // Mettre à jour l'effectif requis sur tous les slots si fourni
+  if (requiredCount !== undefined && requiredCount >= 1) {
+    await updateSlotsRequiredCount(seasonId, requiredCount)
+  }
+
+  const [slots, closures, activeMembers, memberSettings, absencesByMember] = await Promise.all([
+    getSlotsBySeason(seasonId),
+    getClosurePeriodsBySeason(seasonId),
+    getActiveMembersByLudo(ludoId),
+    getMemberSettingsBySeason(seasonId),
+    getApprovedAbsencesByMember(ludoId, season.startDate, season.endDate),
+  ])
+
+  const settingsMap = new Map(memberSettings.map((s) => [s.memberId, s.isPermanent]))
+  const permanents = activeMembers.filter((m) => settingsMap.get(m.id) === true)
+  const pool = activeMembers.filter((m) => settingsMap.get(m.id) !== true)
+
+  function hasAbsence(memberId: string, date: string): boolean {
+    const abs = absencesByMember.get(memberId) ?? []
+    return abs.some((a) => isDateInRange(date, a.startDate, a.endDate))
+  }
+
+  function isInClosure(date: string): boolean {
+    return closures.some((c) => isDateInRange(date, c.startDate, c.endDate))
+  }
+
+  // Phase 0 — auto-annuler les samedis fériés GE non encore annulés
+  let slotsAutoCancelled = 0
+  for (const slot of slots) {
+    if (!slot.isCancelled && isGenevaHoliday(slot.date)) {
+      await setSlotCancelled(slot.id, true)
+      slot.isCancelled = true
+      slotsAutoCancelled++
+    }
+  }
+
+  const workableSlots = slots.filter((s) => !s.isCancelled && !isInClosure(s.date))
+  let assignmentsCreated = 0
+
+  // Phase 1 — Permanents : tous les samedis travaillables sauf absence
+  for (const slot of workableSlots) {
+    for (const member of permanents) {
+      if (hasAbsence(member.id, slot.date)) continue
+      try {
+        await insertAssignment({ slotId: slot.id, memberId: member.id })
+        assignmentsCreated++
+      } catch {
+        // UNIQUE violation → déjà assigné, ignorer
+      }
+    }
+  }
+
+  // Phase 2 — Pool : distribution équitable avec contrainte consécutif
+  type Tracker = { total: number; lastDates: string[] }
+  const tracker = new Map<string, Tracker>(pool.map((m) => [m.id, { total: 0, lastDates: [] }]))
+
+  // Nombre de permanents présents par slot (pour calculer le besoin restant)
+  const permanentsPerSlot = new Map<string, number>()
+  for (const slot of workableSlots) {
+    permanentsPerSlot.set(slot.id, permanents.filter((m) => !hasAbsence(m.id, slot.date)).length)
+  }
+
+  for (const slot of workableSlots) {
+    const alreadyFilled = permanentsPerSlot.get(slot.id) ?? 0
+    const needed = Math.max(0, slot.requiredCount - alreadyFilled)
+    if (needed === 0) continue
+
+    const eligible = pool.filter((m) => {
+      if (hasAbsence(m.id, slot.date)) return false
+      const t = tracker.get(m.id)!
+      if (t.lastDates.length >= 2) {
+        // Bloquer si les 2 derniers samedis assignés étaient consécutifs avec celui-ci
+        const last = t.lastDates[t.lastDates.length - 1]
+        const prev = t.lastDates[t.lastDates.length - 2]
+        if (daysBetween(last, slot.date) === 7 && daysBetween(prev, last) === 7) return false
+      }
+      return true
+    })
+
+    // Trier : moins chargés d'abord, aléatoire à égalité
+    eligible.sort((a, b) => {
+      const diff = tracker.get(a.id)!.total - tracker.get(b.id)!.total
+      return diff !== 0 ? diff : Math.random() - 0.5
+    })
+
+    for (const member of eligible.slice(0, needed)) {
+      try {
+        await insertAssignment({ slotId: slot.id, memberId: member.id })
+        assignmentsCreated++
+        const t = tracker.get(member.id)!
+        t.total++
+        t.lastDates.push(slot.date)
+        if (t.lastDates.length > 2) t.lastDates.shift()
+      } catch {
+        // UNIQUE violation → ignorer
+      }
+    }
+  }
+
+  return { slotsGenerated: workableSlots.length, assignmentsCreated, slotsAutoCancelled }
 }

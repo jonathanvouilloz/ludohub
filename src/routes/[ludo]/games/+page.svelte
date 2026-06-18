@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js'
+  import { CollapsibleSection } from '$lib/components/ui/collapsible-section/index.js'
   import WishlistItem from '$lib/components/games/WishlistItem.svelte'
   import NewGameWishDialog from '$lib/components/games/NewGameWishDialog.svelte'
   import type { GameWishRow, MemberRow } from '$lib/server/schema'
@@ -45,14 +46,13 @@
     </div>
 
     {#if bought.length > 0}
-      <section class="bought-section">
-        <h2>Achetés ({bought.length})</h2>
+      <CollapsibleSection title="Achetés" count={bought.length}>
         <div class="list">
           {#each bought as wish (wish.id)}
             <WishlistItem {wish} />
           {/each}
         </div>
-      </section>
+      </CollapsibleSection>
     {/if}
   {/if}
 
@@ -76,12 +76,6 @@
     color: var(--text-main);
     margin: 0 0 var(--space-1);
   }
-  h2 {
-    color: var(--text-main);
-    font-size: var(--text-h2);
-    font-weight: var(--weight-semibold);
-    margin: 0 0 var(--space-3);
-  }
   .muted {
     color: var(--text-muted);
     margin: 0;
@@ -102,8 +96,5 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
-  }
-  .bought-section {
-    margin-top: var(--space-8);
   }
 </style>

@@ -47,6 +47,7 @@ const SEVERITY: Record<NotificationType, NotificationSeverity> = {
   installation_closed: 'info',
   checkup_recorded: 'info',
   checkup_missing_item: 'action_required',
+  supply_request: 'action_required',
 }
 
 async function resolveRecipients(event: DomainEvent): Promise<Recipient[]> {

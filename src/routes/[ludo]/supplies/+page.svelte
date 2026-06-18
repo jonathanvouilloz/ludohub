@@ -1,5 +1,6 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js'
+  import { CollapsibleSection } from '$lib/components/ui/collapsible-section/index.js'
   import SupplyCard from '$lib/components/supplies/SupplyCard.svelte'
   import NewSupplyDialog from '$lib/components/supplies/NewSupplyDialog.svelte'
   import type { SupplyRequestRow as SupplyRow, MemberRow } from '$lib/server/schema'
@@ -12,23 +13,25 @@
 
   // Les demandes arrivent déjà triées par urgence décroissante (service).
   const supplies = $derived(data.supplies as SupplyWithMember[])
+  // Les reçus sont rangés dans une section repliée — la liste principale ne montre que l'actif.
+  const pending = $derived(supplies.filter((s) => s.status !== 'recu'))
+  const received = $derived(supplies.filter((s) => s.status === 'recu'))
 
-  const tabs = [
+  const urgencyFilters = [
     { key: 'all', label: 'Tout' },
-    { key: 'jeux', label: 'Jeux' },
-    { key: 'materiel', label: 'Matériel' },
-    { key: 'fournitures', label: 'Fournitures' },
-    { key: 'autre', label: 'Autre' },
+    { key: 'critique', label: 'Critique' },
+    { key: 'haute', label: 'Haute' },
+    { key: 'normale', label: 'Normale' },
   ] as const
 
-  let activeTab = $state<string>('all')
+  let activeUrgency = $state<string>('all')
 
   function countFor(key: string): number {
-    return key === 'all' ? supplies.length : supplies.filter((s) => s.category === key).length
+    return key === 'all' ? pending.length : pending.filter((s) => s.urgency === key).length
   }
 
   const filtered = $derived(
-    activeTab === 'all' ? supplies : supplies.filter((s) => s.category === activeTab),
+    activeUrgency === 'all' ? pending : pending.filter((s) => s.urgency === activeUrgency),
   )
 </script>
 
@@ -52,34 +55,52 @@
   {#if supplies.length === 0}
     <p class="empty">Aucune demande pour le moment.</p>
   {:else}
-    <div class="tabs" role="tablist" aria-label="Filtrer par catégorie">
-      {#each tabs as tab (tab.key)}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === tab.key}
-          class="tab"
-          class:active={activeTab === tab.key}
-          onclick={() => (activeTab = tab.key)}
-        >
-          {tab.label}
-          <span class="badge-count">{countFor(tab.key)}</span>
-        </button>
-      {/each}
-    </div>
-
-    {#if filtered.length === 0}
-      <p class="empty">Aucune demande dans cette catégorie.</p>
-    {:else}
-      <div class="list">
-        {#each filtered as supply (supply.id)}
-          <SupplyCard
-            {supply}
-            responsable={data.responsable}
-            currentMemberId={data.currentMemberId}
-          />
+    {#if pending.length > 0}
+      <div class="tabs" role="tablist" aria-label="Filtrer par urgence">
+        {#each urgencyFilters as f (f.key)}
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeUrgency === f.key}
+            class="tab urgency-{f.key}"
+            class:active={activeUrgency === f.key}
+            onclick={() => (activeUrgency = f.key)}
+          >
+            {f.label}
+            <span class="badge-count">{countFor(f.key)}</span>
+          </button>
         {/each}
       </div>
+
+      {#if filtered.length === 0}
+        <p class="empty">Aucune demande pour cette urgence.</p>
+      {:else}
+        <div class="list">
+          {#each filtered as supply (supply.id)}
+            <SupplyCard
+              {supply}
+              responsable={data.responsable}
+              currentMemberId={data.currentMemberId}
+            />
+          {/each}
+        </div>
+      {/if}
+    {:else}
+      <p class="empty">Aucune demande en attente.</p>
+    {/if}
+
+    {#if received.length > 0}
+      <CollapsibleSection title="Reçus" count={received.length}>
+        <div class="list">
+          {#each received as supply (supply.id)}
+            <SupplyCard
+              {supply}
+              responsable={data.responsable}
+              currentMemberId={data.currentMemberId}
+            />
+          {/each}
+        </div>
+      </CollapsibleSection>
     {/if}
   {/if}
 
@@ -157,6 +178,19 @@
     border-color: var(--primary);
     color: var(--text-inverse);
   }
+  /* Filtres color-codés par sévérité quand actifs (« Tout » reste primary). */
+  .tab.urgency-critique.active {
+    background: var(--danger);
+    border-color: var(--danger);
+  }
+  .tab.urgency-haute.active {
+    background: var(--warning);
+    border-color: var(--warning);
+  }
+  .tab.urgency-normale.active {
+    background: var(--text-subtle);
+    border-color: var(--text-subtle);
+  }
   .badge-count {
     display: inline-flex;
     align-items: center;
@@ -170,8 +204,8 @@
     font-weight: var(--weight-bold);
   }
   .tab.active .badge-count {
-    background: var(--primary-dark);
-    color: var(--text-inverse);
+    background: var(--bg-card);
+    color: var(--text-main);
   }
 
   .list {

@@ -1,27 +1,63 @@
 import { fail } from '@sveltejs/kit'
 import { getActiveMembersByLudo } from '$lib/server/db/members.js'
+import { getApprovedAbsencesInRange } from '$lib/server/db/absences.js'
+import { clearAssignmentsBySeason, getMemberSettingsBySeason } from '$lib/server/db/planning.js'
 import {
+  addMemberUnavailability,
   assignMember,
   cancelSlot,
   createClosurePeriod,
   deleteClosurePeriod,
+  generatePlanning,
   getSeasonGrid,
+  importGEVacations,
   PlanningServiceError,
   removeMember,
   reopenSlot,
+  saveMemberConfig,
   swapMembers,
 } from '$lib/server/services/planning.js'
 import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import { isResponsable } from '$lib/utils/permissions.js'
+import { isGenevaHoliday, isDateInRange } from '$lib/utils/dates.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params, parent }) => {
   const { ludo, currentMember } = await parent()
   const responsable = isResponsable(currentMember)
   const { season, slots, closures } = await getSeasonGrid(params.id, ludo.id)
-  // Liste des membres seulement utile aux responsables (dialog d'assignation).
   const members = responsable ? await getActiveMembersByLudo(ludo.id) : []
-  return { season, slots, closures, members, responsable }
+
+  // Données de configuration pour le panneau d'auto-génération (responsable uniquement)
+  const memberSettings = responsable ? await getMemberSettingsBySeason(params.id) : []
+  const seasonAbsences = responsable
+    ? await getApprovedAbsencesInRange(ludo.id, season.startDate, season.endDate)
+    : []
+
+  // Preview pour le dialog de génération
+  const settingsMap = new Map(memberSettings.map((s) => [s.memberId, s.isPermanent]))
+  const permanentCount = members.filter((m) => settingsMap.get(m.id) === true).length
+  const workableSlotsCount = slots.filter(
+    (s) =>
+      !s.isCancelled &&
+      !isGenevaHoliday(s.date) &&
+      !closures.some((c) => isDateInRange(s.date, c.startDate, c.endDate)),
+  ).length
+  const existingAssignmentsCount = slots.reduce((sum, s) => sum + s.assignments.length, 0)
+
+  return {
+    season,
+    slots,
+    closures,
+    members,
+    responsable,
+    memberSettings,
+    seasonAbsences,
+    permanentCount,
+    poolCount: members.length - permanentCount,
+    workableSlotsCount,
+    existingAssignmentsCount,
+  }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -77,6 +113,18 @@ export const actions: Actions = {
     )
   },
 
+  importFromGE: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const seasonId = String(event.params.id ?? '')
+    try {
+      const imported = await importGEVacations(seasonId, ludo.id)
+      return { success: true, imported }
+    } catch (err) {
+      if (err instanceof PlanningServiceError) return fail(400, { error: err.message })
+      throw err
+    }
+  },
+
   createClosure: async (event) => {
     const { ludo } = await requireResponsableContext(event)
     const data = await event.request.formData()
@@ -93,5 +141,43 @@ export const actions: Actions = {
     const { ludo } = await requireResponsableContext(event)
     const data = await event.request.formData()
     return run(() => deleteClosurePeriod(String(data.get('closureId') ?? ''), ludo.id))
+  },
+
+  saveMemberConfig: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() =>
+      saveMemberConfig(
+        String(event.params.id ?? ''),
+        ludo.id,
+        String(data.get('memberId') ?? ''),
+        data.get('isPermanent') === 'true',
+      ),
+    )
+  },
+
+  addUnavailability: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() =>
+      addMemberUnavailability(
+        String(event.params.id ?? ''),
+        ludo.id,
+        String(data.get('memberId') ?? ''),
+        String(data.get('startDate') ?? ''),
+        String(data.get('endDate') ?? ''),
+      ),
+    )
+  },
+
+  generatePlanning: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    const seasonId = String(event.params.id ?? '')
+    const requiredCount = Number(data.get('requiredCount') ?? 3)
+    return run(async () => {
+      await clearAssignmentsBySeason(seasonId)
+      await generatePlanning(seasonId, ludo.id, requiredCount)
+    })
   },
 }

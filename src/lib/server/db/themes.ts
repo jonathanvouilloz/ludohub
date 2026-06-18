@@ -58,6 +58,11 @@ export async function createTheme(data: ThemeInsert) {
   return theme
 }
 
+/** Suppression définitive : le cascade FK supprime items/images/prêts/installations. */
+export async function deleteTheme(id: string): Promise<void> {
+  await db.delete(themes).where(eq(themes.id, id))
+}
+
 export async function updateTheme(
   id: string,
   data: Partial<Pick<ThemeInsert, 'name' | 'description' | 'isShareable' | 'isArchived'>>,

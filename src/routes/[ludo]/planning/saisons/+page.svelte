@@ -4,10 +4,18 @@
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
+  import { DataTable } from '$lib/components/ui/data-table/index.js'
+  import { DataCard } from '$lib/components/ui/data-card/index.js'
+  import ArrowRightIcon from '@lucide/svelte/icons/arrow-right'
+  import ArchiveIcon from '@lucide/svelte/icons/archive'
+  import Trash2Icon from '@lucide/svelte/icons/trash-2'
+  import ZapIcon from '@lucide/svelte/icons/zap'
   import SeasonDialog from '$lib/components/planning/SeasonDialog.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
   let { data, form } = $props()
+
+  type Season = (typeof data.seasons)[number]
 
   let dialogOpen = $state(false)
 </script>
@@ -35,19 +43,84 @@
     <p class="banner" role="alert">{form.error}</p>
   {/if}
 
+  {#snippet rowActions(season: Season)}
+    <Button
+      variant="ghost"
+      size="icon-sm"
+      title="Ouvrir"
+      href="/{data.ludo.slug}/planning/saisons/{season.id}"
+    >
+      <ArrowRightIcon aria-hidden="true" />
+      <span class="sr-only">Ouvrir</span>
+    </Button>
+
+    {#if data.responsable}
+      {#if !season.isActive && !season.isArchived}
+        <form method="POST" action="?/activate" use:enhance>
+          <input type="hidden" name="id" value={season.id} />
+          <Button type="submit" variant="ghost" size="icon-sm" title="Activer cette saison">
+            <ZapIcon aria-hidden="true" />
+            <span class="sr-only">Activer</span>
+          </Button>
+        </form>
+      {/if}
+
+      <form method="POST" action="?/archive" use:enhance>
+        <input type="hidden" name="id" value={season.id} />
+        <input type="hidden" name="archived" value={(!season.isArchived).toString()} />
+        <Button
+          type="submit"
+          variant="ghost"
+          size="icon-sm"
+          title={season.isArchived ? 'Désarchiver' : 'Archiver'}
+        >
+          <ArchiveIcon aria-hidden="true" />
+          <span class="sr-only">{season.isArchived ? 'Désarchiver' : 'Archiver'}</span>
+        </Button>
+      </form>
+
+      <AlertDialog.Root>
+        <AlertDialog.Trigger
+          class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+          title="Supprimer"
+        >
+          <Trash2Icon class="danger-icon" aria-hidden="true" />
+          <span class="sr-only">Supprimer</span>
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Title>Supprimer {season.name} ?</AlertDialog.Title>
+            <AlertDialog.Description>
+              Action définitive : tous les samedis et assignations de cette saison seront supprimés.
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+          <form method="POST" action="?/delete" use:enhance>
+            <input type="hidden" name="id" value={season.id} />
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
+              <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
+                Supprimer
+              </button>
+            </AlertDialog.Footer>
+          </form>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
+    {/if}
+  {/snippet}
+
   {#if data.seasons.length === 0}
     <p class="muted">Aucune saison pour l'instant.</p>
   {:else}
-    <Table.Root>
-      <Table.Header>
+    <DataTable>
+      {#snippet head()}
         <Table.Row>
           <Table.Head>Nom</Table.Head>
           <Table.Head>Période</Table.Head>
           <Table.Head>Statut</Table.Head>
           <Table.Head class="actions-col">Actions</Table.Head>
         </Table.Row>
-      </Table.Header>
-      <Table.Body>
+      {/snippet}
+      {#snippet body()}
         {#each data.seasons as season (season.id)}
           <Table.Row>
             <Table.Cell>
@@ -58,61 +131,40 @@
               {formatDateShort(season.startDate)} – {formatDateShort(season.endDate)}
             </Table.Cell>
             <Table.Cell>
-              {#if season.isArchived}
-                <Badge variant="destructive">Archivée</Badge>
+              {#if season.isActive}
+                <Badge variant="success">Active</Badge>
+              {:else if season.isArchived}
+                <Badge variant="secondary">Archivée</Badge>
               {:else}
-                <Badge variant="outline">Active</Badge>
+                <Badge variant="outline">En préparation</Badge>
               {/if}
             </Table.Cell>
             <Table.Cell>
-              <div class="actions">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  href="/{data.ludo.slug}/planning/saisons/{season.id}"
-                >
-                  Ouvrir
-                </Button>
-
-                {#if data.responsable}
-                  <form method="POST" action="?/archive" use:enhance>
-                    <input type="hidden" name="id" value={season.id} />
-                    <input type="hidden" name="archived" value={(!season.isArchived).toString()} />
-                    <Button type="submit" variant="ghost" size="sm">
-                      {season.isArchived ? 'Désarchiver' : 'Archiver'}
-                    </Button>
-                  </form>
-
-                  <AlertDialog.Root>
-                    <AlertDialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-                      Supprimer
-                    </AlertDialog.Trigger>
-                    <AlertDialog.Content>
-                      <AlertDialog.Header>
-                        <AlertDialog.Title>Supprimer {season.name} ?</AlertDialog.Title>
-                        <AlertDialog.Description>
-                          Action définitive : tous les samedis et assignations de cette saison
-                          seront supprimés.
-                        </AlertDialog.Description>
-                      </AlertDialog.Header>
-                      <form method="POST" action="?/delete" use:enhance>
-                        <input type="hidden" name="id" value={season.id} />
-                        <AlertDialog.Footer>
-                          <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
-                          <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
-                            Supprimer
-                          </button>
-                        </AlertDialog.Footer>
-                      </form>
-                    </AlertDialog.Content>
-                  </AlertDialog.Root>
-                {/if}
-              </div>
+              <div class="actions">{@render rowActions(season)}</div>
             </Table.Cell>
           </Table.Row>
         {/each}
-      </Table.Body>
-    </Table.Root>
+      {/snippet}
+      {#snippet cards()}
+        {#each data.seasons as season (season.id)}
+          <DataCard title={season.name}>
+            {#snippet badge()}
+              {#if season.isActive}
+                <Badge variant="success">Active</Badge>
+              {:else if season.isArchived}
+                <Badge variant="secondary">Archivée</Badge>
+              {:else}
+                <Badge variant="outline">En préparation</Badge>
+              {/if}
+            {/snippet}
+            {#snippet byline()}
+              {formatDateShort(season.startDate)} – {formatDateShort(season.endDate)}
+            {/snippet}
+            {#snippet actions()}{@render rowActions(season)}{/snippet}
+          </DataCard>
+        {/each}
+      {/snippet}
+    </DataTable>
   {/if}
 </main>
 

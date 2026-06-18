@@ -8,7 +8,12 @@ vi.mock('../db/supplies.js', () => ({
   updateSupply: vi.fn(),
 }))
 
+vi.mock('./events.js', () => ({
+  emitEvent: vi.fn(),
+}))
+
 import { createSupply, deleteSupply, getSupplyById, updateSupply } from '../db/supplies.js'
+import { emitEvent } from './events.js'
 import {
   createSupplyRequest,
   deleteSupplyRequest,
@@ -31,13 +36,18 @@ beforeEach(() => {
     ludoId: LUDO,
     memberId: AUTHOR,
   } as never)
+  vi.mocked(createSupply).mockResolvedValue({
+    id: SUPPLY,
+    ludoId: LUDO,
+    memberId: AUTHOR,
+    name: 'Cartes',
+  } as never)
 })
 
 describe('createSupplyRequest', () => {
   it('crée une demande valide', async () => {
     await createSupplyRequest(LUDO, AUTHOR, {
       name: 'Cartes',
-      category: 'fournitures',
       urgency: 'haute',
       notes: '  besoin rapide ',
     })
@@ -45,21 +55,46 @@ describe('createSupplyRequest', () => {
       ludoId: LUDO,
       memberId: AUTHOR,
       name: 'Cartes',
-      category: 'fournitures',
+      link: null,
       urgency: 'haute',
       notes: 'besoin rapide',
     })
   })
 
-  it('refuse une catégorie invalide', async () => {
+  it('notifie les responsables de la ludo', async () => {
+    await createSupplyRequest(LUDO, AUTHOR, { name: 'Cartes', urgency: 'haute' })
+    expect(emitEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'supply_request',
+        actorLudoId: LUDO,
+        actorMemberId: AUTHOR,
+        entityType: 'supply',
+        entityId: SUPPLY,
+        recipientResponsablesOf: LUDO,
+      }),
+    )
+  })
+
+  it('conserve un lien http(s) valide', async () => {
+    await createSupplyRequest(LUDO, AUTHOR, {
+      name: 'Cartes',
+      link: 'https://example.com/cartes',
+      urgency: 'normale',
+    })
+    expect(createSupply).toHaveBeenCalledWith(
+      expect.objectContaining({ link: 'https://example.com/cartes' }),
+    )
+  })
+
+  it('refuse un lien non http', async () => {
     await expect(
-      createSupplyRequest(LUDO, AUTHOR, { name: 'X', category: 'nope', urgency: 'normale' }),
-    ).rejects.toThrow(/Catégorie invalide/)
+      createSupplyRequest(LUDO, AUTHOR, { name: 'X', link: 'ftp://x', urgency: 'normale' }),
+    ).rejects.toThrow(/http/)
   })
 
   it('refuse une urgence invalide', async () => {
     await expect(
-      createSupplyRequest(LUDO, AUTHOR, { name: 'X', category: 'autre', urgency: 'extreme' }),
+      createSupplyRequest(LUDO, AUTHOR, { name: 'X', urgency: 'extreme' }),
     ).rejects.toThrow(/Urgence invalide/)
   })
 })

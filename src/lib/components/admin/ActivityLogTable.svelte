@@ -4,6 +4,8 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import { DataTable } from '$lib/components/ui/data-table/index.js'
+  import { DataCard } from '$lib/components/ui/data-card/index.js'
 
   type LogRow = {
     id: string
@@ -68,8 +70,8 @@
 {#if logs.length === 0}
   <p class="empty">Aucune activité ne correspond à ces filtres.</p>
 {:else}
-  <Table.Root>
-    <Table.Header>
+  <DataTable>
+    {#snippet head()}
       <Table.Row>
         <Table.Head>Date</Table.Head>
         <Table.Head>Ludothèque</Table.Head>
@@ -77,8 +79,8 @@
         <Table.Head>Entité</Table.Head>
         <Table.Head>Métadonnées</Table.Head>
       </Table.Row>
-    </Table.Header>
-    <Table.Body>
+    {/snippet}
+    {#snippet body()}
       {#each logs as log (log.id)}
         <Table.Row>
           <Table.Cell>{formatDateTime(log.createdAt)}</Table.Cell>
@@ -88,8 +90,17 @@
           <Table.Cell class="meta-cell"><code>{summarizeMetadata(log.metadata)}</code></Table.Cell>
         </Table.Row>
       {/each}
-    </Table.Body>
-  </Table.Root>
+    {/snippet}
+    {#snippet cards()}
+      {#each logs as log (log.id)}
+        {#snippet cardNote()}<code class="meta">{summarizeMetadata(log.metadata)}</code>{/snippet}
+        <DataCard title={ludoNames.get(log.ludoId) ?? '—'} notes={cardNote}>
+          {#snippet badge()}<Badge variant="secondary">{log.action}</Badge>{/snippet}
+          {#snippet byline()}{formatDateTime(log.createdAt)} · {log.entityType}{/snippet}
+        </DataCard>
+      {/each}
+    {/snippet}
+  </DataTable>
 {/if}
 
 <style>
@@ -137,6 +148,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     vertical-align: bottom;
+    font-size: var(--text-small);
+    color: var(--text-muted);
+  }
+  code.meta {
+    display: block;
+    overflow-wrap: anywhere;
     font-size: var(--text-small);
     color: var(--text-muted);
   }

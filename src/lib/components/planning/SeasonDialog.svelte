@@ -4,12 +4,14 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import DatePicker from '$lib/components/ui/date-picker/DatePicker.svelte'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
 
   let name = $state('')
   let startDate = $state('')
   let endDate = $state('')
+  let activateNow = $state(false)
   let error = $state('')
   let submitting = $state(false)
 
@@ -18,6 +20,7 @@
       name = ''
       startDate = ''
       endDate = ''
+      activateNow = false
       error = ''
     }
   })
@@ -51,19 +54,32 @@
     >
       <div class="field">
         <Label for="season-name">Nom</Label>
-        <Input id="season-name" name="name" bind:value={name} placeholder="Saison 2026" required />
+        <Input id="season-name" name="name" bind:value={name} placeholder="Saison 2026-27" required />
       </div>
 
       <div class="row">
         <div class="field">
-          <Label for="season-start">Début</Label>
-          <Input id="season-start" name="startDate" type="date" bind:value={startDate} required />
+          <Label>Début</Label>
+          <DatePicker bind:value={startDate} name="startDate" placeholder="Date de début" />
         </div>
         <div class="field">
-          <Label for="season-end">Fin</Label>
-          <Input id="season-end" name="endDate" type="date" bind:value={endDate} required />
+          <Label>Fin</Label>
+          <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" />
         </div>
       </div>
+
+      <label class="activate-check">
+        <input
+          type="checkbox"
+          bind:checked={activateNow}
+          name="activateNow"
+          value="true"
+        />
+        <span>
+          Activer immédiatement
+          <span class="activate-note">— la saison actuellement active sera archivée</span>
+        </span>
+      </label>
 
       {#if error}
         <p class="error" role="alert">{error}</p>
@@ -71,7 +87,7 @@
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
-        <Button type="submit" disabled={submitting}>
+        <Button type="submit" disabled={submitting || !startDate || !endDate}>
           {submitting ? 'Création…' : 'Créer la saison'}
         </Button>
       </Dialog.Footer>
@@ -96,6 +112,21 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+  .activate-check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    cursor: pointer;
+    font-size: var(--text-small);
+    color: var(--text-main);
+  }
+  .activate-check input[type='checkbox'] {
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+  .activate-note {
+    color: var(--text-muted);
   }
   .error {
     margin: 0;

@@ -1,8 +1,13 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import * as Table from '$lib/components/ui/table/index.js'
-  import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Button } from '$lib/components/ui/button/index.js'
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
+  import { StatusBadge } from '$lib/components/ui/badge/index.js'
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
+  import { DataTable } from '$lib/components/ui/data-table/index.js'
+  import { DataCard } from '$lib/components/ui/data-card/index.js'
+  import EyeIcon from '@lucide/svelte/icons/eye'
+  import XIcon from '@lucide/svelte/icons/x'
   import NewAbsenceDialog from '$lib/components/absences/NewAbsenceDialog.svelte'
   import AbsenceReviewDialog from '$lib/components/absences/AbsenceReviewDialog.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
@@ -72,53 +77,89 @@
     </section>
   {/if}
 
+  {#snippet rowActions(a: AbsenceWithMember)}
+    {#if data.responsable && a.status === 'en_attente'}
+      <Button variant="ghost" size="icon-sm" title="Examiner" onclick={() => openReview(a)}>
+        <EyeIcon aria-hidden="true" />
+        <span class="sr-only">Examiner</span>
+      </Button>
+    {/if}
+    {#if !data.responsable && a.status === 'en_attente'}
+      <AlertDialog.Root>
+        <AlertDialog.Trigger
+          class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+          title="Annuler"
+        >
+          <XIcon aria-hidden="true" />
+          <span class="sr-only">Annuler</span>
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Title>Annuler cette demande d'absence ?</AlertDialog.Title>
+            <AlertDialog.Description>
+              La demande sera supprimée. Vous pourrez en refaire une si besoin.
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+          <form method="POST" action="?/cancel" use:enhance>
+            <input type="hidden" name="id" value={a.id} />
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>
+              <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
+                Annuler la demande
+              </button>
+            </AlertDialog.Footer>
+          </form>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
+    {/if}
+  {/snippet}
+
   {#if absences.length === 0}
     <p class="empty">Aucune demande pour le moment.</p>
   {:else}
-    <Table.Root>
-      <Table.Header>
+    <DataTable>
+      {#snippet head()}
         <Table.Row>
-          {#if data.responsable}<Table.Head>Membre</Table.Head>{/if}
+          <Table.Head>Membre</Table.Head>
           <Table.Head>Type</Table.Head>
           <Table.Head>Période</Table.Head>
           <Table.Head>Statut</Table.Head>
           <Table.Head>Note</Table.Head>
           <Table.Head class="actions-col">Actions</Table.Head>
         </Table.Row>
-      </Table.Header>
-      <Table.Body>
+      {/snippet}
+      {#snippet body()}
         {#each absences as a (a.id)}
           <Table.Row>
-            {#if data.responsable}<Table.Cell>{a.member?.name ?? '—'}</Table.Cell>{/if}
+            <Table.Cell>{a.member?.name ?? '—'}</Table.Cell>
             <Table.Cell>{typeLabels[a.type] ?? a.type}</Table.Cell>
             <Table.Cell>{formatDateShort(a.startDate)} → {formatDateShort(a.endDate)}</Table.Cell>
-            <Table.Cell>
-              {#if a.status === 'approuve'}
-                <Badge>Approuvée</Badge>
-              {:else if a.status === 'refuse'}
-                <Badge variant="destructive">Refusée</Badge>
-              {:else}
-                <Badge variant="outline">En attente</Badge>
-              {/if}
-            </Table.Cell>
+            <Table.Cell><StatusBadge status={a.status} /></Table.Cell>
             <Table.Cell class="note-cell">{a.responderNotes ?? a.notes ?? ''}</Table.Cell>
             <Table.Cell>
-              <div class="actions">
-                {#if data.responsable && a.status === 'en_attente'}
-                  <Button variant="ghost" size="sm" onclick={() => openReview(a)}>Examiner</Button>
-                {/if}
-                {#if !data.responsable && a.status === 'en_attente'}
-                  <form method="POST" action="?/cancel" use:enhance>
-                    <input type="hidden" name="id" value={a.id} />
-                    <Button type="submit" variant="ghost" size="sm">Annuler</Button>
-                  </form>
-                {/if}
-              </div>
+              <div class="actions">{@render rowActions(a)}</div>
             </Table.Cell>
           </Table.Row>
         {/each}
-      </Table.Body>
-    </Table.Root>
+      {/snippet}
+      {#snippet cards()}
+        {#each absences as a (a.id)}
+          {#snippet cardNote()}{a.responderNotes ?? a.notes}{/snippet}
+          <DataCard
+            title={a.member?.name ?? '—'}
+            notes={(a.responderNotes ?? a.notes) ? cardNote : undefined}
+          >
+            {#snippet badge()}<StatusBadge status={a.status} />{/snippet}
+            {#snippet byline()}
+              {typeLabels[a.type] ?? a.type} · {formatDateShort(a.startDate)} → {formatDateShort(
+                a.endDate,
+              )}
+            {/snippet}
+            {#snippet actions()}{@render rowActions(a)}{/snippet}
+          </DataCard>
+        {/each}
+      {/snippet}
+    </DataTable>
   {/if}
 
   <NewAbsenceDialog bind:open={newOpen} />

@@ -34,7 +34,7 @@ export const actions: Actions = {
     return run(() =>
       createSupplyRequest(ludo.id, member.id, {
         name: String(data.get('name') ?? ''),
-        category: String(data.get('category') ?? ''),
+        link: String(data.get('link') ?? ''),
         urgency: String(data.get('urgency') ?? ''),
         notes: String(data.get('notes') ?? ''),
       }),

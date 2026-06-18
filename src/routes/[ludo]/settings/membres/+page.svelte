@@ -4,6 +4,12 @@
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
+  import { DataTable } from '$lib/components/ui/data-table/index.js'
+  import { DataCard } from '$lib/components/ui/data-card/index.js'
+  import PencilIcon from '@lucide/svelte/icons/pencil'
+  import UserXIcon from '@lucide/svelte/icons/user-x'
+  import UserCheckIcon from '@lucide/svelte/icons/user-check'
+  import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import MemberDialog from '$lib/components/membres/MemberDialog.svelte'
   import type { MemberRow } from '$lib/server/schema'
 
@@ -52,16 +58,76 @@
   <p class="banner" role="alert">{form.error}</p>
 {/if}
 
-<Table.Root>
-  <Table.Header>
+{#snippet rowActions(member: MemberRow)}
+  <Button variant="ghost" size="icon-sm" title="Modifier" onclick={() => openEdit(member)}>
+    <PencilIcon aria-hidden="true" />
+    <span class="sr-only">Modifier</span>
+  </Button>
+
+  {#if member.isActive}
+    <form method="POST" action="?/deactivate" use:enhance>
+      <input type="hidden" name="id" value={member.id} />
+      <Button
+        type="submit"
+        variant="ghost"
+        size="icon-sm"
+        title="Désactiver"
+        disabled={isSelf(member) || isLastResponsable(member)}
+      >
+        <UserXIcon aria-hidden="true" />
+        <span class="sr-only">Désactiver</span>
+      </Button>
+    </form>
+  {:else}
+    <form method="POST" action="?/reactivate" use:enhance>
+      <input type="hidden" name="id" value={member.id} />
+      <Button type="submit" variant="ghost" size="icon-sm" title="Réactiver">
+        <UserCheckIcon aria-hidden="true" />
+        <span class="sr-only">Réactiver</span>
+      </Button>
+    </form>
+  {/if}
+
+  <AlertDialog.Root>
+    <AlertDialog.Trigger
+      class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+      disabled={isSelf(member) || isLastResponsable(member)}
+      title="Supprimer"
+    >
+      <Trash2Icon class="danger-icon" aria-hidden="true" />
+      <span class="sr-only">Supprimer</span>
+    </AlertDialog.Trigger>
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Supprimer {member.name} ?</AlertDialog.Title>
+        <AlertDialog.Description>
+          Action définitive. La suppression est bloquée si ce membre a des assignations ou absences
+          — désactivez-le dans ce cas.
+        </AlertDialog.Description>
+      </AlertDialog.Header>
+      <form method="POST" action="?/delete" use:enhance>
+        <input type="hidden" name="id" value={member.id} />
+        <AlertDialog.Footer>
+          <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
+          <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
+            Supprimer
+          </button>
+        </AlertDialog.Footer>
+      </form>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
+{/snippet}
+
+<DataTable>
+  {#snippet head()}
     <Table.Row>
       <Table.Head>Nom</Table.Head>
       <Table.Head>Rôle</Table.Head>
       <Table.Head>Statut</Table.Head>
       <Table.Head class="actions-col">Actions</Table.Head>
     </Table.Row>
-  </Table.Header>
-  <Table.Body>
+  {/snippet}
+  {#snippet body()}
     {#each data.members as member (member.id)}
       <Table.Row>
         <Table.Cell class="name-cell">
@@ -77,66 +143,36 @@
         </Table.Cell>
         <Table.Cell>
           {#if member.isActive}
-            <Badge variant="outline">Actif</Badge>
+            <Badge variant="success">Actif</Badge>
           {:else}
             <Badge variant="destructive">Inactif</Badge>
           {/if}
         </Table.Cell>
         <Table.Cell>
-          <div class="actions">
-            <Button variant="ghost" size="sm" onclick={() => openEdit(member)}>Modifier</Button>
-
-            {#if member.isActive}
-              <form method="POST" action="?/deactivate" use:enhance>
-                <input type="hidden" name="id" value={member.id} />
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isSelf(member) || isLastResponsable(member)}
-                >
-                  Désactiver
-                </Button>
-              </form>
-            {:else}
-              <form method="POST" action="?/reactivate" use:enhance>
-                <input type="hidden" name="id" value={member.id} />
-                <Button type="submit" variant="ghost" size="sm">Réactiver</Button>
-              </form>
-            {/if}
-
-            <AlertDialog.Root>
-              <AlertDialog.Trigger
-                class={buttonVariants({ variant: 'ghost', size: 'sm' })}
-                disabled={isSelf(member) || isLastResponsable(member)}
-              >
-                Supprimer
-              </AlertDialog.Trigger>
-              <AlertDialog.Content>
-                <AlertDialog.Header>
-                  <AlertDialog.Title>Supprimer {member.name} ?</AlertDialog.Title>
-                  <AlertDialog.Description>
-                    Action définitive. La suppression est bloquée si ce membre a des assignations ou
-                    absences — désactivez-le dans ce cas.
-                  </AlertDialog.Description>
-                </AlertDialog.Header>
-                <form method="POST" action="?/delete" use:enhance>
-                  <input type="hidden" name="id" value={member.id} />
-                  <AlertDialog.Footer>
-                    <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
-                    <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
-                      Supprimer
-                    </button>
-                  </AlertDialog.Footer>
-                </form>
-              </AlertDialog.Content>
-            </AlertDialog.Root>
-          </div>
+          <div class="actions">{@render rowActions(member)}</div>
         </Table.Cell>
       </Table.Row>
     {/each}
-  </Table.Body>
-</Table.Root>
+  {/snippet}
+  {#snippet cards()}
+    {#each data.members as member (member.id)}
+      <DataCard title={member.name}>
+        {#snippet badge()}
+          {#if member.isActive}
+            <Badge variant="success">Actif</Badge>
+          {:else}
+            <Badge variant="destructive">Inactif</Badge>
+          {/if}
+        {/snippet}
+        {#snippet byline()}
+          {member.role === 'responsable' ? 'Responsable' : 'Membre'}{#if isSelf(member)}
+            · vous{/if}
+        {/snippet}
+        {#snippet actions()}{@render rowActions(member)}{/snippet}
+      </DataCard>
+    {/each}
+  {/snippet}
+</DataTable>
 
 <MemberDialog bind:open={dialogOpen} member={editing} />
 

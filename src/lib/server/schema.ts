@@ -110,6 +110,7 @@ export const seasons = pgTable('seasons', {
   name: text('name').notNull(),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
+  isActive: boolean('is_active').notNull().default(false),
   isArchived: boolean('is_archived').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
@@ -123,7 +124,7 @@ export const saturdaySlots = pgTable('saturday_slots', {
     .references(() => seasons.id, { onDelete: 'cascade' }),
   date: date('date').notNull(),
   type: slotType('type').notNull().default('normal'),
-  requiredCount: integer('required_count').notNull().default(2),
+  requiredCount: integer('required_count').notNull().default(3),
   isCancelled: boolean('is_cancelled').notNull().default(false),
 })
 
@@ -157,16 +158,49 @@ export const closurePeriods = pgTable('closure_periods', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+/**
+ * Configuration par membre pour une saison donnée.
+ * `isPermanent` = travaille tous les samedis non fermés/fériés de la saison.
+ * Utilisé par l'algo de génération automatique du planning.
+ */
+export const seasonMemberSettings = pgTable(
+  'season_member_settings',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    seasonId: uuid('season_id')
+      .notNull()
+      .references(() => seasons.id, { onDelete: 'cascade' }),
+    memberId: uuid('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    isPermanent: boolean('is_permanent').notNull().default(false),
+  },
+  (t) => [unique().on(t.seasonId, t.memberId)],
+)
+
 // ─── Relations (API relationnelle Drizzle : `db.query.*.findMany({ with })`) ──
 
 export const membersRelations = relations(members, ({ many }) => ({
   assignments: many(assignments),
   absences: many(absences),
+  seasonSettings: many(seasonMemberSettings),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
   slots: many(saturdaySlots),
   closurePeriods: many(closurePeriods),
+  memberSettings: many(seasonMemberSettings),
+}))
+
+export const seasonMemberSettingsRelations = relations(seasonMemberSettings, ({ one }) => ({
+  season: one(seasons, {
+    fields: [seasonMemberSettings.seasonId],
+    references: [seasons.id],
+  }),
+  member: one(members, {
+    fields: [seasonMemberSettings.memberId],
+    references: [members.id],
+  }),
 }))
 
 export const closurePeriodsRelations = relations(closurePeriods, ({ one }) => ({
@@ -332,7 +366,7 @@ export const themeLoansRelations = relations(themeLoans, ({ one }) => ({
 
 export const installationStatus = pgEnum('installation_status', ['en_cours', 'cloturee'])
 
-export const checkupItemStatus = pgEnum('checkup_item_status', ['present', 'manquant'])
+export const checkupItemStatus = pgEnum('checkup_item_status', ['present', 'a_reparer', 'manquant'])
 
 export const themeInstallations = pgTable('theme_installations', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -361,6 +395,8 @@ export const themeInstallationItems = pgTable('theme_installation_items', {
   themeItemId: uuid('theme_item_id')
     .notNull()
     .references(() => themeItems.id, { onDelete: 'cascade' }),
+  // État courant persistant de l'objet (mis à jour par check-up ou résolution).
+  condition: checkupItemStatus('condition').notNull().default('present'),
 })
 
 export const themeCheckups = pgTable('theme_checkups', {
@@ -513,13 +549,6 @@ export const gameWishes = pgTable('game_wishes', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
-export const supplyCategory = pgEnum('supply_category', [
-  'jeux',
-  'materiel',
-  'fournitures',
-  'autre',
-])
-
 export const supplyUrgency = pgEnum('supply_urgency', ['normale', 'haute', 'critique'])
 
 export const supplyStatus = pgEnum('supply_status', ['en_attente', 'commande', 'recu'])
@@ -533,7 +562,7 @@ export const supplyRequests = pgTable('supply_requests', {
     .notNull()
     .references(() => members.id),
   name: text('name').notNull(),
-  category: supplyCategory('category').notNull(),
+  link: text('link'),
   urgency: supplyUrgency('urgency').notNull().default('normale'),
   status: supplyStatus('status').notNull().default('en_attente'),
   notes: text('notes'),
@@ -590,6 +619,7 @@ export const notificationType = pgEnum('notification_type', [
   'installation_closed',
   'checkup_recorded',
   'checkup_missing_item',
+  'supply_request',
 ])
 
 export const notificationSeverity = pgEnum('notification_severity', ['info', 'action_required'])
@@ -638,6 +668,8 @@ export type AssignmentRow = typeof assignments.$inferSelect
 export type AssignmentInsert = typeof assignments.$inferInsert
 export type ClosurePeriodRow = typeof closurePeriods.$inferSelect
 export type ClosurePeriodInsert = typeof closurePeriods.$inferInsert
+export type SeasonMemberSettingRow = typeof seasonMemberSettings.$inferSelect
+export type SeasonMemberSettingInsert = typeof seasonMemberSettings.$inferInsert
 export type AbsenceRow = typeof absences.$inferSelect
 export type AbsenceInsert = typeof absences.$inferInsert
 export type ThemeRow = typeof themes.$inferSelect

@@ -4,6 +4,46 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-18 | Saison active explicite (`is_active`) plutôt qu'implicite (plus récente non-archivée)
+
+**Contexte :** L'ancien système rendait active la saison la plus récente non-archivée, ce qui empêchait de préparer une future saison en avance. Besoin d'un contrôle explicite avec 3 états : Active / En préparation / Archivée.
+
+**Décision :** Colonne `is_active boolean default false` sur `seasons`. `activateSeason` archive atomiquement l'ancienne via `db.batch()`. Une seule active par ludo, gérée en service (pas de contrainte DB unique — neon-http sans transaction interactive).
+
+**Alternatives :** Contrainte UNIQUE partielle en DB (rejetée : neon-http `db.batch()` suffit + plus simple) ; garder l'implicite + flag "draft" séparé (rejeté : 2 colonnes pour la même sémantique).
+
+---
+
+## 2026-06-18 | Import ge.ch : attribut `title=` du `<a>` plutôt que contenu textuel
+
+**Contexte :** Le contenu texte de `<a href="*/telecharger">` contient un `<span class="material-icons-outlined">` imbriqué, ce qui casse le regex `[^<]+` (s'arrête au premier `<`). L'attribut `title="lundi 19 octobre 2026 au..."` contient le texte propre sans HTML.
+
+**Décision :** Cibler `/<a\s[^>]*href="[^"]*\/telecharger"[^>]*>/gi` et extraire `title="..."` pour le texte de date. Chercher en arrière le `<strong>` le plus proche pour le label.
+
+**Alternatives :** Strip HTML complet puis parse texte brut (plus fragile), LLM Mistral (dépendance externe inutile pour un format aussi régulier).
+
+---
+
+## 2026-06-17 | Système de composants UI : on étend les primitives `ui/` plutôt que des wrappers ad hoc
+
+**Contexte :** Palette très claire → boutons `ghost`/`outline` et badges `outline` invisibles ; tableaux transparents et non responsive ; cartes dupliquées entre matériel et jeux. Besoin d'une base réutilisable et d'une charte respectée pour toute modif future.
+
+**Décision :** Centraliser dans `src/lib/components/ui/` : (1) variantes de `button`/`badge` revues (bordure forte sur boutons texte, icône-only sans bordure via `compoundVariants`, variantes `success`/`warning`, `StatusBadge`) ; (2) nouveaux composants `data-table` (responsive → cartes < 640px), `data-card` (carte unifiée, les cartes domaine en deviennent des adaptateurs), `collapsible-section`. Conventions figées dans `DESIGN.md §9` / `STYLEGUIDE.md`.
+
+**Alternatives :** Wrappers par domaine sans toucher `ui/` (rejeté : duplication, dérive de la charte) ; garder shadcn par défaut (rejeté : invisibilité des boutons sur la palette claire).
+
+---
+
+## 2026-06-17 | Tailwind v4 `@theme` : valeurs littérales pour radius/ombres (pas d'auto-référence)
+
+**Contexte :** `@theme` mappait `--radius-lg: var(--radius-lg)` (même nom des deux côtés) → résolution cassée, `border-radius` à 0 sur les boutons/surfaces. Le pattern marche pour les couleurs car les noms diffèrent (`--color-primary: var(--primary)`).
+
+**Décision :** Poser les valeurs littérales dans `@theme` (`--radius-lg: 16px`, ombres idem). `tokens.css` reste la source documentaire ; `@theme` est l'override Tailwind.
+
+**Alternatives :** Renommer les tokens source (rejeté : utilisés en `var()` dans tout le CSS scopé) ; supprimer le mapping (rejeté : Tailwind retomberait sur ses défauts 0.5rem).
+
+---
+
 ## 2026-06-17 | Notifs check-up : deep-link vers la liste thèmes (pas l'installation précise)
 
 **Contexte :** La table `notifications` ne stocke pas de `metadata` (seul `activity_log` l'a). Les 4 nouveaux types de notif liés aux installations (`theme_installed`, `installation_closed`, `checkup_recorded`, `checkup_missing_item`) n'ont donc pas accès au `themeId` pour construire l'URL `/[slug]/themes/[themeId]/installations/[iid]`.

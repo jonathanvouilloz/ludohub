@@ -21,6 +21,7 @@ export async function getPendingAbsencesByLudo(ludoId: string) {
 export async function getAbsencesByMember(memberId: string) {
   return db.query.absences.findMany({
     where: eq(absences.memberId, memberId),
+    with: { member: true },
     orderBy: (a, { desc }) => desc(a.createdAt),
   })
 }

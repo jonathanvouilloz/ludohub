@@ -1,10 +1,14 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import * as Table from '$lib/components/ui/table/index.js'
-  import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Button } from '$lib/components/ui/button/index.js'
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
+  import { Badge, StatusBadge } from '$lib/components/ui/badge/index.js'
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
+  import { DataTable } from '$lib/components/ui/data-table/index.js'
+  import { DataCard } from '$lib/components/ui/data-card/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import ThemeItemList from '$lib/components/themes/ThemeItemList.svelte'
   import ThemeImageGallery from '$lib/components/themes/ThemeImageGallery.svelte'
   import LoanDialog from '$lib/components/themes/LoanDialog.svelte'
@@ -48,17 +52,39 @@
     </div>
     <div class="head-actions">
       {#if editable && !activeInstallation}
-        <Button variant="outline" onclick={() => (installOpen = true)}>Installer</Button>
+        <Button onclick={() => (installOpen = true)}>Installer</Button>
       {/if}
       {#if editable && !activeLoan}
-        <Button onclick={() => (loanOpen = true)}>Prêter</Button>
+        <Button variant="outline" onclick={() => (loanOpen = true)}>Prêter</Button>
       {/if}
-      <form method="POST" action="?/archive" use:enhance>
-        <input type="hidden" name="archived" value={theme.isArchived ? 'false' : 'true'} />
-        <Button type="submit" variant="outline">
-          {theme.isArchived ? 'Désarchiver' : 'Archiver'}
-        </Button>
-      </form>
+      {#if data.responsable}
+        <AlertDialog.Root>
+          <AlertDialog.Trigger
+            class={buttonVariants({ variant: 'ghost', size: 'icon' })}
+            title="Supprimer le thème"
+          >
+            <Trash2Icon class="danger-icon" aria-hidden="true" />
+            <span class="sr-only">Supprimer le thème</span>
+          </AlertDialog.Trigger>
+          <AlertDialog.Content>
+            <AlertDialog.Header>
+              <AlertDialog.Title>Supprimer « {theme.name} » ?</AlertDialog.Title>
+              <AlertDialog.Description>
+                Suppression définitive du thème et de tout son contenu : éléments, photos,
+                historique des prêts et installations. Action irréversible.
+              </AlertDialog.Description>
+            </AlertDialog.Header>
+            <form method="POST" action="?/delete" use:enhance>
+              <AlertDialog.Footer>
+                <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
+                <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
+                  Supprimer définitivement
+                </button>
+              </AlertDialog.Footer>
+            </form>
+          </AlertDialog.Content>
+        </AlertDialog.Root>
+      {/if}
     </div>
   </header>
 
@@ -155,7 +181,6 @@
         <p class="muted">{theme.description || 'Aucune description.'}</p>
       {/if}
 
-      <h2>Items</h2>
       <ThemeItemList items={theme.items ?? []} {editable} />
     </section>
 
@@ -167,30 +192,35 @@
       {#if history.length === 0}
         <p class="muted">Aucun prêt enregistré.</p>
       {:else}
-        <Table.Root>
-          <Table.Header>
+        <DataTable>
+          {#snippet head()}
             <Table.Row>
               <Table.Head>Ludothèque</Table.Head>
               <Table.Head>Date</Table.Head>
               <Table.Head>Statut</Table.Head>
             </Table.Row>
-          </Table.Header>
-          <Table.Body>
+          {/snippet}
+          {#snippet body()}
             {#each history as loan (loan.id)}
               <Table.Row>
                 <Table.Cell>{loan.toLudo?.name ?? '—'}</Table.Cell>
                 <Table.Cell>{formatDateShort(loan.createdAt)}</Table.Cell>
-                <Table.Cell>
-                  {#if loan.status === 'actif'}
-                    <Badge variant="secondary">{statusLabels[loan.status]}</Badge>
-                  {:else}
-                    <Badge variant="outline">{statusLabels[loan.status] ?? loan.status}</Badge>
-                  {/if}
-                </Table.Cell>
+                <Table.Cell><StatusBadge status={loan.status} labels={statusLabels} /></Table.Cell>
               </Table.Row>
             {/each}
-          </Table.Body>
-        </Table.Root>
+          {/snippet}
+          {#snippet cards()}
+            {#each history as loan (loan.id)}
+              <DataCard title={loan.toLudo?.name ?? '—'}>
+                {#snippet badge()}<StatusBadge
+                    status={loan.status}
+                    labels={statusLabels}
+                  />{/snippet}
+                {#snippet byline()}{formatDateShort(loan.createdAt)}{/snippet}
+              </DataCard>
+            {/each}
+          {/snippet}
+        </DataTable>
       {/if}
     </section>
   </div>
@@ -236,7 +266,11 @@
   }
   .head-actions {
     display: flex;
+    align-items: center;
     gap: var(--space-3);
+  }
+  .head-actions :global(.danger-icon) {
+    color: var(--danger);
   }
   .banner {
     margin: 0 0 var(--space-4);
