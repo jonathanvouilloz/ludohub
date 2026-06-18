@@ -7,7 +7,10 @@
   const current = $derived(page.url.pathname)
 
   type NavItem = { label: string; href: string; disabled?: boolean }
-  const items = $derived<NavItem[]>([{ label: 'Membres', href: `/${slug}/settings/membres` }])
+  const items = $derived<NavItem[]>([
+    { label: 'Membres', href: `/${slug}/settings/membres` },
+    { label: 'Infos ludothèque', href: `/${slug}/settings/infos` },
+  ])
 </script>
 
 <div class="settings">
