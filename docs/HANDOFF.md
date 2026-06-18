@@ -12,4 +12,4 @@
 
 **Prochain epic : 12-TESTS E2E** (Playwright) — setup `playwright.config.ts` + seed DB test + helper auth, puis flows F1→F5.
 Rappel migration : activer une saison manuellement depuis `/planning/saisons` (⚡) — toutes ont `isActive=false`.
-Commit : (à renseigner après commit)
+Commit : [95b642f] feat(absences): planification responsable + suppression + DatePicker minValue

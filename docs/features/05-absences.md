@@ -18,7 +18,7 @@
 - DatePicker : ne pas initialiser `calPlaceholder` en référençant un prop réactif (`minValue`/`value`) dans `$state(...)` → warning Svelte `state_referenced_locally`. Init à `undefined`, l'effet `if (minDv && !dv)` règle le mois au montage.
 - `createAbsenceForMember` réutilise le type de notif `absence_approved` (titre/corps custom) → aucune migration d'enum.
 
-**Commit :** (à renseigner)
+**Commit :** [95b642f] feat(absences): planification responsable + suppression + DatePicker minValue
 
 ## Carte du code
 > Mise à jour : 2026-06-18
