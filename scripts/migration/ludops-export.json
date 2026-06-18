@@ -1,0 +1,2517 @@
+{
+  "members": [
+    {
+      "id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "name": "Alessia",
+      "label": "Responsable",
+      "is_permanent": 0,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    },
+    {
+      "id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "name": "Eduardo",
+      "label": null,
+      "is_permanent": 0,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    },
+    {
+      "id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "name": "Franziska",
+      "label": null,
+      "is_permanent": 0,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    },
+    {
+      "id": "01KMJ2PD39XEGC7KM54WD2F4XF",
+      "name": "Gabriel",
+      "label": null,
+      "is_permanent": 1,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    },
+    {
+      "id": "01KMJ2PD5NW1CFCNVGZPK6X7DC",
+      "name": "Jonathan",
+      "label": null,
+      "is_permanent": 0,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    },
+    {
+      "id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "name": "Sadjia",
+      "label": null,
+      "is_permanent": 0,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    },
+    {
+      "id": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "name": "Zaineb",
+      "label": null,
+      "is_permanent": 0,
+      "is_active": 1,
+      "created_at": "2026-03-25 08:45:04"
+    }
+  ],
+  "seasons": [
+    {
+      "id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "name": "Saison 25-26",
+      "start_date": "2025-08-23",
+      "end_date": "2026-08-15",
+      "default_slots": 3,
+      "created_at": "2026-03-25 08:45:04"
+    }
+  ],
+  "saturday_slots": [
+    {
+      "id": "01KMJ2PDE83B5XHJ0BHRB0TXA4",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-08-23",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PDPE1XN8FN3KH42S3FGR",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-08-30",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PDZ2F5HJE3DHMN8KBEXR",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-09-06",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PE9QB20Z7F2T1SYT1CYC",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-09-13",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PEPPMKECWY98945HEJD4",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-09-20",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PF2KRNVW0PC3P3B6D4BZ",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-09-27",
+      "type": "event",
+      "event_label": "Portes ouvertes des ludos",
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PF5X4A8F9DY6FD4DXZ24",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-10-04",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PFG4QNQR4S1B7MDAPNN3",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-10-11",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PFQ1SY6SXPA18GTBAMER",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-10-18",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PFRZHV5DMT2KN6ZH8KQZ",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-10-25",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PFTW4HQ6CEAY1EYQ17HV",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-11-01",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PG3H5TXP1D0WW2ABDHF8",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-11-08",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PGBCVQK4X8PCKB2W777H",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-11-15",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PGMDMC3T2W1YTMVXT3MK",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-11-22",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PGXANY2MH4BMJWKHDH4V",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-11-29",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PH5NG47ZPR0NFG9VNG62",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-12-06",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PHD3HJC9S66G13PMTQ06",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-12-13",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PHQCRSCV1RJ785ETFYQ8",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-12-20",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PHS104JN245D5PWPN53V",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2025-12-27",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PHTTTJWZ2NTZDJNDA5V0",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-01-03",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PHWH5NCCBTT5ZG1K5B3C",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-01-10",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PJ3YXGWAM88GF2WZYXWX",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-01-17",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PJB8M1WC2W0ENCPJ1FV9",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-01-24",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PJMKJ865VYFNK979WQSN",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-01-31",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PJZ093S1QFJWSSWR4WDV",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-02-07",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PK798X548NHW4RPZ6KBG",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-02-14",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PKEEXJFPE2YWYZBQX2K6",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-02-21",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PKGJNN442YF0J40AMF0S",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-02-28",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PKJ7AJPHTBFPXA3SFKJF",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-03-07",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PKVH2GQ6TQ6ERDXX9DRM",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-03-14",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PM6E9KE65HG3C3ZMQ37K",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-03-21",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PMG61DAPGK478GR1P36Q",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-03-28",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PMSQFNWX1WZD90HP9XJE",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-04-04",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PMXA3S887FSBK8JW0KJV",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-04-11",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PN07R11WN6J2SCYZHYWC",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-04-18",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PN37R5EX73ZFPTQ2Q6BR",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-04-25",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PNGM3J70154ADP6RXCDF",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-05-02",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PNJJJMGCGAYHMGZYY2G6",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-05-09",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PNSZSPVSCWZW04EHRTWV",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-05-16",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PNVTAHSA2TQDDZ6EW9G1",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-05-23",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PP42TZY9HCKYQZRWRYV9",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-05-30",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PPDFFDH29D69K1PPPTYE",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-06-06",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PPM7S611GKY8H7Q2YYT1",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-06-13",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PPX91WSPHRRRYG9WT8S0",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-06-20",
+      "type": "normal",
+      "event_label": null,
+      "required_count": 3,
+      "is_closed": 0
+    },
+    {
+      "id": "01KMJ2PQ6D6GH5XDKCJZBGF63C",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-06-27",
+      "type": "normal",
+      "event_label": "Fermeture été",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQ8YVHH9CS367KK6V208",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-07-04",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQAJF1R9WJHCQDFH9KA2",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-07-11",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQD4MYBWG6099WYS7QAF",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-07-18",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQF3A8Z4NG0BX0GE786S",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-07-25",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQGXH08RDK5WW9ZY152J",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-08-01",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQJJ3JF2J0QMN2C5SBS2",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-08-08",
+      "type": "normal",
+      "event_label": "Vacances",
+      "required_count": null,
+      "is_closed": 1
+    },
+    {
+      "id": "01KMJ2PQM82DZM8NKK4WAPCE4M",
+      "season_id": "01KMJ2PDCAGVCJTAP5H78FQRW3",
+      "date": "2026-08-15",
+      "type": "event",
+      "event_label": "Réouverture",
+      "required_count": 3,
+      "is_closed": 0
+    }
+  ],
+  "assignments": [
+    {
+      "id": "01KMJ2PDG3CFH8VJQ1EQMG9PV2",
+      "slot_id": "01KMJ2PDE83B5XHJ0BHRB0TXA4",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PDJBM04D8NGB602P6Q3Z",
+      "slot_id": "01KMJ2PDE83B5XHJ0BHRB0TXA4",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PDMDYW1QFZH5MX4C5M3E",
+      "slot_id": "01KMJ2PDE83B5XHJ0BHRB0TXA4",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PDS4Y766KH11Y2RNBADG",
+      "slot_id": "01KMJ2PDPE1XN8FN3KH42S3FGR",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PDV9X5RKGJTD7FTS7QZY",
+      "slot_id": "01KMJ2PDPE1XN8FN3KH42S3FGR",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PDX8A9S42N66H83PPS09",
+      "slot_id": "01KMJ2PDPE1XN8FN3KH42S3FGR",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PE1851CYE8QMHVN0V8CY",
+      "slot_id": "01KMJ2PDZ2F5HJE3DHMN8KBEXR",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PE43E3QBRSRGVZTX8542",
+      "slot_id": "01KMJ2PDZ2F5HJE3DHMN8KBEXR",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PE6EZXRJXWYZ5AXTYG0N",
+      "slot_id": "01KMJ2PDZ2F5HJE3DHMN8KBEXR",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PECDWBCKZMM3JDNAB2GF",
+      "slot_id": "01KMJ2PE9QB20Z7F2T1SYT1CYC",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PEE9YZPH1EW1RPYVH6AB",
+      "slot_id": "01KMJ2PE9QB20Z7F2T1SYT1CYC",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PEKDT0A3J7HX7H9JWW87",
+      "slot_id": "01KMJ2PE9QB20Z7F2T1SYT1CYC",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PERYQD371MMK4NPAYBXW",
+      "slot_id": "01KMJ2PEPPMKECWY98945HEJD4",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PETVV0D0AK05CV7G8JR0",
+      "slot_id": "01KMJ2PEPPMKECWY98945HEJD4",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PEZ3HEA3H68RTY4A0AFF",
+      "slot_id": "01KMJ2PEPPMKECWY98945HEJD4",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PF8KDKQDCQSPYGAS6KJH",
+      "slot_id": "01KMJ2PF5X4A8F9DY6FD4DXZ24",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PFBBG8B4G20BS2KSFR2Q",
+      "slot_id": "01KMJ2PF5X4A8F9DY6FD4DXZ24",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PFE59YES06C67WRXKKAV",
+      "slot_id": "01KMJ2PF5X4A8F9DY6FD4DXZ24",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PFHSXGCFB3DYT1E3XCFV",
+      "slot_id": "01KMJ2PFG4QNQR4S1B7MDAPNN3",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PFKED1DR8628K83YE7ZK",
+      "slot_id": "01KMJ2PFG4QNQR4S1B7MDAPNN3",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PFN8JQ8CHSHD6EEP2JA2",
+      "slot_id": "01KMJ2PFG4QNQR4S1B7MDAPNN3",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PFX5BAVPR957MGA91FZG",
+      "slot_id": "01KMJ2PFTW4HQ6CEAY1EYQ17HV",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PFZZNBN6AMDJVEWSEC2N",
+      "slot_id": "01KMJ2PFTW4HQ6CEAY1EYQ17HV",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PG1TP2PYJ4TRR3JM52ME",
+      "slot_id": "01KMJ2PFTW4HQ6CEAY1EYQ17HV",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PG5ERC1JK5P2ZRR4EN4Z",
+      "slot_id": "01KMJ2PG3H5TXP1D0WW2ABDHF8",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PG76KFR1W8MZBFSPG0MW",
+      "slot_id": "01KMJ2PG3H5TXP1D0WW2ABDHF8",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PG8X1WAWMYX15YFQFGWN",
+      "slot_id": "01KMJ2PG3H5TXP1D0WW2ABDHF8",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PGDQ1D0F21851HXRJZ87",
+      "slot_id": "01KMJ2PGBCVQK4X8PCKB2W777H",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PGG8M7YWSM2FMEJ6YQ3D",
+      "slot_id": "01KMJ2PGBCVQK4X8PCKB2W777H",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PGJN9HW6GHH79ACMET2G",
+      "slot_id": "01KMJ2PGBCVQK4X8PCKB2W777H",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PGP5S0CZXF9TK7RMC970",
+      "slot_id": "01KMJ2PGMDMC3T2W1YTMVXT3MK",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PGQY89HMCYEBGQHG0079",
+      "slot_id": "01KMJ2PGMDMC3T2W1YTMVXT3MK",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PGTWZCWX2T80FF8EZNDX",
+      "slot_id": "01KMJ2PGMDMC3T2W1YTMVXT3MK",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PGZ7PE8NR3ZEHYWC3HHP",
+      "slot_id": "01KMJ2PGXANY2MH4BMJWKHDH4V",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PH12QH8MZWMY56M5X8ZM",
+      "slot_id": "01KMJ2PGXANY2MH4BMJWKHDH4V",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PH3229FY4PNRCFS0SEW7",
+      "slot_id": "01KMJ2PGXANY2MH4BMJWKHDH4V",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PH7SH5S6EYADN0BVM25B",
+      "slot_id": "01KMJ2PH5NG47ZPR0NFG9VNG62",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PH9NRBW9S8KFFNZ2RRM6",
+      "slot_id": "01KMJ2PH5NG47ZPR0NFG9VNG62",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PHBEB55W0PGXZFPT88G3",
+      "slot_id": "01KMJ2PH5NG47ZPR0NFG9VNG62",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PHFRGX9F0QNJYNA4FB6K",
+      "slot_id": "01KMJ2PHD3HJC9S66G13PMTQ06",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PHJM9H4ZXW5Q4PPJ92ZW",
+      "slot_id": "01KMJ2PHD3HJC9S66G13PMTQ06",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PHNCVADGNW976XWNDAWF",
+      "slot_id": "01KMJ2PHD3HJC9S66G13PMTQ06",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PHYJD6F2DM4TJDK9EJAM",
+      "slot_id": "01KMJ2PHWH5NCCBTT5ZG1K5B3C",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PJ082QSY16WEYGH4K35J",
+      "slot_id": "01KMJ2PHWH5NCCBTT5ZG1K5B3C",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PJ28VSZN68ZSK5FF0434",
+      "slot_id": "01KMJ2PHWH5NCCBTT5ZG1K5B3C",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PJ64P9E145W4W0HZDETY",
+      "slot_id": "01KMJ2PJ3YXGWAM88GF2WZYXWX",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PJ7S4996JMHMMFQGYFN6",
+      "slot_id": "01KMJ2PJ3YXGWAM88GF2WZYXWX",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PJ9JAQ4HHBDBJWEH0SA6",
+      "slot_id": "01KMJ2PJ3YXGWAM88GF2WZYXWX",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PJD45AYNXR0VNDJ5BB6J",
+      "slot_id": "01KMJ2PJB8M1WC2W0ENCPJ1FV9",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PJEYA3G3MVJ7B8R4M37W",
+      "slot_id": "01KMJ2PJB8M1WC2W0ENCPJ1FV9",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PJHPQ6E387VD5PTQ6W3W",
+      "slot_id": "01KMJ2PJB8M1WC2W0ENCPJ1FV9",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PJPZR9WDFV21C7A9G4EB",
+      "slot_id": "01KMJ2PJMKJ865VYFNK979WQSN",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PJTZZRF8DXJGKJBA2SS6",
+      "slot_id": "01KMJ2PJMKJ865VYFNK979WQSN",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PJX7C42RSP0RSBTQR66M",
+      "slot_id": "01KMJ2PJMKJ865VYFNK979WQSN",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PK0PDY4ZWCSQGVBBG860",
+      "slot_id": "01KMJ2PJZ093S1QFJWSSWR4WDV",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PK331YRJRQWYAS0FS9A8",
+      "slot_id": "01KMJ2PJZ093S1QFJWSSWR4WDV",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PK5HXTCZM7Q6A4H62C2N",
+      "slot_id": "01KMJ2PJZ093S1QFJWSSWR4WDV",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PK9860PJQKFTG61E8Q4D",
+      "slot_id": "01KMJ2PK798X548NHW4RPZ6KBG",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PKAZYV4M0KA9WA7Q70DC",
+      "slot_id": "01KMJ2PK798X548NHW4RPZ6KBG",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PKCQ4PYV5E97EYHC0GEN",
+      "slot_id": "01KMJ2PK798X548NHW4RPZ6KBG",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PKM0FQJT2237T9ZJHZEN",
+      "slot_id": "01KMJ2PKJ7AJPHTBFPXA3SFKJF",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PKNQGMKAS116D5AE72D6",
+      "slot_id": "01KMJ2PKJ7AJPHTBFPXA3SFKJF",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PKR9KSNT3B37SWF21APF",
+      "slot_id": "01KMJ2PKJ7AJPHTBFPXA3SFKJF",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PKZ22747SHXRV4QWF2J2",
+      "slot_id": "01KMJ2PKVH2GQ6TQ6ERDXX9DRM",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PM1R2FVSZMYRZG0V39AX",
+      "slot_id": "01KMJ2PKVH2GQ6TQ6ERDXX9DRM",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PM4DBBASKXKS9J2PEP8K",
+      "slot_id": "01KMJ2PKVH2GQ6TQ6ERDXX9DRM",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PM88SWJ66BGXAN2WBNW5",
+      "slot_id": "01KMJ2PM6E9KE65HG3C3ZMQ37K",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PMCRJ04XFVQPBDMQ5HDE",
+      "slot_id": "01KMJ2PM6E9KE65HG3C3ZMQ37K",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PMECAN3MB2AD59P0YDZP",
+      "slot_id": "01KMJ2PM6E9KE65HG3C3ZMQ37K",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PMJ8AA0NY4PCK74Q6ZQP",
+      "slot_id": "01KMJ2PMG61DAPGK478GR1P36Q",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PMKY0VR40SVGPV1DH4AQ",
+      "slot_id": "01KMJ2PMG61DAPGK478GR1P36Q",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PMNRTVJEA26AHXV5609P",
+      "slot_id": "01KMJ2PMG61DAPGK478GR1P36Q",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PND8VTJ7R7ZCNTKPVDKN",
+      "slot_id": "01KMJ2PN37R5EX73ZFPTQ2Q6BR",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PNF02WQDQ4TWN9RA2WER",
+      "slot_id": "01KMJ2PN37R5EX73ZFPTQ2Q6BR",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PNMDHA3QQATMT7VE4G6Y",
+      "slot_id": "01KMJ2PNJJJMGCGAYHMGZYY2G6",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PNR48GJ8B2CHH9BZEBR8",
+      "slot_id": "01KMJ2PNJJJMGCGAYHMGZYY2G6",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PNZCMQDGCF86DS694R18",
+      "slot_id": "01KMJ2PNVTAHSA2TQDDZ6EW9G1",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PP1NDKHNM1WGQ3SEBZ0W",
+      "slot_id": "01KMJ2PNVTAHSA2TQDDZ6EW9G1",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PP5P6M482X0001W4MD98",
+      "slot_id": "01KMJ2PP42TZY9HCKYQZRWRYV9",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PP8PPRN6JM9SQ29DABYS",
+      "slot_id": "01KMJ2PP42TZY9HCKYQZRWRYV9",
+      "member_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7"
+    },
+    {
+      "id": "01KMJ2PPAYYRWBTH3SM7DBFZ5P",
+      "slot_id": "01KMJ2PP42TZY9HCKYQZRWRYV9",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PPF6FV7Y370RKRRD8QGX",
+      "slot_id": "01KMJ2PPDFFDH29D69K1PPPTYE",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KMJ2PPGVF0Y4Y0Y829RR4VVR",
+      "slot_id": "01KMJ2PPDFFDH29D69K1PPPTYE",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    },
+    {
+      "id": "01KMJ2PPJG40WB152C47174D0K",
+      "slot_id": "01KMJ2PPDFFDH29D69K1PPPTYE",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PPQK0BBW8CK1SM9F7JRW",
+      "slot_id": "01KMJ2PPM7S611GKY8H7Q2YYT1",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJ2PPSFRB6TM74R7GWTCCX2",
+      "slot_id": "01KMJ2PPM7S611GKY8H7Q2YYT1",
+      "member_id": "01KMJ2PD9G2G2P7K09XRNXKTY7"
+    },
+    {
+      "id": "01KMJ2PPVFZ5ANG0D4WKJ5AXWB",
+      "slot_id": "01KMJ2PPM7S611GKY8H7Q2YYT1",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJ2PPZ188KDJ2Q193S22VGP",
+      "slot_id": "01KMJ2PPX91WSPHRRRYG9WT8S0",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KMJ2PQ3ACNQQC4SN454DJPP6",
+      "slot_id": "01KMJ2PPX91WSPHRRRYG9WT8S0",
+      "member_id": "01KMJ2PD39XEGC7KM54WD2F4XF"
+    },
+    {
+      "id": "01KMJAY3VRYEYVJ4K5QEHHPPNE",
+      "slot_id": "01KMJ2PN37R5EX73ZFPTQ2Q6BR",
+      "member_id": "01KMJ2PD7PJG07M7X2D8JWCET8"
+    },
+    {
+      "id": "01KMJAY3VRHZ23QR8T85FTBGKJ",
+      "slot_id": "01KMJ2PNVTAHSA2TQDDZ6EW9G1",
+      "member_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP"
+    },
+    {
+      "id": "01KN1PHY06FP8K9TK3JKV0ENNR",
+      "slot_id": "01KMJ2PNJJJMGCGAYHMGZYY2G6",
+      "member_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH"
+    },
+    {
+      "id": "01KN1PHY09QT059XFCH2DNEFNS",
+      "slot_id": "01KMJ2PPX91WSPHRRRYG9WT8S0",
+      "member_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC"
+    }
+  ],
+  "themes": [
+    {
+      "id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "Parc et Jardin",
+      "created_at": "2026-06-10 07:08:47"
+    }
+  ],
+  "theme_items": [
+    {
+      "id": "01KTR5SFR78WP34YW2W474W307",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "2 chaises longues",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SFZP6JYAH8RT7RRYCGQ6",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "3 paires de bottes",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SG66KP46KFTJHSCVWY10",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "10 pots de fleurs",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SGCF2EQ1QV37MSZQBE25",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 arbuste",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SGKQXV7WG6NQQDQW1SZ0",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 mini-kit barbecue",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SGSVTTPK0CB9A2CTNYJ0",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 mini-kit glace",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SGZSJYC8E35J3Z8WX6J5",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "3 arrosoir",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SH5PC6B0Q51F37JE8D02",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 pulvérisateur d'eau",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SHBWT339WA1FDECRZBVV",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "2 pelles",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SHHTTRK7B3R6S93SF7DQ",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 ramasse-feuille",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SHQVNX918PJW7VX7XSZM",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 râteau",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SHY1EKPTXYWNHXDKGN77",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "4 cuillère, 4 couteaux, 4 fourchettes, 4 assiettes, 4 serviette, 4 verre",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SJ4KYZBMWDA9GYA1GC5E",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 sacoche rose avec 1 paire de gants et accessoires",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SJFNES0YBCDDGCH60H95",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 brouette",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 07:08:50"
+    },
+    {
+      "id": "01KTRJBHBQJZB37D4X98RSQCWG",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 seau avec ses fraises",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 10:48:23"
+    },
+    {
+      "id": "01KTRJBQHWTXF03181MK20861X",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "1 caisse enregistreuse",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 10:48:29"
+    },
+    {
+      "id": "01KTRJCX7XH2HJXZJJ0RYQ6Z2A",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "name": "2 chapeaux de paille",
+      "quantity": 1,
+      "is_archived": 0,
+      "created_at": "2026-06-10 10:49:08"
+    }
+  ],
+  "theme_periods": [
+    {
+      "id": "01KTR5SK4VDDE53JFAGBKP15QW",
+      "theme_id": "01KTR5SFHAVC3GS5BMJN0BW4XC",
+      "started_by": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "closed_at": null,
+      "created_at": "2026-06-10 07:08:50"
+    }
+  ],
+  "checkups": [
+    {
+      "id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_period_id": "01KTR5SK4VDDE53JFAGBKP15QW",
+      "done_by": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "note": null,
+      "completed_at": "2026-06-10T07:10:00.753Z",
+      "created_at": "2026-06-10 07:09:59"
+    }
+  ],
+  "checkup_entries": [
+    {
+      "id": "01KTR5VNX9ASFB81WTT7TBCVT4",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SFR78WP34YW2W474W307",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNX9N3M3NBDNGNKKH4AF",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SFZP6JYAH8RT7RRYCGQ6",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNX94WPNPCBENXNW13VC",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SG66KP46KFTJHSCVWY10",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNX9BKTR2WN64P4A46GS",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SGCF2EQ1QV37MSZQBE25",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNX9JB629R2TNM07AHR1",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SGKQXV7WG6NQQDQW1SZ0",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNX953SCNP8WD8N9VAJG",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SGSVTTPK0CB9A2CTNYJ0",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXATJVPA3069Q3H8NNY",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SGZSJYC8E35J3Z8WX6J5",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXAMHHR2MTZHSY0TVD6",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SH5PC6B0Q51F37JE8D02",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXAAYRYN4NNXJK86WXK",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SHBWT339WA1FDECRZBVV",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXAYY17H540WTGPJ1V1",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SHHTTRK7B3R6S93SF7DQ",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXASE1CQY7ZEW9MWWG6",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SHQVNX918PJW7VX7XSZM",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXA46GJ0G9CFDSEESYF",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SHY1EKPTXYWNHXDKGN77",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    },
+    {
+      "id": "01KTR5VNXA4FF3TW4THCY0BB93",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SJ4KYZBMWDA9GYA1GC5E",
+      "status": "broken",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": "2026-06-10T07:26:02.245Z",
+      "resolved_by": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "resolution_type": "repaired"
+    },
+    {
+      "id": "01KTR5VNXA785E7B7Y9XWETK5Z",
+      "checkup_id": "01KTR5VNMVE9QW1P22ZP7GG10K",
+      "theme_item_id": "01KTR5SJFNES0YBCDDGCH60H95",
+      "status": "present",
+      "suggested_name": null,
+      "note": null,
+      "resolved_at": null,
+      "resolved_by": null,
+      "resolution_type": null
+    }
+  ],
+  "game_wishes": [
+    {
+      "id": "01KMJ5FJYAJK5CFYKQJ36XNTPG",
+      "name": "Catane",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-03-25T11:08:13.822Z",
+      "created_at": "2026-03-25 09:33:46"
+    },
+    {
+      "id": "01KMJSDZ58JSNQQXEMYEJEBTAX",
+      "name": "Kapla",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-15T16:32:58.574Z",
+      "created_at": "2026-03-25 15:22:25"
+    },
+    {
+      "id": "01KMJX35TCQ7E5NDB0ACZA1Q4X",
+      "name": "Monza",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-15T16:32:57.332Z",
+      "created_at": "2026-03-25 16:26:26"
+    },
+    {
+      "id": "01KMMP1QW32QAM4R3T50X8RTEE",
+      "name": "Svp nous fabriquer des trophée",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-08T10:22:56.341Z",
+      "created_at": "2026-03-26 09:01:47"
+    },
+    {
+      "id": "01KNPQGPXSQDNDBSWHKFD4SCF8",
+      "name": "The Genius square",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-15T16:33:04.079Z",
+      "created_at": "2026-04-08 14:21:37"
+    },
+    {
+      "id": "01KNPQJ1NQBFTC89THPPF00SZ9",
+      "name": "Genius star",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-19T10:51:17.038Z",
+      "created_at": "2026-04-08 14:22:21"
+    },
+    {
+      "id": "01KNPQKS8TT9QZXFZPF0MPS2DG",
+      "name": "The Genius gems",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-22T16:06:42.899Z",
+      "created_at": "2026-04-08 14:23:18"
+    },
+    {
+      "id": "01KNPRC5WBE11PS6AJEDMF6XCK",
+      "name": "Pic Pirates (à remplacer numéro PA2168)",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD5NW1CFCNVGZPK6X7DC",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-22T16:06:45.501Z",
+      "created_at": "2026-04-08 14:36:37"
+    },
+    {
+      "id": "01KP82DSP99QW7429NH2XF3211",
+      "name": "MES PREMIERES ENIGMES ! ANIMAUX",
+      "link": null,
+      "price": 15.9,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-22T16:06:47.903Z",
+      "created_at": "2026-04-15 07:59:21"
+    },
+    {
+      "id": "01KP8KX33N49CHKQ2JSHAKZ277",
+      "name": "1 micro usb [court] pour le jeu FLASH CARTES PARLANTES",
+      "link": null,
+      "price": 10.0,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-22T16:06:50.534Z",
+      "created_at": "2026-04-15 13:04:48"
+    },
+    {
+      "id": "01KPRCXKR2ARK56RWTY4GP43QC",
+      "name": "DOBBLE JUNIOR",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "purchased_at": "2026-04-21T16:12:17.360Z",
+      "created_at": "2026-04-21 16:10:36"
+    },
+    {
+      "id": "01KPRD15WTAPZBG9SNV5XV0BS2",
+      "name": "DOBBLE FORMES",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-22T16:06:56.352Z",
+      "created_at": "2026-04-21 16:12:33"
+    },
+    {
+      "id": "01KPRD23GF7JVAAMP80BD3CHFQ",
+      "name": "UNO JUNIOR",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-05-13T08:27:49.500Z",
+      "created_at": "2026-04-21 16:13:03"
+    },
+    {
+      "id": "01KPT4R2MKFNW2ADW5G026QYC8",
+      "name": "Aspirateur pour Sécheron",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-04-22T16:06:54.287Z",
+      "created_at": "2026-04-22 08:26:15"
+    },
+    {
+      "id": "01KPXEQB49R7BA5PVWAX8SWRCZ",
+      "name": "PIC PIRATE",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-05-13T08:27:48.192Z",
+      "created_at": "2026-04-23 15:18:20"
+    },
+    {
+      "id": "01KQHAQNRXTWF5AT43S27K2KMC",
+      "name": "potion ou poison",
+      "link": "https://www.galaxus.ch/fr/s5/product/gigamic-potion-ou-poison-f-francais-4-10-joueur-jeux-de-plateau-68655418",
+      "price": 15.7,
+      "added_by": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-03T05:11:08.256Z",
+      "created_at": "2026-05-01 08:33:25"
+    },
+    {
+      "id": "01KRZK689WESAX0N63P79FBE4K",
+      "name": "feutres effacables pour jeux",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-10T11:01:26.935Z",
+      "created_at": "2026-05-19 07:46:16"
+    },
+    {
+      "id": "01KS238DEZ8JQE9RFTQST2JDYY",
+      "name": "Little association  ( Sécheron)",
+      "link": null,
+      "price": 16.9,
+      "added_by": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-03T05:11:13.378Z",
+      "created_at": "2026-05-20 07:05:32"
+    },
+    {
+      "id": "01KS4VZ3VSSH6Z5HQ7JBN21YN8",
+      "name": "Poupée encastrée",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-10T11:01:27.500Z",
+      "created_at": "2026-05-21 08:55:51"
+    },
+    {
+      "id": "01KS55D3J28KPF5S7AVYHHTF17",
+      "name": "Diamoniak",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-03T05:11:19.935Z",
+      "created_at": "2026-05-21 11:40:47"
+    },
+    {
+      "id": "01KT493ZYCHH9VG6TEG05BAAJQ",
+      "name": "Petit snoppy Fisher price (motricité)",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-10T11:01:30.338Z",
+      "created_at": "2026-06-02 13:42:10"
+    },
+    {
+      "id": "01KTDYMJJRAY9STEZ34Q9RD4MJ",
+      "name": "BUs scolaire Fisher Price  little people",
+      "link": "king jouet",
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-10T11:01:32.624Z",
+      "created_at": "2026-06-06 07:51:23"
+    },
+    {
+      "id": "01KTR72S3WR81FAMDC1JRMHPBF",
+      "name": "sachets en tissus pour jeux",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "purchased_at": "2026-06-10T11:01:34.558Z",
+      "created_at": "2026-06-10 07:31:21"
+    },
+    {
+      "id": "01KTRDDWHQT01X2Y4SX3T0J5Z4",
+      "name": "elastiques pour jeu Fingertwist",
+      "link": null,
+      "price": null,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 0,
+      "purchased_by": null,
+      "purchased_at": null,
+      "created_at": "2026-06-10 09:22:17"
+    },
+    {
+      "id": "01KTRGTDAHT89JD7VJXGFHT4ER",
+      "name": "minuteur pour jeu Mirogolo",
+      "link": "Galaxus",
+      "price": 6.5,
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 0,
+      "purchased_by": null,
+      "purchased_at": null,
+      "created_at": "2026-06-10 10:21:33"
+    }
+  ],
+  "supply_needs": [
+    {
+      "id": "01KMMNYN2ZFQQW902QBQ8MTMXQ",
+      "name": "Désinfectant pour les mains",
+      "link": null,
+      "price": null,
+      "category": "autre",
+      "urgency": "normal",
+      "added_by": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "purchased_at": "2026-04-15T10:50:06.889Z",
+      "created_at": "2026-03-26 09:00:06"
+    },
+    {
+      "id": "01KN413KCXAYZJ10JCX2CP1SAB",
+      "name": "Piles AA,  Piles AAA pour Sécheron et Pâquis",
+      "link": null,
+      "price": null,
+      "category": "bureau",
+      "urgency": "normal",
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 1,
+      "purchased_by": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "purchased_at": "2026-04-09T06:58:35.706Z",
+      "created_at": "2026-04-01 08:03:39"
+    },
+    {
+      "id": "01KT8V5C1AVTT87JW5M27NEH15",
+      "name": "sticks de colle 11,2 x200mm",
+      "link": null,
+      "price": null,
+      "category": "autre",
+      "urgency": "normal",
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 0,
+      "purchased_by": null,
+      "purchased_at": null,
+      "created_at": "2026-06-04 08:14:27"
+    },
+    {
+      "id": "01KTRGFYR8NDACF61XJ0CMXWHS",
+      "name": "bande magnétique",
+      "link": "migros",
+      "price": null,
+      "category": "autre",
+      "urgency": "normal",
+      "added_by": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "is_purchased": 0,
+      "purchased_by": null,
+      "purchased_at": null,
+      "created_at": "2026-06-10 10:15:50"
+    }
+  ],
+  "activity_log": [
+    {
+      "id": "01KMJ30NSNWP9ZNV2DWJMJS02A",
+      "type": "slot_updated",
+      "description": "Alessia a modifié le sam. 4 avr. 2026 : label supprimé",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"slotId\":\"01KMJ2PMSQFNWX1WZD90HP9XJE\",\"date\":\"2026-04-04\",\"changes\":{\"isClosed\":true,\"eventLabel\":null}}",
+      "created_at": "2026-03-25 08:50:41"
+    },
+    {
+      "id": "01KMJ30ST4N9MR0DY21RQ9P5G4",
+      "type": "slot_updated",
+      "description": "Alessia a modifié le sam. 4 avr. 2026 : label \"Vacances\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"slotId\":\"01KMJ2PMSQFNWX1WZD90HP9XJE\",\"date\":\"2026-04-04\",\"changes\":{\"isClosed\":true,\"eventLabel\":\"Vacances\"}}",
+      "created_at": "2026-03-25 08:50:45"
+    },
+    {
+      "id": "01KMJ5FK1FFWW491HQWEA6DFTT",
+      "type": "game_added",
+      "description": "Alessia a ajouté \"Catane\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"gameId\":\"01KMJ5FJYAJK5CFYKQJ36XNTPG\",\"gameName\":\"Catane\"}",
+      "created_at": "2026-03-25 09:33:46"
+    },
+    {
+      "id": "01KMJAWH7VMVE07KDHMHF40KVD",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Catane\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KMJ5FJYAJK5CFYKQJ36XNTPG\",\"gameName\":\"Catane\"}",
+      "created_at": "2026-03-25 11:08:13"
+    },
+    {
+      "id": "01KMJAY42CSH9NZR39WMY69C5G",
+      "type": "swap",
+      "description": "Eduardo a échangé le sam. 25 avr. 2026 avec Sadjia le sam. 23 mai 2026",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"fromSlotId\":\"01KMJ2PN37R5EX73ZFPTQ2Q6BR\",\"toSlotId\":\"01KMJ2PNVTAHSA2TQDDZ6EW9G1\",\"fromDate\":\"2026-04-25\",\"toDate\":\"2026-05-23\",\"fromMemberId\":\"01KMJ2PCVVAZAEJKMG2CPBGDRP\",\"toMemberId\":\"01KMJ2PD7PJG07M7X2D8JWCET8\",\"isAdminSwap\":false}",
+      "created_at": "2026-03-25 11:09:06"
+    },
+    {
+      "id": "01KMJSDZ8TH3HWQ28DVVJD9DJD",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"Kapla\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KMJSDZ58JSNQQXEMYEJEBTAX\",\"gameName\":\"Kapla\"}",
+      "created_at": "2026-03-25 15:22:25"
+    },
+    {
+      "id": "01KMJX35YV2Y5SGK8TJYAYTYDT",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"Monza\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KMJX35TCQ7E5NDB0ACZA1Q4X\",\"gameName\":\"Monza\"}",
+      "created_at": "2026-03-25 16:26:26"
+    },
+    {
+      "id": "01KMMNYN7H0CYRF2RX8FHFXQYJ",
+      "type": "supply_added",
+      "description": "Sadjia a ajouté \"Désinfectant pour les mains\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"supplyId\":\"01KMMNYN2ZFQQW902QBQ8MTMXQ\",\"supplyName\":\"Désinfectant pour les mains\",\"category\":\"autre\",\"urgency\":\"normal\"}",
+      "created_at": "2026-03-26 09:00:06"
+    },
+    {
+      "id": "01KMMP1QZ1H4PHK3KCRP68FBZB",
+      "type": "game_added",
+      "description": "Zaineb a ajouté \"Svp nous fabriquer des trophée\"",
+      "actor_id": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "metadata": "{\"gameId\":\"01KMMP1QW32QAM4R3T50X8RTEE\",\"gameName\":\"Svp nous fabriquer des trophée\"}",
+      "created_at": "2026-03-26 09:01:47"
+    },
+    {
+      "id": "01KN1PHY6GQD4HCX5C76VCC4RC",
+      "type": "swap",
+      "description": "Jonathan a échangé le sam. 9 mai 2026 avec Franziska le sam. 20 juin 2026",
+      "actor_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC",
+      "metadata": "{\"fromSlotId\":\"01KMJ2PNJJJMGCGAYHMGZYY2G6\",\"toSlotId\":\"01KMJ2PPX91WSPHRRRYG9WT8S0\",\"fromDate\":\"2026-05-09\",\"toDate\":\"2026-06-20\",\"fromMemberId\":\"01KMJ2PD5NW1CFCNVGZPK6X7DC\",\"toMemberId\":\"01KMJ2PD0BZBQCMPAQ4BVCNJBH\",\"isAdminSwap\":false}",
+      "created_at": "2026-03-31 10:20:46"
+    },
+    {
+      "id": "01KN413KGMET2YYKDDFJ7DPT0H",
+      "type": "supply_added",
+      "description": "Franziska a ajouté \"Piles AA,  Piles AAA pour Sécheron et Pâquis\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"supplyId\":\"01KN413KCXAYZJ10JCX2CP1SAB\",\"supplyName\":\"Piles AA,  Piles AAA pour Sécheron et Pâquis\",\"category\":\"bureau\",\"urgency\":\"normal\"}",
+      "created_at": "2026-04-01 08:03:39"
+    },
+    {
+      "id": "01KNP9VNEH5D0FB8GQWRM3DB2T",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Svp nous fabriquer des trophée\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KMMP1QW32QAM4R3T50X8RTEE\",\"gameName\":\"Svp nous fabriquer des trophée\"}",
+      "created_at": "2026-04-08 10:22:56"
+    },
+    {
+      "id": "01KNPQGQ2PQG293Y0G771HVCVJ",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"The Genius square\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KNPQGPXSQDNDBSWHKFD4SCF8\",\"gameName\":\"The Genius square\"}",
+      "created_at": "2026-04-08 14:21:37"
+    },
+    {
+      "id": "01KNPQJ1RREA0D6EE2J7EFDXV9",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"Genius star\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KNPQJ1NQBFTC89THPPF00SZ9\",\"gameName\":\"Genius star\"}",
+      "created_at": "2026-04-08 14:22:21"
+    },
+    {
+      "id": "01KNPQKSE710JW2YP8B3AZA3JF",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"The Genius gems\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KNPQKS8TT9QZXFZPF0MPS2DG\",\"gameName\":\"The Genius gems\"}",
+      "created_at": "2026-04-08 14:23:18"
+    },
+    {
+      "id": "01KNPRC60TCRKGXAZYM48N5SDN",
+      "type": "game_added",
+      "description": "Jonathan a ajouté \"Pic Pirates (à remplacer numéro PA2168)\"",
+      "actor_id": "01KMJ2PD5NW1CFCNVGZPK6X7DC",
+      "metadata": "{\"gameId\":\"01KNPRC5WBE11PS6AJEDMF6XCK\",\"gameName\":\"Pic Pirates (à remplacer numéro PA2168)\"}",
+      "created_at": "2026-04-08 14:36:37"
+    },
+    {
+      "id": "01KNQ6BP2TRB06JYA3VY2E1Q0B",
+      "type": "school_created",
+      "description": "Alessia a ajouté l'école \"École de Pâquis\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"schoolId\":\"01KNQ6BNZMD9ETJCXHCHNF9QPN\"}",
+      "created_at": "2026-04-08 18:41:01"
+    },
+    {
+      "id": "01KNQ6E3J51P3G6CHQ9NQ38QHN",
+      "type": "period_created",
+      "description": "Alessia a ajouté la période \"Vacances de paques\" (2026-04-03 → 2026-04-17)",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"periodId\":\"01KNQ6E3FDWZBM7K590NQEM9GS\",\"type\":\"vacation\"}",
+      "created_at": "2026-04-08 18:42:20"
+    },
+    {
+      "id": "01KNQ6G2V8CS7NVFEXDY3YY8YT",
+      "type": "absence_created",
+      "description": "Alessia a enregistré vacances du 2026-04-16 au 2026-04-23",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"absenceId\":\"01KNQ6G2R49YWTMRQ6C7ANNVBC\",\"memberId\":\"01KMJ2PCVVAZAEJKMG2CPBGDRP\",\"type\":\"vacation\",\"startDate\":\"2026-04-16\",\"endDate\":\"2026-04-23\"}",
+      "created_at": "2026-04-08 18:43:25"
+    },
+    {
+      "id": "01KNQ6WAXZ1PJW8FV9D7HYYW3Z",
+      "type": "absence_created",
+      "description": "Alessia a enregistré vacances du 2026-04-16 au 2026-05-07",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"absenceId\":\"01KNQ6WAV1MDXT2A43E6Z8PEQM\",\"memberId\":\"01KMJ2PD7PJG07M7X2D8JWCET8\",\"type\":\"vacation\",\"startDate\":\"2026-04-16\",\"endDate\":\"2026-05-07\"}",
+      "created_at": "2026-04-08 18:50:07"
+    },
+    {
+      "id": "01KNQFHW92B3VEV70W6EKMPKYY",
+      "type": "proposal_created",
+      "description": "Alessia a créé la proposition \"accueil 2026\" pour École de Pâquis (1 créneaux)",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KNQFHVZAHJ9D6699Y3YCDK24\",\"schoolId\":\"01KNQ6BNZMD9ETJCXHCHNF9QPN\",\"eventCount\":1}",
+      "created_at": "2026-04-08 21:21:40"
+    },
+    {
+      "id": "01KNQFHWJPC6Z7MTNNPNTQ6BV7",
+      "type": "proposal_sent",
+      "description": "Alessia a activé le lien de la proposition \"accueil 2026\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KNQFHVZAHJ9D6699Y3YCDK24\"}",
+      "created_at": "2026-04-08 21:21:41"
+    },
+    {
+      "id": "01KNQFK3TYZ43SZW5FK2DH1DCF",
+      "type": "proposal_updated",
+      "description": "Alessia a modifié la proposition \"accueil 2026\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KNQFHVZAHJ9D6699Y3YCDK24\"}",
+      "created_at": "2026-04-08 21:22:21"
+    },
+    {
+      "id": "01KNQFKD3HG6G6P4TPRBK8SA0P",
+      "type": "proposal_deleted",
+      "description": "Alessia a supprimé la proposition \"accueil 2026\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KNQFHVZAHJ9D6699Y3YCDK24\"}",
+      "created_at": "2026-04-08 21:22:30"
+    },
+    {
+      "id": "01KNQJM5TX6H51PCSNNH0XA5T3",
+      "type": "event_deleted",
+      "description": "Alessia a supprimé \"accueil 2026\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"eventId\":\"01KNQFHW0GNB8TPPC6K4XQZMXJ\",\"scope\":\"one\"}",
+      "created_at": "2026-04-08 22:15:21"
+    },
+    {
+      "id": "01KNRGJ75HKQPPNA48P8YP6W6K",
+      "type": "supply_purchased",
+      "description": "Zaineb a marqué \"Piles AA,  Piles AAA pour Sécheron et Pâquis\" comme acheté",
+      "actor_id": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "metadata": "{\"supplyId\":\"01KN413KCXAYZJ10JCX2CP1SAB\",\"supplyName\":\"Piles AA,  Piles AAA pour Sécheron et Pâquis\"}",
+      "created_at": "2026-04-09 06:58:35"
+    },
+    {
+      "id": "01KP64X475JGB0SVFQK5KM01E3",
+      "type": "proposal_created",
+      "description": "Sadjia a créé la proposition \"Accueil 2027\" pour École de Pâquis (3 créneaux)",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"proposalId\":\"01KP64X3QY8NVKESC2TQECBDR1\",\"schoolId\":\"01KNQ6BNZMD9ETJCXHCHNF9QPN\",\"eventCount\":3}",
+      "created_at": "2026-04-14 14:04:12"
+    },
+    {
+      "id": "01KP64XVJB505REQVM112CZ9J5",
+      "type": "proposal_sent",
+      "description": "Alessia a activé le lien de la proposition \"Accueil 2027\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KP64X3QY8NVKESC2TQECBDR1\"}",
+      "created_at": "2026-04-14 14:04:36"
+    },
+    {
+      "id": "01KP64YVTQSQGQC4P4XPD4GYZF",
+      "type": "proposal_submitted",
+      "description": "École de Pâquis a soumis ses réponses pour \"Accueil 2027\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"proposalId\":\"01KP64X3QY8NVKESC2TQECBDR1\",\"schoolId\":\"01KNQ6BNZMD9ETJCXHCHNF9QPN\"}",
+      "created_at": "2026-04-14 14:05:09"
+    },
+    {
+      "id": "01KP64ZEPA5T2Q7JF50TX6VDN0",
+      "type": "proposal_deleted",
+      "description": "Alessia a supprimé la proposition \"Accueil 2027\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KP64X3QY8NVKESC2TQECBDR1\"}",
+      "created_at": "2026-04-14 14:05:28"
+    },
+    {
+      "id": "01KP652TT52Z9538AHCQQTB46R",
+      "type": "absence_deleted",
+      "description": "Alessia a supprimé une absence",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"absenceId\":\"01KNQ6G2R49YWTMRQ6C7ANNVBC\"}",
+      "created_at": "2026-04-14 14:07:19"
+    },
+    {
+      "id": "01KP652X15QK8PMBA62QWN3GEH",
+      "type": "absence_deleted",
+      "description": "Alessia a supprimé une absence",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"absenceId\":\"01KNQ6WAV1MDXT2A43E6Z8PEQM\"}",
+      "created_at": "2026-04-14 14:07:21"
+    },
+    {
+      "id": "01KP6560XV32YSPZXJHJ33XR8K",
+      "type": "period_updated",
+      "description": "Alessia a modifié la période \"Vacances de paques\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"periodId\":\"01KNQ6E3FDWZBM7K590NQEM9GS\"}",
+      "created_at": "2026-04-14 14:09:03"
+    },
+    {
+      "id": "01KP65DE69KJDE1QGSE26KTJ3K",
+      "type": "proposal_created",
+      "description": "Alessia a créé la proposition \"Accueil 2026-2027\" pour École de Pâquis (9 créneaux)",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KP65DC1ZA48N587R0DH2GSMR\",\"schoolId\":\"01KNQ6BNZMD9ETJCXHCHNF9QPN\",\"eventCount\":9}",
+      "created_at": "2026-04-14 14:13:06"
+    },
+    {
+      "id": "01KP65DETAE8ARDQ6VD23B1TJJ",
+      "type": "proposal_sent",
+      "description": "Alessia a activé le lien de la proposition \"Accueil 2026-2027\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KP65DC1ZA48N587R0DH2GSMR\"}",
+      "created_at": "2026-04-14 14:13:07"
+    },
+    {
+      "id": "01KP65H86PPQG3T23VRB8342CC",
+      "type": "proposal_submitted",
+      "description": "École de Pâquis a soumis ses réponses pour \"Accueil 2026-2027\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KP65DC1ZA48N587R0DH2GSMR\",\"schoolId\":\"01KNQ6BNZMD9ETJCXHCHNF9QPN\"}",
+      "created_at": "2026-04-14 14:15:11"
+    },
+    {
+      "id": "01KP65J699MAF33AZS6J0MKSAS",
+      "type": "proposal_confirmed",
+      "description": "Alessia a confirmé la proposition \"Accueil 2026-2027\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"proposalId\":\"01KP65DC1ZA48N587R0DH2GSMR\",\"deleteDeclined\":true}",
+      "created_at": "2026-04-14 14:15:42"
+    },
+    {
+      "id": "01KP65N1B73846BAN47710A553",
+      "type": "school_created",
+      "description": "Alessia a ajouté l'école \"Class aCCES 2\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"schoolId\":\"01KP65N18CBZBA3PWPA03WE614\"}",
+      "created_at": "2026-04-14 14:17:15"
+    },
+    {
+      "id": "01KP82DSTF2W1Q91PSRH4ZGDQ7",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"MES PREMIERES ENIGMES ! ANIMAUX\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KP82DSP99QW7429NH2XF3211\",\"gameName\":\"MES PREMIERES ENIGMES ! ANIMAUX\"}",
+      "created_at": "2026-04-15 07:59:21"
+    },
+    {
+      "id": "01KP8C6ET0DVGV1PTQ20XZ2Q53",
+      "type": "supply_purchased",
+      "description": "Zaineb a marqué \"Désinfectant pour les mains\" comme acheté",
+      "actor_id": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "metadata": "{\"supplyId\":\"01KMMNYN2ZFQQW902QBQ8MTMXQ\",\"supplyName\":\"Désinfectant pour les mains\"}",
+      "created_at": "2026-04-15 10:50:07"
+    },
+    {
+      "id": "01KP8KX379K01Q5FAYHC7JAGCJ",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"1 micro usb [court] pour le jeu FLASH CARTES PARLANTES\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KP8KX33N49CHKQ2JSHAKZ277\",\"gameName\":\"1 micro usb [court] pour le jeu FLASH CARTES PARLANTES\"}",
+      "created_at": "2026-04-15 13:04:48"
+    },
+    {
+      "id": "01KP8ZT6D2571MN9HKSSVPZQCG",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Monza\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KMJX35TCQ7E5NDB0ACZA1Q4X\",\"gameName\":\"Monza\"}",
+      "created_at": "2026-04-15 16:32:56"
+    },
+    {
+      "id": "01KP8ZT72GJDHH375XCXQGSZ29",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Monza\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KMJX35TCQ7E5NDB0ACZA1Q4X\",\"gameName\":\"Monza\"}",
+      "created_at": "2026-04-15 16:32:57"
+    },
+    {
+      "id": "01KP8ZT8962VE905EN89CY421Z",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Kapla\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KMJSDZ58JSNQQXEMYEJEBTAX\",\"gameName\":\"Kapla\"}",
+      "created_at": "2026-04-15 16:32:58"
+    },
+    {
+      "id": "01KP8ZTDNDKR911F0FQ631TG6F",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"The Genius square\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KNPQGPXSQDNDBSWHKFD4SCF8\",\"gameName\":\"The Genius square\"}",
+      "created_at": "2026-04-15 16:33:04"
+    },
+    {
+      "id": "01KPJNVF9DSHXR8XSAWVV7TP7X",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Genius star\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KNPQJ1NQBFTC89THPPF00SZ9\",\"gameName\":\"Genius star\"}",
+      "created_at": "2026-04-19 10:51:17"
+    },
+    {
+      "id": "01KPRCXKVXMQ4JWYMPH3D4SVWN",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"DOBBLE JUNIOR\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KPRCXKR2ARK56RWTY4GP43QC\",\"gameName\":\"DOBBLE JUNIOR\"}",
+      "created_at": "2026-04-21 16:10:36"
+    },
+    {
+      "id": "01KPRD0P6370FAB8PHXZ1C7FXP",
+      "type": "game_purchased",
+      "description": "Franziska a marqué \"DOBBLE JUNIOR\" comme acheté",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KPRCXKR2ARK56RWTY4GP43QC\",\"gameName\":\"DOBBLE JUNIOR\"}",
+      "created_at": "2026-04-21 16:12:17"
+    },
+    {
+      "id": "01KPRD15ZPMM0M3VD8ENFXTCCD",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"DOBBLE FORMES\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KPRD15WTAPZBG9SNV5XV0BS2\",\"gameName\":\"DOBBLE FORMES\"}",
+      "created_at": "2026-04-21 16:12:33"
+    },
+    {
+      "id": "01KPRD23K9KX28891ZMYNRVAY4",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"UNO JUNIOR\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KPRD23GF7JVAAMP80BD3CHFQ\",\"gameName\":\"UNO JUNIOR\"}",
+      "created_at": "2026-04-21 16:13:04"
+    },
+    {
+      "id": "01KPT4R2RKG2QXG2YGH97V4MHV",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"Aspirateur pour Sécheron\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KPT4R2MKFNW2ADW5G026QYC8\",\"gameName\":\"Aspirateur pour Sécheron\"}",
+      "created_at": "2026-04-22 08:26:15"
+    },
+    {
+      "id": "01KPTZ36JQEBWWQW6ED3BRCTAT",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"The Genius gems\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KNPQKS8TT9QZXFZPF0MPS2DG\",\"gameName\":\"The Genius gems\"}",
+      "created_at": "2026-04-22 16:06:43"
+    },
+    {
+      "id": "01KPTZ392TQTEZ8JXBMP296H9M",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Pic Pirates (à remplacer numéro PA2168)\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KNPRC5WBE11PS6AJEDMF6XCK\",\"gameName\":\"Pic Pirates (à remplacer numéro PA2168)\"}",
+      "created_at": "2026-04-22 16:06:45"
+    },
+    {
+      "id": "01KPTZ3BDR8359MHCNF65P5MZD",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"MES PREMIERES ENIGMES ! ANIMAUX\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KP82DSP99QW7429NH2XF3211\",\"gameName\":\"MES PREMIERES ENIGMES ! ANIMAUX\"}",
+      "created_at": "2026-04-22 16:06:48"
+    },
+    {
+      "id": "01KPTZ3E0W5680P9Z0D5GN74B3",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"1 micro usb [court] pour le jeu FLASH CARTES PARLANTES\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KP8KX33N49CHKQ2JSHAKZ277\",\"gameName\":\"1 micro usb [court] pour le jeu FLASH CARTES PARLANTES\"}",
+      "created_at": "2026-04-22 16:06:50"
+    },
+    {
+      "id": "01KPTZ3HNA40J6608AASXF0VNW",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Aspirateur pour Sécheron\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KPT4R2MKFNW2ADW5G026QYC8\",\"gameName\":\"Aspirateur pour Sécheron\"}",
+      "created_at": "2026-04-22 16:06:54"
+    },
+    {
+      "id": "01KPTZ3KNZEWTMYJYF2SW5RPZ5",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"DOBBLE FORMES\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KPRD15WTAPZBG9SNV5XV0BS2\",\"gameName\":\"DOBBLE FORMES\"}",
+      "created_at": "2026-04-22 16:06:56"
+    },
+    {
+      "id": "01KPXEQB7X374AG7SS7Q7HGP9P",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"PIC PIRATE\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KPXEQB49R7BA5PVWAX8SWRCZ\",\"gameName\":\"PIC PIRATE\"}",
+      "created_at": "2026-04-23 15:18:20"
+    },
+    {
+      "id": "01KQHAQNX041EAV7D16JQ60S4D",
+      "type": "game_added",
+      "description": "Alessia a ajouté \"potion ou poison\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"gameId\":\"01KQHAQNRXTWF5AT43S27K2KMC\",\"gameName\":\"potion ou poison\"}",
+      "created_at": "2026-05-01 08:33:25"
+    },
+    {
+      "id": "01KRG7607CHMGEDTQKNM07MZ38",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"PIC PIRATE\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KPXEQB49R7BA5PVWAX8SWRCZ\",\"gameName\":\"PIC PIRATE\"}",
+      "created_at": "2026-05-13 08:27:48"
+    },
+    {
+      "id": "01KRG761ERYYQ7174AMSQMERSS",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"UNO JUNIOR\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KPRD23GF7JVAAMP80BD3CHFQ\",\"gameName\":\"UNO JUNIOR\"}",
+      "created_at": "2026-05-13 08:27:49"
+    },
+    {
+      "id": "01KRZK68DKBXWK1GWQXFKD2P9X",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"feutres effacables pour jeux\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KRZK689WESAX0N63P79FBE4K\",\"gameName\":\"feutres effacables pour jeux\"}",
+      "created_at": "2026-05-19 07:46:16"
+    },
+    {
+      "id": "01KS238DJSZ4F1BGFMPK52NYRW",
+      "type": "game_added",
+      "description": "Alessia a ajouté \"Little association  ( Sécheron)\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"gameId\":\"01KS238DEZ8JQE9RFTQST2JDYY\",\"gameName\":\"Little association  ( Sécheron)\"}",
+      "created_at": "2026-05-20 07:05:33"
+    },
+    {
+      "id": "01KS4VZ3ZD98DD4QRJGR08D818",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"Poupée encastrée\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KS4VZ3VSSH6Z5HQ7JBN21YN8\",\"gameName\":\"Poupée encastrée\"}",
+      "created_at": "2026-05-21 08:55:51"
+    },
+    {
+      "id": "01KS55D3NSJHAFQBS3CB18ZS62",
+      "type": "game_added",
+      "description": "Zaineb a ajouté \"Diamoniak\"",
+      "actor_id": "01KMJ2PD9G2G2P7K09XRNXKTY7",
+      "metadata": "{\"gameId\":\"01KS55D3J28KPF5S7AVYHHTF17\",\"gameName\":\"Diamoniak\"}",
+      "created_at": "2026-05-21 11:40:47"
+    },
+    {
+      "id": "01KT49402YBQ7YHX1ZJS4MS3C7",
+      "type": "game_added",
+      "description": "Sadjia a ajouté \"Petit snoppy Fisher price (motricité)\"",
+      "actor_id": "01KMJ2PD7PJG07M7X2D8JWCET8",
+      "metadata": "{\"gameId\":\"01KT493ZYCHH9VG6TEG05BAAJQ\",\"gameName\":\"Petit snoppy Fisher price (motricité)\"}",
+      "created_at": "2026-06-02 13:42:10"
+    },
+    {
+      "id": "01KT5Y8ZV1VZK5TKXSSB9P1B3G",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"potion ou poison\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KQHAQNRXTWF5AT43S27K2KMC\",\"gameName\":\"potion ou poison\"}",
+      "created_at": "2026-06-03 05:11:08"
+    },
+    {
+      "id": "01KT5Y94SY85XTMYEYXJ3937E7",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Little association  ( Sécheron)\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KS238DEZ8JQE9RFTQST2JDYY\",\"gameName\":\"Little association  ( Sécheron)\"}",
+      "created_at": "2026-06-03 05:11:13"
+    },
+    {
+      "id": "01KT5Y9B6X0VAS80GJ9R9V1B8Q",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Diamoniak\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KS55D3J28KPF5S7AVYHHTF17\",\"gameName\":\"Diamoniak\"}",
+      "created_at": "2026-06-03 05:11:20"
+    },
+    {
+      "id": "01KT8V5C5JVJ8KZ882WQ7R4K18",
+      "type": "supply_added",
+      "description": "Franziska a ajouté \"sticks de colle 11,2 x200mm\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"supplyId\":\"01KT8V5C1AVTT87JW5M27NEH15\",\"supplyName\":\"sticks de colle 11,2 x200mm\",\"category\":\"autre\",\"urgency\":\"normal\"}",
+      "created_at": "2026-06-04 08:14:27"
+    },
+    {
+      "id": "01KTDYMJPRB540XJBXPJF3D84Y",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"BUs scolaire Fisher Price  little people\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KTDYMJJRAY9STEZ34Q9RD4MJ\",\"gameName\":\"BUs scolaire Fisher Price  little people\"}",
+      "created_at": "2026-06-06 07:51:23"
+    },
+    {
+      "id": "01KTR5SFM14G2J7VME3V6263XF",
+      "type": "theme_created",
+      "description": "Alessia a créé le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"themeName\":\"Parc et Jardin\"}",
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SFVKSWVZ08D0JWZPVT6C",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"2 chaises longues\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SFR78WP34YW2W474W307\",\"itemName\":\"2 chaises longues\"}",
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SG28ZZJTE2XYFXAAD92Y",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"3 paires de bottes\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SFZP6JYAH8RT7RRYCGQ6\",\"itemName\":\"3 paires de bottes\"}",
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SG7YF162XT285KGZAXX6",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"10 pots de fleurs\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SG66KP46KFTJHSCVWY10\",\"itemName\":\"10 pots de fleurs\"}",
+      "created_at": "2026-06-10 07:08:47"
+    },
+    {
+      "id": "01KTR5SGE82A74MGM85A9M96DN",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 arbuste\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGCF2EQ1QV37MSZQBE25\",\"itemName\":\"1 arbuste\"}",
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SGNKE4JT099FA2C92J1V",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 mini-kit barbecue\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGKQXV7WG6NQQDQW1SZ0\",\"itemName\":\"1 mini-kit barbecue\"}",
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SGVMB5T32FXRR4KNVGVJ",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 mini-kit glace\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGSVTTPK0CB9A2CTNYJ0\",\"itemName\":\"1 mini-kit glace\"}",
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SH1JM6PPQR0GX4YXQY1F",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"2 arrosoir\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGZSJYC8E35J3Z8WX6J5\",\"itemName\":\"2 arrosoir\"}",
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SH7H9TA3MFWT2YTV6EA7",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 pulvérisateur d'eau\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SH5PC6B0Q51F37JE8D02\",\"itemName\":\"1 pulvérisateur d'eau\"}",
+      "created_at": "2026-06-10 07:08:48"
+    },
+    {
+      "id": "01KTR5SHDR9SP70636DNT17DXT",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"2 pelles\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SHBWT339WA1FDECRZBVV\",\"itemName\":\"2 pelles\"}",
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SHKKFB34SZR9026JGRGY",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 ramasse-feuille\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SHHTTRK7B3R6S93SF7DQ\",\"itemName\":\"1 ramasse-feuille\"}",
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SHSS9WV5Z60YAE552J1M",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 râteau\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SHQVNX918PJW7VX7XSZM\",\"itemName\":\"1 râteau\"}",
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SJ09SG9JB7JYVKHVG5PK",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"4 cuillère, 4 couteaux, 4 fourchettes, 4 assiettes, 4 serviette, 4 verre\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SHY1EKPTXYWNHXDKGN77\",\"itemName\":\"4 cuillère, 4 couteaux, 4 fourchettes, 4 assiettes, 4 serviette, 4 verre\"}",
+      "created_at": "2026-06-10 07:08:49"
+    },
+    {
+      "id": "01KTR5SJ6V445QTCY8Q5A0EBZC",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 sacoche rose avec 1 paire de gants et accessoires\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SJ4KYZBMWDA9GYA1GC5E\",\"itemName\":\"1 sacoche rose avec 1 paire de gants et accessoires\"}",
+      "created_at": "2026-06-10 07:08:50"
+    },
+    {
+      "id": "01KTR5SJMZBGF8G351JZDXMR1Z",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 brouette\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SJFNES0YBCDDGCH60H95\",\"itemName\":\"1 brouette\"}",
+      "created_at": "2026-06-10 07:08:50"
+    },
+    {
+      "id": "01KTR5SK7ZZMQEMMPJS4QY3W29",
+      "type": "theme_changed",
+      "description": "Alessia a installé le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"themeName\":\"Parc et Jardin\",\"periodId\":\"01KTR5SK4VDDE53JFAGBKP15QW\"}",
+      "created_at": "2026-06-10 07:08:51"
+    },
+    {
+      "id": "01KTR5VNPNDF10WBRHQ08SP1HP",
+      "type": "checkup_started",
+      "description": "Alessia a démarré un check-up",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"checkupId\":\"01KTR5VNMVE9QW1P22ZP7GG10K\",\"themePeriodId\":\"01KTR5SK4VDDE53JFAGBKP15QW\"}",
+      "created_at": "2026-06-10 07:09:59"
+    },
+    {
+      "id": "01KTR5VP4J44M0EK0D6ZX5FC57",
+      "type": "checkup_completed",
+      "description": "Alessia a validé un check-up",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"checkupId\":\"01KTR5VNMVE9QW1P22ZP7GG10K\"}",
+      "created_at": "2026-06-10 07:09:59"
+    },
+    {
+      "id": "01KTR6S12TK5XPH3CRCMFGQZEP",
+      "type": "checkup_problem_resolved",
+      "description": "Alessia a résolu un problème (repaired)",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"checkupId\":\"01KTR5VNMVE9QW1P22ZP7GG10K\",\"entryId\":\"01KTR5VNXA4FF3TW4THCY0BB93\",\"resolutionType\":\"repaired\"}",
+      "created_at": "2026-06-10 07:26:01"
+    },
+    {
+      "id": "01KTR72SADDCR52GZP1N1EGE9A",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"sachets en tissus pour jeux\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KTR72S3WR81FAMDC1JRMHPBF\",\"gameName\":\"sachets en tissus pour jeux\"}",
+      "created_at": "2026-06-10 07:31:22"
+    },
+    {
+      "id": "01KTRDDWPPCP67JPJWE22C69JG",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"elastiques pour jeu Fingertwist\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KTRDDWHQT01X2Y4SX3T0J5Z4\",\"gameName\":\"elastiques pour jeu Fingertwist\"}",
+      "created_at": "2026-06-10 09:22:17"
+    },
+    {
+      "id": "01KTRGFZ07TEJTN1HVPF0BBDN6",
+      "type": "supply_added",
+      "description": "Franziska a ajouté \"bande magnétique\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"supplyId\":\"01KTRGFYR8NDACF61XJ0CMXWHS\",\"supplyName\":\"bande magnétique\",\"category\":\"autre\",\"urgency\":\"normal\"}",
+      "created_at": "2026-06-10 10:15:51"
+    },
+    {
+      "id": "01KTRGTDHMGXCZAJPK4AHE0DXM",
+      "type": "game_added",
+      "description": "Franziska a ajouté \"minuteur pour jeu Mirogolo\"",
+      "actor_id": "01KMJ2PD0BZBQCMPAQ4BVCNJBH",
+      "metadata": "{\"gameId\":\"01KTRGTDAHT89JD7VJXGFHT4ER\",\"gameName\":\"minuteur pour jeu Mirogolo\"}",
+      "created_at": "2026-06-10 10:21:33"
+    },
+    {
+      "id": "01KTRJBHGESHJVWE0YQH2B9JJM",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 seau avec ses fraises\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTRJBHBQJZB37D4X98RSQCWG\",\"itemName\":\"1 seau avec ses fraises\"}",
+      "created_at": "2026-06-10 10:48:23"
+    },
+    {
+      "id": "01KTRJBQN4562F6FK6SSSZT743",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"1 caisse enregistreuse\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTRJBQHWTXF03181MK20861X\",\"itemName\":\"1 caisse enregistreuse\"}",
+      "created_at": "2026-06-10 10:48:29"
+    },
+    {
+      "id": "01KTRJC3C088GVYAV86R26EQXQ",
+      "type": "theme_item_updated",
+      "description": "Alessia a modifié \"2 arrosoir\" dans le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGZSJYC8E35J3Z8WX6J5\"}",
+      "created_at": "2026-06-10 10:48:41"
+    },
+    {
+      "id": "01KTRJCABQH1FXJFH1ED4B8AJG",
+      "type": "theme_item_updated",
+      "description": "Alessia a modifié \"3 arrosoir\" dans le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGZSJYC8E35J3Z8WX6J5\"}",
+      "created_at": "2026-06-10 10:48:48"
+    },
+    {
+      "id": "01KTRJCKE001AN3416RADW2WKQ",
+      "type": "theme_item_updated",
+      "description": "Alessia a modifié \"arrosoir\" dans le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SGZSJYC8E35J3Z8WX6J5\"}",
+      "created_at": "2026-06-10 10:48:58"
+    },
+    {
+      "id": "01KTRJCXCFHBGWQ93NAXQQT92D",
+      "type": "theme_item_added",
+      "description": "Alessia a ajouté \"2 chapeaux de paille\" au thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTRJCX7XH2HJXZJJ0RYQ6Z2A\",\"itemName\":\"2 chapeaux de paille\"}",
+      "created_at": "2026-06-10 10:49:08"
+    },
+    {
+      "id": "01KTRJH6RDQBXYX60MATB2JT0R",
+      "type": "theme_item_updated",
+      "description": "Alessia a modifié \"2 chaises longues\" dans le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SFR78WP34YW2W474W307\"}",
+      "created_at": "2026-06-10 10:51:28"
+    },
+    {
+      "id": "01KTRJHS3RDX8D19HS6FAQK1WC",
+      "type": "theme_item_updated",
+      "description": "Alessia a modifié \"chaises longues\" dans le thème \"Parc et Jardin\"",
+      "actor_id": "01KMJ2PCSHBW1W5Y0J5M58HMN7",
+      "metadata": "{\"themeId\":\"01KTR5SFHAVC3GS5BMJN0BW4XC\",\"itemId\":\"01KTR5SFR78WP34YW2W474W307\"}",
+      "created_at": "2026-06-10 10:51:47"
+    },
+    {
+      "id": "01KTRK3EXMABX37GKZEXCSMMDB",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"feutres effacables pour jeux\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KRZK689WESAX0N63P79FBE4K\",\"gameName\":\"feutres effacables pour jeux\"}",
+      "created_at": "2026-06-10 11:01:27"
+    },
+    {
+      "id": "01KTRK3FEBNHTVKRE39PM28DNQ",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Poupée encastrée\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KS4VZ3VSSH6Z5HQ7JBN21YN8\",\"gameName\":\"Poupée encastrée\"}",
+      "created_at": "2026-06-10 11:01:27"
+    },
+    {
+      "id": "01KTRK3J86E29VPBTAFZS4V803",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"Petit snoppy Fisher price (motricité)\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KT493ZYCHH9VG6TEG05BAAJQ\",\"gameName\":\"Petit snoppy Fisher price (motricité)\"}",
+      "created_at": "2026-06-10 11:01:30"
+    },
+    {
+      "id": "01KTRK3MEN9QP1NYQDBQ4QYXHR",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"BUs scolaire Fisher Price  little people\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KTDYMJJRAY9STEZ34Q9RD4MJ\",\"gameName\":\"BUs scolaire Fisher Price  little people\"}",
+      "created_at": "2026-06-10 11:01:32"
+    },
+    {
+      "id": "01KTRK3PC3H37F3Z6FPQ4PXJAQ",
+      "type": "game_purchased",
+      "description": "Eduardo a marqué \"sachets en tissus pour jeux\" comme acheté",
+      "actor_id": "01KMJ2PCVVAZAEJKMG2CPBGDRP",
+      "metadata": "{\"gameId\":\"01KTR72S3WR81FAMDC1JRMHPBF\",\"gameName\":\"sachets en tissus pour jeux\"}",
+      "created_at": "2026-06-10 11:01:34"
+    }
+  ],
+  "absences": []
+}

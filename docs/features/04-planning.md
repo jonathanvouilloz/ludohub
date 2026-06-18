@@ -21,7 +21,7 @@
 - Regex `new RegExp(pattern)` avec `\\s`/`\\d` : valide en TypeScript compilé, mais les heredocs bash dropent un niveau de backslash → tester via fichier.
 - `geAcademicYears(startDate, endDate)` → peut retourner 2 URLs si la saison couvre deux années scolaires.
 
-**Commit :** (à renseigner)
+**Commit :** [9752312] feat(planning): auto-génération planning, wizard, saison active, import ge.ch
 
 ---
 
