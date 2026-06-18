@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { replaceState } from '$app/navigation'
+  import { page } from '$app/state'
   import { Button } from '$lib/components/ui/button/index.js'
   import { CollapsibleSection } from '$lib/components/ui/collapsible-section/index.js'
   import SupplyCard from '$lib/components/supplies/SupplyCard.svelte'
@@ -10,6 +12,17 @@
   let { data, form } = $props()
 
   let newOpen = $state(false)
+
+  // Ouverture directe du dialog depuis une action rapide de l'accueil (`?new=1`),
+  // puis on nettoie l'URL pour ne pas le rouvrir au rechargement.
+  $effect(() => {
+    if (page.url.searchParams.get('new') === '1') {
+      newOpen = true
+      const url = new URL(page.url.href)
+      url.searchParams.delete('new')
+      replaceState(url, {})
+    }
+  })
 
   // Les demandes arrivent déjà triées par urgence décroissante (service).
   const supplies = $derived(data.supplies as SupplyWithMember[])
