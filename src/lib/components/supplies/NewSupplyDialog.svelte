@@ -1,27 +1,20 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
-  import * as Select from '$lib/components/ui/select/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
 
   let { open = $bindable(false) }: { open?: boolean } = $props()
 
-  const categoryLabels: Record<string, string> = {
-    jeux: 'Jeux',
-    materiel: 'Matériel',
-    fournitures: 'Fournitures',
-    autre: 'Autre',
-  }
-  const urgencyLabels: Record<string, string> = {
-    normale: 'Normale',
-    haute: 'Haute',
-    critique: 'Critique',
-  }
+  const urgencies = [
+    { value: 'normale', label: 'Normale' },
+    { value: 'haute', label: 'Haute' },
+    { value: 'critique', label: 'Critique' },
+  ] as const
 
   let name = $state('')
-  let category = $state<string>('materiel')
+  let link = $state('')
   let urgency = $state<string>('normale')
   let notes = $state('')
   let error = $state('')
@@ -31,7 +24,7 @@
   $effect(() => {
     if (open) {
       name = ''
-      category = 'materiel'
+      link = ''
       urgency = 'normale'
       notes = ''
       error = ''
@@ -75,30 +68,26 @@
         />
       </div>
 
-      <div class="row">
-        <div class="field">
-          <Label for="supply-category">Catégorie</Label>
-          <Select.Root type="single" name="category" bind:value={category}>
-            <Select.Trigger id="supply-category">{categoryLabels[category]}</Select.Trigger>
-            <Select.Content>
-              <Select.Item value="jeux" label="Jeux" />
-              <Select.Item value="materiel" label="Matériel" />
-              <Select.Item value="fournitures" label="Fournitures" />
-              <Select.Item value="autre" label="Autre" />
-            </Select.Content>
-          </Select.Root>
-        </div>
+      <div class="field">
+        <Label for="supply-link">Lien (facultatif)</Label>
+        <Input id="supply-link" name="link" type="url" bind:value={link} placeholder="https://…" />
+      </div>
 
-        <div class="field">
-          <Label for="supply-urgency">Urgence</Label>
-          <Select.Root type="single" name="urgency" bind:value={urgency}>
-            <Select.Trigger id="supply-urgency">{urgencyLabels[urgency]}</Select.Trigger>
-            <Select.Content>
-              <Select.Item value="normale" label="Normale" />
-              <Select.Item value="haute" label="Haute" />
-              <Select.Item value="critique" label="Critique" />
-            </Select.Content>
-          </Select.Root>
+      <div class="field">
+        <span class="field-label">Urgence</span>
+        <div class="pills" role="radiogroup" aria-label="Urgence">
+          {#each urgencies as u (u.value)}
+            <label class="pill urgency-{u.value}" class:selected={urgency === u.value}>
+              <input
+                type="radio"
+                name="urgency"
+                value={u.value}
+                bind:group={urgency}
+                class="sr-only"
+              />
+              {u.label}
+            </label>
+          {/each}
         </div>
       </div>
 
@@ -134,12 +123,53 @@
     gap: var(--space-2);
     margin-bottom: var(--space-4);
   }
-  .row {
-    display: flex;
-    gap: var(--space-3);
+  .field-label {
+    color: var(--text-main);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
   }
-  .row .field {
+  .pills {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .pill {
     flex: 1;
+    text-align: center;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    transition:
+      background var(--dur-fast) var(--ease-out-strong),
+      color var(--dur-fast) var(--ease-out-strong),
+      border-color var(--dur-fast) var(--ease-out-strong);
+  }
+  .pill:hover {
+    background: var(--bg-hover);
+  }
+  /* Sélection color-codée par sévérité. */
+  .pill.selected {
+    color: var(--text-inverse);
+  }
+  .pill.urgency-normale.selected {
+    background: var(--text-subtle);
+    border-color: var(--text-subtle);
+  }
+  .pill.urgency-haute.selected {
+    background: var(--warning);
+    border-color: var(--warning);
+  }
+  .pill.urgency-critique.selected {
+    background: var(--danger);
+    border-color: var(--danger);
+  }
+  /* Anneau de focus clavier sur la pastille active. */
+  .pill:focus-within {
+    box-shadow: var(--shadow-focus);
   }
   textarea {
     width: 100%;
