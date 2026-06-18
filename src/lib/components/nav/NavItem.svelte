@@ -38,6 +38,11 @@
     border-radius: var(--radius-sm);
     transition: background var(--dur-fast) var(--ease-out-strong);
   }
+  .nav-item:hover,
+  .nav-item:active,
+  .nav-item:focus {
+    text-decoration: none;
+  }
   .nav-item:hover {
     background: var(--bg-hover);
   }

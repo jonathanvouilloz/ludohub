@@ -1,5 +1,8 @@
 <script lang="ts">
   import { invalidateAll } from '$app/navigation'
+  import imageCompression from 'browser-image-compression'
+  import { toast } from '$lib/components/ui/sonner/index.js'
+  import { Spinner } from '$lib/components/ui/spinner/index.js'
 
   type ThemeImage = { id: string; url: string; isCover?: boolean }
 
@@ -9,7 +12,6 @@
   const MAX = 6
   let fileInput = $state<HTMLInputElement | null>(null)
   let uploading = $state(false)
-  let error = $state('')
 
   // Images déjà ordonnées cover-first côté serveur ; on reste défensif.
   const cover = $derived(images.find((i) => i.isCover) ?? images[0])
@@ -20,18 +22,28 @@
     const input = event.currentTarget as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
-    error = ''
     uploading = true
     try {
+      // Compression côté client : redimensionne + recomprime (gère l'orientation
+      // EXIF des photos iPhone) → upload léger, jamais 5+ Mo bruts.
+      const compressed = await imageCompression(file, {
+        maxWidthOrHeight: 1600,
+        maxSizeMB: 1,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+      })
       const body = new FormData()
-      body.append('file', file)
+      body.append('file', compressed, file.name.replace(/\.[^.]+$/, '') + '.jpg')
       const res = await fetch(`/api/themes/${themeId}/images`, { method: 'POST', body })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        error = data?.message ?? 'Échec de l’upload.'
+        toast.error(data?.message ?? 'Échec de l’upload.')
         return
       }
       await invalidateAll()
+      toast.success('Image enregistrée.')
+    } catch {
+      toast.error('Échec de l’upload.')
     } finally {
       uploading = false
       if (fileInput) fileInput.value = ''
@@ -39,29 +51,29 @@
   }
 
   async function onDelete(imageId: string) {
-    error = ''
     const res = await fetch(`/api/themes/${themeId}/images?imageId=${imageId}`, {
       method: 'DELETE',
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      error = data?.message ?? 'Échec de la suppression.'
+      toast.error(data?.message ?? 'Échec de la suppression.')
       return
     }
     await invalidateAll()
+    toast.success('Image supprimée.')
   }
 
   async function onSetCover(imageId: string) {
-    error = ''
     const res = await fetch(`/api/themes/${themeId}/images?imageId=${imageId}`, {
       method: 'PATCH',
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      error = data?.message ?? 'Échec de la définition de la couverture.'
+      toast.error(data?.message ?? 'Échec de la définition de la couverture.')
       return
     }
     await invalidateAll()
+    toast.success('Couverture mise à jour.')
   }
 </script>
 
@@ -88,8 +100,14 @@
         disabled={uploading}
         onclick={() => fileInput?.click()}
       >
-        <span class="plus" aria-hidden="true">+</span>
-        {uploading ? 'Envoi…' : 'Ajouter une couverture'}
+        {#if uploading}
+          <Spinner />
+          Envoi…
+        {:else}
+          <span class="plus" aria-hidden="true">+</span>
+          Ajouter une couverture
+          <span class="dropzone-hint">Format 4:3 — la photo sera recadrée</span>
+        {/if}
       </button>
     {:else}
       <div class="cover empty"><span aria-hidden="true">🎲</span></div>
@@ -125,8 +143,13 @@
             disabled={uploading}
             onclick={() => fileInput?.click()}
           >
-            <span class="plus" aria-hidden="true">+</span>
-            {uploading ? 'Envoi…' : 'Ajouter'}
+            {#if uploading}
+              <Spinner />
+              Envoi…
+            {:else}
+              <span class="plus" aria-hidden="true">+</span>
+              Ajouter
+            {/if}
           </button>
         {/if}
       </div>
@@ -143,8 +166,6 @@
     />
     {#if atMax}<p class="hint">Maximum {MAX} photos (1 couverture + {MAX - 1} d'appoint).</p>{/if}
   {/if}
-
-  {#if error}<p class="error" role="alert">{error}</p>{/if}
 </div>
 
 <style>
@@ -164,7 +185,7 @@
   .cover {
     position: relative;
     margin: 0;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     border-radius: var(--radius-md);
     overflow: hidden;
     border: 1px solid var(--border);
@@ -188,7 +209,7 @@
     justify-content: center;
     gap: var(--space-2);
     width: 100%;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     font: inherit;
     font-size: var(--text-small);
     font-weight: var(--weight-medium);
@@ -295,9 +316,9 @@
     color: var(--text-subtle);
     font-size: var(--text-small);
   }
-  .error {
-    margin: 0;
-    color: var(--danger);
-    font-size: var(--text-small);
+  .dropzone-hint {
+    font-size: var(--text-label, var(--text-small));
+    font-weight: var(--weight-regular, 400);
+    color: var(--text-subtle);
   }
 </style>

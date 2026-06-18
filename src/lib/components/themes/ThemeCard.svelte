@@ -73,7 +73,7 @@
   }
   .thumb {
     position: relative;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     background: var(--bg-hover);
     display: grid;
     place-items: center;

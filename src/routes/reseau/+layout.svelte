@@ -59,6 +59,11 @@
     text-decoration: none;
     transition: background var(--dur-fast) var(--ease-out-strong);
   }
+  .reseau-tab:hover,
+  .reseau-tab:active,
+  .reseau-tab:focus {
+    text-decoration: none;
+  }
   .reseau-tab:hover {
     background: var(--bg-hover);
   }

@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { goto } from '$app/navigation'
+  import { goto, replaceState } from '$app/navigation'
+  import { page } from '$app/state'
   import { Button } from '$lib/components/ui/button/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import ListIcon from '@lucide/svelte/icons/list'
@@ -87,6 +88,17 @@
     editing = null
     dialogOpen = true
   }
+
+  // Ouverture directe du dialog depuis le FAB de la bottom bar (`?new=1`), puis
+  // on nettoie l'URL pour ne pas le rouvrir au rechargement.
+  $effect(() => {
+    if (page.url.searchParams.get('new') === '1') {
+      openNew()
+      const url = new URL(page.url.href)
+      url.searchParams.delete('new')
+      replaceState(url, {})
+    }
+  })
   function openEdit(record: AttendanceRow) {
     editing = record
     dialogOpen = true
@@ -141,9 +153,9 @@
   <header class="head">
     <div>
       <h1>Fréquentation</h1>
-      <p class="muted">Relevé des séances — {scopeLabel}.</p>
+      <p class="muted">Relevé des ouvertures — {scopeLabel}.</p>
     </div>
-    <Button onclick={openNew}>Clôturer une séance</Button>
+    <Button onclick={openNew}>Clôturer une ouverture</Button>
   </header>
 
   {#if form?.error}
@@ -187,7 +199,7 @@
   </div>
 
   {#if records.length === 0}
-    <p class="empty">Aucune séance clôturée sur cette période.</p>
+    <p class="empty">Aucune ouverture clôturée sur cette période.</p>
   {:else}
     <section class="season-summary" aria-label="Totaux de la saison">
       <h2>Total — {scopeLabel}</h2>

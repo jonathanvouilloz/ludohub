@@ -1,8 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Button } from '$lib/components/ui/button/index.js'
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { formatDateCH } from '$lib/utils/dates.js'
+  import PhoneIcon from '@lucide/svelte/icons/phone'
   import HelpResponseList from './HelpResponseList.svelte'
 
   type Response = {
@@ -10,7 +11,7 @@
     status: string
     memberId: string
     member?: { name: string } | null
-    ludo?: { name: string; color?: string | null } | null
+    ludo?: { name: string; color?: string | null; phone?: string | null } | null
   }
   type FeedRequest = {
     id: string
@@ -18,7 +19,7 @@
     slotInfo?: string | null
     notes?: string | null
     status: string
-    ludo?: { name: string; color?: string | null } | null
+    ludo?: { name: string; color?: string | null; phone?: string | null } | null
     responses: Response[]
     isMine?: boolean
     myResponse?: Response | null
@@ -39,11 +40,23 @@
       <span class="dot" style="background: {request.ludo?.color ?? 'var(--primary)'}"></span>
       <strong>{request.ludo?.name ?? '—'}</strong>
     </span>
-    {#if request.status === 'ouverte'}
-      <Badge variant="outline">{statusLabels[request.status]}</Badge>
-    {:else}
-      <Badge variant="secondary">{statusLabels[request.status] ?? request.status}</Badge>
-    {/if}
+    <span class="head-actions">
+      {#if request.ludo?.phone}
+        <a
+          href="tel:{request.ludo.phone}"
+          class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+          title="Appeler {request.ludo.name}"
+        >
+          <PhoneIcon aria-hidden="true" />
+          <span class="sr-only">Appeler {request.ludo.name}</span>
+        </a>
+      {/if}
+      {#if request.status === 'ouverte'}
+        <Badge variant="outline">{statusLabels[request.status]}</Badge>
+      {:else}
+        <Badge variant="secondary">{statusLabels[request.status] ?? request.status}</Badge>
+      {/if}
+    </span>
   </header>
 
   <p class="date">{formatDateCH(request.date)}</p>
@@ -100,6 +113,11 @@
     align-items: center;
     gap: var(--space-2);
     color: var(--text-main);
+  }
+  .head-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
   }
   .dot {
     width: 0.7rem;

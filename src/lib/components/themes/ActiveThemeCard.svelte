@@ -102,7 +102,7 @@
   .thumb {
     flex-shrink: 0;
     width: 9rem;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
     border-radius: var(--radius-md);
     overflow: hidden;
     background: var(--bg-hover);

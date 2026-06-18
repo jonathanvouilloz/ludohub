@@ -46,7 +46,7 @@ export function buildNavConfig(slug: string): NavDest[] {
       href: `${base}/planning`,
       icon: CalendarDaysIcon,
       match: (p) => p.startsWith(`${base}/planning`),
-      zones: ['sidebar', 'tabbar'],
+      zones: ['sidebar', 'sheet'],
     },
     {
       label: 'Matériel',

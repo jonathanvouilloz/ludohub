@@ -124,7 +124,7 @@
 <Dialog.Root bind:open>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>{isEdit ? 'Corriger la séance' : 'Clôturer une séance'}</Dialog.Title>
+      <Dialog.Title>{isEdit ? "Corriger l'ouverture" : 'Clôturer une ouverture'}</Dialog.Title>
       <Dialog.Description>
         Date, période, compteurs et météo. La météo est pré-remplie et reste corrigible.
       </Dialog.Description>
@@ -212,7 +212,7 @@
           {#if submitting}
             Enregistrement…
           {:else}
-            {isEdit ? 'Enregistrer' : 'Clôturer la séance'}
+            {isEdit ? 'Enregistrer' : "Clôturer l'ouverture"}
           {/if}
         </Button>
       </Dialog.Footer>

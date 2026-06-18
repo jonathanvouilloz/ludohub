@@ -52,9 +52,9 @@
     </AlertDialog.Trigger>
     <AlertDialog.Content>
       <AlertDialog.Header>
-        <AlertDialog.Title>Supprimer cette séance ?</AlertDialog.Title>
+        <AlertDialog.Title>Supprimer cette ouverture ?</AlertDialog.Title>
         <AlertDialog.Description>
-          La séance du {formatDateShort(r.date)} ({periodLabels[r.period] ?? r.period}) sera
+          L'ouverture du {formatDateShort(r.date)} ({periodLabels[r.period] ?? r.period}) sera
           définitivement supprimée.
         </AlertDialog.Description>
       </AlertDialog.Header>
@@ -109,7 +109,7 @@
           <li><span>Retours</span><strong>{r.returnsCount}</strong></li>
         </ul>
       {/snippet}
-      <DataCard title={formatDateShort(r.date)} notes={counts}>
+      <DataCard title={formatDateShort(r.date)} accent="var(--ludo-color)" notes={counts}>
         {#snippet byline()}{periodText(r)} · {weatherText(r)}{/snippet}
         {#snippet actions()}{@render rowActions(r)}{/snippet}
       </DataCard>
@@ -138,7 +138,7 @@
     padding: 0;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-1) var(--space-4);
+    gap: var(--space-2) var(--space-4);
   }
   .card-counts li {
     display: flex;

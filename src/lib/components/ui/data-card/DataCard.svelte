@@ -7,6 +7,7 @@
     href,
     linkTitle = 'Voir le lien',
     muted = false,
+    accent,
     dotColor,
     dotTitle,
     badge,
@@ -18,6 +19,8 @@
     href?: string | null
     linkTitle?: string
     muted?: boolean
+    /** Couleur d'accent : bordure gauche + séparation renforcée du footer. */
+    accent?: string
     dotColor?: string
     dotTitle?: string
     badge?: Snippet
@@ -27,7 +30,12 @@
   } = $props()
 </script>
 
-<article class="card" class:muted>
+<article
+  class="card"
+  class:muted
+  class:has-accent={accent}
+  style={accent ? `--card-accent: ${accent}` : undefined}
+>
   <div class="title-row">
     {#if dotColor}
       <span class="dot" style="background: {dotColor}" title={dotTitle}></span>
@@ -64,6 +72,17 @@
   }
   .card.muted {
     opacity: 0.7;
+  }
+  /* Accent couleur (ex. couleur de la ludo) : hiérarchie visuelle + respiration
+     supplémentaire avant le footer (byline météo / actions). */
+  .card.has-accent {
+    border-left: 3px solid var(--card-accent);
+    gap: var(--space-3);
+  }
+  .card.has-accent .card-foot {
+    margin-top: var(--space-1);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--border);
   }
 
   .title-row {
