@@ -5,8 +5,13 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import DatePicker from '$lib/components/ui/date-picker/DatePicker.svelte'
+  import type { MemberRow } from '$lib/server/schema'
 
-  let { open = $bindable(false) }: { open?: boolean } = $props()
+  let {
+    open = $bindable(false),
+    responsable = false,
+    members = [],
+  }: { open?: boolean; responsable?: boolean; members?: MemberRow[] } = $props()
 
   const typeLabels: Record<string, string> = {
     conge: 'Congé',
@@ -15,6 +20,9 @@
     indisponible: 'Indisponible',
   }
 
+  // En mode responsable : planification directe (approuvée) pour un membre.
+  // En mode membre : demande classique (en attente).
+  let memberId = $state('')
   let type = $state<string>('conge')
   let startDate = $state('')
   let endDate = $state('')
@@ -22,10 +30,15 @@
   let error = $state('')
   let submitting = $state(false)
 
+  const selectedMemberName = $derived(
+    members.find((m) => m.id === memberId)?.name ?? 'Choisir un membre',
+  )
+
   // Réinitialise les champs à chaque ouverture.
   $effect(() => {
     if (open) {
-      type = 'conge'
+      memberId = ''
+      type = responsable ? 'vacances' : 'conge'
       startDate = ''
       endDate = ''
       notes = ''
@@ -37,15 +50,19 @@
 <Dialog.Root bind:open>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>Nouvelle demande d'absence</Dialog.Title>
+      <Dialog.Title>
+        {responsable ? 'Planifier une absence' : "Nouvelle demande d'absence"}
+      </Dialog.Title>
       <Dialog.Description>
-        Indiquez le type et la période. Un·e responsable validera votre demande.
+        {responsable
+          ? "L'absence est enregistrée directement, sans validation."
+          : 'Indiquez le type et la période. Un·e responsable validera votre demande.'}
       </Dialog.Description>
     </Dialog.Header>
 
     <form
       method="POST"
-      action="?/request"
+      action={responsable ? '?/createForMember' : '?/request'}
       use:enhance={() => {
         submitting = true
         return async ({ result, update }) => {
@@ -60,6 +77,20 @@
         }
       }}
     >
+      {#if responsable}
+        <div class="field">
+          <Label for="absence-member">Membre</Label>
+          <Select.Root type="single" name="memberId" bind:value={memberId}>
+            <Select.Trigger id="absence-member">{selectedMemberName}</Select.Trigger>
+            <Select.Content>
+              {#each members as m (m.id)}
+                <Select.Item value={m.id} label={m.name} />
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+      {/if}
+
       <div class="field">
         <Label for="absence-type">Type</Label>
         <Select.Root type="single" name="type" bind:value={type}>
@@ -80,7 +111,7 @@
         </div>
         <div class="field">
           <Label for="absence-end">Au</Label>
-          <DatePicker id="absence-end" name="endDate" bind:value={endDate} />
+          <DatePicker id="absence-end" name="endDate" bind:value={endDate} minValue={startDate} />
         </div>
       </div>
 
@@ -101,8 +132,12 @@
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? 'Envoi…' : 'Envoyer la demande'}
+        <Button type="submit" disabled={submitting || (responsable && !memberId)}>
+          {#if submitting}
+            {responsable ? 'Enregistrement…' : 'Envoi…'}
+          {:else}
+            {responsable ? "Enregistrer l'absence" : 'Envoyer la demande'}
+          {/if}
         </Button>
       </Dialog.Footer>
     </form>

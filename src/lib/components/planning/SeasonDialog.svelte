@@ -64,7 +64,7 @@
         </div>
         <div class="field">
           <Label>Fin</Label>
-          <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" />
+          <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" minValue={startDate} />
         </div>
       </div>
 

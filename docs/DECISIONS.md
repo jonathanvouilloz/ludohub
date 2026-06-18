@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-18 | DatePicker : prop `minValue` pour les couples début/fin
+
+**Contexte :** Sur les double date pickers, le picker de fin rouvrait sur le mois courant (pas sur la date de début) et n'empêchait pas une date de fin antérieure au début.
+
+**Décision :** Ajouter une prop `minValue?: string` au composant `DatePicker` partagé : bits-ui désactive nativement les jours antérieurs (`minValue` sur `Calendar.Root`), `bind:placeholder` aligne le mois d'ouverture sur la borne min, et un effet efface la valeur si elle passe sous la borne. Le picker de fin reçoit `minValue={dateDébut}` sur les 4 couples.
+
+**Alternatives :** Validation uniquement côté serveur (rejeté : mauvaise UX, renavigation manuelle) ; logique dupliquée par dialog (rejeté : centraliser dans le composant partagé).
+
+---
+
 ## 2026-06-18 | Saison active explicite (`is_active`) plutôt qu'implicite (plus récente non-archivée)
 
 **Contexte :** L'ancien système rendait active la saison la plus récente non-archivée, ce qui empêchait de préparer une future saison en avance. Besoin d'un contrôle explicite avec 3 états : Active / En préparation / Archivée.

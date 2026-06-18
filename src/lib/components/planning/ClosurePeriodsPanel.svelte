@@ -134,7 +134,7 @@
       </div>
       <div class="field">
         <Label>Au</Label>
-        <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" />
+        <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" minValue={startDate} />
       </div>
       <Button type="submit" disabled={submitting || !label || !startDate || !endDate}>
         {submitting ? 'Ajout…' : 'Ajouter'}

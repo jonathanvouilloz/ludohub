@@ -1,6 +1,46 @@
 # Feature : ABSENCES — Demande et approbation
 
-**Epic :** 05 | **Taille :** M | **Statut :** DONE
+**Epic :** 05 | **Taille :** M | **Statut :** DONE (itératif)
+
+## Etat session 2026-06-18 (responsable planifie/supprime + DatePicker min)
+
+**Fait :**
+
+- **Responsable planifie une absence pour un membre** : nouvelle fn service `createAbsenceForMember` (status `approuve` direct, `respondedBy` = responsable, notifie le membre via `absence_approved`), action `?/createForMember`. `NewAbsenceDialog` bi-mode : si responsable → titre « Planifier une absence » + sélecteur de membre + type défaut `vacances`, sinon workflow demande classique inchangé. Le load fournit `members` (actifs) aux responsables.
+- **Suppression d'absence par responsable** : fn `deleteAbsenceForLudo` (garde tenant via `requireAbsenceInLudo`), action `?/deleteAbsence`, bouton corbeille + `AlertDialog` de confirmation sur **toutes** les lignes (tous statuts). Membre garde son annulation `cancel` (en_attente uniquement).
+- **DatePicker — `minValue` + mois aligné** (transverse) : prop `minValue?: string` sur `DatePicker` → bits-ui désactive les jours antérieurs, `bind:placeholder` ouvre le calendrier sur le mois de la borne min quand aucune valeur n'est posée, efface la valeur si elle passe sous la borne. Branché sur les 4 couples (absences, fermetures, saison, indispo membre) : le picker de fin reçoit `minValue={dateDébut}`.
+- `pnpm check` 0 erreur / 0 warning.
+
+**Prochain :** Epic 05 complet (itératif). Prochain epic non démarré : **12-TESTS E2E** (Playwright).
+
+**Pièges :**
+
+- DatePicker : ne pas initialiser `calPlaceholder` en référençant un prop réactif (`minValue`/`value`) dans `$state(...)` → warning Svelte `state_referenced_locally`. Init à `undefined`, l'effet `if (minDv && !dv)` règle le mois au montage.
+- `createAbsenceForMember` réutilise le type de notif `absence_approved` (titre/corps custom) → aucune migration d'enum.
+
+**Commit :** (à renseigner)
+
+## Carte du code
+> Mise à jour : 2026-06-18
+
+| Fichier | Rôle |
+|---------|------|
+| `src/lib/server/schema.ts` | Table `absences` + enums + `absencesRelations` (member) ; `members.absences` |
+| `src/lib/server/db/absences.ts` | Queries Drizzle : CRUD + `getApprovedAbsencesInRange` (overlap) |
+| `src/lib/server/services/absences.ts` | `requestAbsence`, `approve/refuse`, `cancelOwnAbsence`, **`createAbsenceForMember`** (responsable, approuvé direct + notif), **`deleteAbsenceForLudo`** (responsable, garde tenant), `getApprovedAbsencesByMember` (Map) |
+| `src/routes/[ludo]/absences/+page.server.ts` | Load (membres aux responsables) + actions request/cancel/approve/refuse + **createForMember** + **deleteAbsence** |
+| `src/routes/[ludo]/absences/+page.svelte` | Liste ; bouton « Planifier une absence » (responsable) + **corbeille + AlertDialog** par ligne |
+| `src/lib/components/absences/NewAbsenceDialog.svelte` | **Bi-mode** : sélecteur membre + action conditionnelle ; picker fin `minValue={startDate}` |
+| `src/lib/components/absences/AbsenceReviewDialog.svelte` | Approbation/refus responsable (note obligatoire au refus) |
+| `src/lib/components/ui/date-picker/DatePicker.svelte` | **Prop `minValue`** (jours antérieurs désactivés) + `bind:placeholder` (mois aligné) + clear si valeur < min |
+| `src/lib/components/planning/{ClosurePeriodsPanel,SeasonDialog,SeasonMemberConfig}.svelte` | Picker de fin branché `minValue={dateDébut}` |
+| `src/lib/server/ludo-context.ts` | Helper `requireLudoContext`/`requireResponsableContext` pour les form actions |
+
+### Décisions clés
+
+- **Responsable crée une absence approuvée directe** (`createAbsenceForMember`) — bypass du workflow demande→validation ; notifie le membre concerné.
+- **Suppression responsable = tous statuts** ; le membre reste limité à l'annulation de sa demande `en_attente`.
+- **DatePicker `minValue`** : la borne min vient de la date de début ; le composant gère désactivation + mois d'ouverture + cohérence (efface fin < début).
 
 ## Etat session 2026-06-16 (clôture)
 
@@ -8,28 +48,6 @@
 **Prochain :** Epic 06-THÈMES (catalogue, items, photos Vercel Blob, prêts) — lire `docs/features/06-themes.md`.
 **Pièges :** Form actions SvelteKit → toujours résoudre le contexte via `requireLudoContext`/`requireResponsableContext` (jamais lire `locals.ludo`/`currentMember`, posés seulement par le `load` du layout). CLI `shadcn-svelte add` inutilisable en non-interactif → créer les composants à la main sur bits-ui.
 **Commit :** feat(absences): demande/approbation + warnings planning + fix 403 actions
-
-## Carte du code
-> Mise à jour : 2026-06-16
-
-| Fichier | Rôle |
-|---------|------|
-| `src/lib/server/schema.ts` | Table `absences` + enums + `absencesRelations` (member) ; `members.absences` |
-| `src/lib/server/db/absences.ts` | Queries Drizzle : CRUD + `getApprovedAbsencesInRange` (overlap) |
-| `src/lib/server/services/absences.ts` | Logique métier : `requestAbsence`, `approve/refuse`, `cancelOwnAbsence`, `getApprovedAbsencesByMember` (Map) + `AbsenceServiceError` |
-| `src/lib/server/services/planning.ts` | `getSeasonGrid` enrichit chaque assignation d'un champ `absence` |
-| `src/lib/server/ludo-context.ts` | Helper `requireLudoContext`/`requireResponsableContext` pour les form actions (fix 403) |
-| `src/routes/[ludo]/absences/+page.{server.ts,svelte}` | Page liste + actions request/cancel/approve/refuse |
-| `src/lib/components/absences/NewAbsenceDialog.svelte` | Formulaire de demande (DatePicker Du/Au) |
-| `src/lib/components/absences/AbsenceReviewDialog.svelte` | Approbation/refus responsable (note obligatoire au refus) |
-| `src/lib/components/ui/date-picker/DatePicker.svelte` | Date picker réutilisable (bits-ui Popover+Calendar, valeur `YYYY-MM-DD`) |
-| `src/lib/components/planning/SlotCard.svelte` | Badge « Absent » + recompte effectif |
-| `src/lib/utils/dates.ts` | `isDateInRange(date, start, end)` |
-
-### Décisions clés
-- Le contexte ludo/membre des **actions** se résout via `ludo-context.ts` (les `load` du layout ne tournent pas avant une action en SvelteKit).
-- Warning planning = badge visuel **+ recompte effectif** (l'assigné absent ne compte plus dans `filled`).
-- Membre peut annuler sa propre demande tant qu'elle est `en_attente` ; note obligatoire pour un refus, optionnelle à l'approbation.
 
 ## Etat session 2026-06-16 (correctifs post-test)
 

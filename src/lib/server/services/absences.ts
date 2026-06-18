@@ -7,6 +7,7 @@ import {
   insertAbsence,
   updateAbsenceStatus,
 } from '../db/absences.js'
+import { getMemberById } from '../db/members.js'
 import type { AbsenceRow } from '../schema.js'
 import { emitEvent } from './events.js'
 
@@ -71,6 +72,58 @@ export async function requestAbsence(data: {
     title: "Nouvelle demande d'absence",
     body: 'Une demande d’absence attend votre décision.',
     recipientResponsablesOf: data.ludoId,
+  })
+
+  return absence
+}
+
+/**
+ * Création directe par un·e responsable d'une absence pour un membre, sans passer
+ * par le workflow demande → validation. L'absence est immédiatement `approuve`.
+ * Le membre concerné est notifié.
+ */
+export async function createAbsenceForMember(data: {
+  ludoId: string
+  memberId: string
+  responderId: string
+  type: string
+  startDate: string
+  endDate: string
+  notes?: string
+}): Promise<AbsenceRow> {
+  const type = parseType(data.type)
+  const startDate = parseDate(data.startDate, 'de début')
+  const endDate = parseDate(data.endDate, 'de fin')
+  if (startDate > endDate) {
+    throw new AbsenceServiceError('La date de début doit précéder la date de fin.')
+  }
+
+  const member = await getMemberById(data.memberId)
+  if (!member || member.ludoId !== data.ludoId) {
+    throw new AbsenceServiceError('Membre introuvable.')
+  }
+
+  const absence = await insertAbsence({
+    ludoId: data.ludoId,
+    memberId: data.memberId,
+    type,
+    startDate,
+    endDate,
+    notes: data.notes?.trim() || null,
+    status: 'approuve',
+    respondedBy: data.responderId,
+  })
+
+  await emitEvent({
+    type: 'absence_approved',
+    actorLudoId: data.ludoId,
+    actorMemberId: data.responderId,
+    entityType: 'absence',
+    entityId: absence.id,
+    title: 'Absence planifiée',
+    body: 'Une absence a été enregistrée pour vous par un·e responsable.',
+    recipientLudoId: data.ludoId,
+    recipientMemberId: data.memberId,
   })
 
   return absence
@@ -162,6 +215,12 @@ export async function cancelOwnAbsence(id: string, memberId: string): Promise<vo
   if (absence.status !== 'en_attente') {
     throw new AbsenceServiceError('Seules les demandes en attente peuvent être annulées.')
   }
+  await deleteAbsence(id)
+}
+
+/** Suppression par un·e responsable de n'importe quelle absence de sa ludo. */
+export async function deleteAbsenceForLudo(id: string, ludoId: string): Promise<void> {
+  await requireAbsenceInLudo(id, ludoId)
   await deleteAbsence(id)
 }
 

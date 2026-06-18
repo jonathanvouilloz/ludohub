@@ -17,7 +17,14 @@
     name,
     id,
     placeholder = 'Choisir une date',
-  }: { value?: string; name?: string; id?: string; placeholder?: string } = $props()
+    minValue,
+  }: {
+    value?: string
+    name?: string
+    id?: string
+    placeholder?: string
+    minValue?: string
+  } = $props()
 
   const df = new DateFormatter('fr-CH', { dateStyle: 'long' })
 
@@ -26,8 +33,25 @@
   let dv = $state<DateValue | undefined>(value ? parseDate(value) : undefined)
   let open = $state(false)
 
+  // Borne minimale (ex. date de début pour un picker « fin de plage »).
+  const minDv = $derived(minValue ? parseDate(minValue) : undefined)
+
+  // Mois affiché par le calendrier quand aucune valeur n'est encore choisie.
+  // Initialisé via l'effet ci-dessous ; quand `dv` est posé, Calendar suit son mois.
+  let calPlaceholder = $state<DateValue | undefined>(undefined)
+
   $effect(() => {
     value = dv ? dv.toString() : ''
+  })
+
+  // Quand la borne min change et qu'aucune valeur n'est posée, ouvrir sur ce mois.
+  $effect(() => {
+    if (minDv && !dv) calPlaceholder = minDv
+  })
+
+  // Si la valeur devient antérieure à la borne min → on l'efface (cohérence form).
+  $effect(() => {
+    if (minDv && dv && dv.compare(minDv) < 0) dv = undefined
   })
 </script>
 
@@ -52,6 +76,8 @@
       <Calendar.Root
         type="single"
         bind:value={dv}
+        bind:placeholder={calPlaceholder}
+        minValue={minDv}
         weekdayFormat="short"
         locale="fr-CH"
         onValueChange={() => (open = false)}

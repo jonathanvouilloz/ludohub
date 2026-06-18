@@ -8,6 +8,7 @@
   import { DataCard } from '$lib/components/ui/data-card/index.js'
   import EyeIcon from '@lucide/svelte/icons/eye'
   import XIcon from '@lucide/svelte/icons/x'
+  import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import NewAbsenceDialog from '$lib/components/absences/NewAbsenceDialog.svelte'
   import AbsenceReviewDialog from '$lib/components/absences/AbsenceReviewDialog.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
@@ -49,7 +50,9 @@
         {data.responsable ? "Demandes d'absence de l'équipe." : "Vos demandes d'absence."}
       </p>
     </div>
-    <Button onclick={() => (newOpen = true)}>Nouvelle demande</Button>
+    <Button onclick={() => (newOpen = true)}>
+      {data.responsable ? 'Planifier une absence' : 'Nouvelle demande'}
+    </Button>
   </header>
 
   {#if form?.error}
@@ -83,6 +86,34 @@
         <EyeIcon aria-hidden="true" />
         <span class="sr-only">Examiner</span>
       </Button>
+    {/if}
+    {#if data.responsable}
+      <AlertDialog.Root>
+        <AlertDialog.Trigger
+          class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+          title="Supprimer"
+        >
+          <Trash2Icon class="danger-icon" aria-hidden="true" />
+          <span class="sr-only">Supprimer</span>
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Title>Supprimer cette absence ?</AlertDialog.Title>
+            <AlertDialog.Description>
+              L'absence de {a.member?.name ?? 'ce membre'} sera définitivement supprimée.
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+          <form method="POST" action="?/deleteAbsence" use:enhance>
+            <input type="hidden" name="id" value={a.id} />
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>
+              <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
+                Supprimer
+              </button>
+            </AlertDialog.Footer>
+          </form>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
     {/if}
     {#if !data.responsable && a.status === 'en_attente'}
       <AlertDialog.Root>
@@ -162,7 +193,7 @@
     </DataTable>
   {/if}
 
-  <NewAbsenceDialog bind:open={newOpen} />
+  <NewAbsenceDialog bind:open={newOpen} responsable={data.responsable} members={data.members} />
   <AbsenceReviewDialog bind:open={reviewOpen} absence={reviewing} />
 </main>
 

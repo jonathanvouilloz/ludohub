@@ -149,7 +149,7 @@
                 </div>
                 <div class="field">
                   <Label>Au</Label>
-                  <DatePicker bind:value={indispoEnd} name="endDate" placeholder="Date de fin" />
+                  <DatePicker bind:value={indispoEnd} name="endDate" placeholder="Date de fin" minValue={indispoStart} />
                 </div>
                 <Button type="submit" size="sm" disabled={submitting || !indispoStart || !indispoEnd}>
                   {submitting ? 'Ajout…' : 'Ajouter'}
