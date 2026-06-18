@@ -1,6 +1,23 @@
 # Feature : FRÉQUENTATION — Relevé & clôture de séance
 
-**Epic :** 14 | **Taille :** M | **Statut :** EN COURS (cadrage)
+**Epic :** 14 | **Taille :** M | **Statut :** DONE (module construit + polissage mobile)
+
+## Etat session 2026-06-18 (polissage mobile transverse + logo)
+
+**Fait :**
+
+- **Constat** : le module Fréquentation était **déjà entièrement implémenté** (commit WIP `e0f0ea0`) — le cadrage ci-dessous est historique. Les Phases 1-3 sont livrées.
+- **Fréquentation** : renommage UI « séance » → « ouverture » partout (page, dialog, suppression) ; carte mobile (`SessionList`) avec accent couleur ludo + plus d'espacement ; ouverture directe du dialog de clôture via `?new=1`.
+- **Thèmes** (transverse) : compression image à l'upload (`browser-image-compression`, gère EXIF iPhone), spinner + toasts (`svelte-sonner`), covers fixées en **4:3** (ThemeCard/Network/Active/galerie), hint de cadrage.
+- **Navigation** (transverse) : bottom bar avec **FAB central** « + ouverture » (Planning déplacé dans « Plus ») ; suppression du soulignement au tap (`NavItem` + onglets réseau).
+- **Réseau** (transverse) : téléphone + bouton appeler (`tel:`) sur demandes d'aide, volontaires sur 2 lignes, Confirmer/Appeler en boutons icônes.
+- **Logo** : favicon + icônes PWA (192/512/maskable/apple-touch) régénérés depuis `logo-ludohub.png`.
+
+**Prochain :** Reste **Phase 4 — tests** (`services/attendance.test.ts` + e2e clôture, à faire avec l'epic 12). Sinon valider de visu sur mobile : rendu du FAB surélevé + style des toasts sonner.
+**Pièges :** Nouvelles deps `browser-image-compression` + `svelte-sonner` → `pnpm install` requis sur autre machine. `<Toaster />` monté dans `src/routes/+layout.svelte`. Composants `ui/` (sonner, spinner, data-card) sont eslint-ignored par convention repo.
+**Commit :** [ec6fcfe] feat(ui): polissage mobile + logo LudoHub (favicon/PWA)
+
+---
 
 ## Etat session 2026-06-18
 
