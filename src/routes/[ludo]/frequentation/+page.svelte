@@ -240,7 +240,7 @@
             </span>
           </summary>
           <div class="group-body">
-            {@render breakdown(g.byPeriod, g.totals)}
+            <div class="period-card">{@render breakdown(g.byPeriod, g.totals)}</div>
             <SessionList records={g.records} onEdit={openEdit} />
           </div>
         </details>
@@ -421,10 +421,10 @@
   }
   .group {
     border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-card);
+    border-radius: var(--radius-lg, var(--radius-md));
     overflow: hidden;
   }
+  /* Header du mois : mini-gradient (style card planning), texte clair. */
   .group summary {
     display: flex;
     align-items: center;
@@ -434,20 +434,28 @@
     padding: var(--space-3) var(--space-4);
     cursor: pointer;
     list-style: none;
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ludo-color) 82%, white),
+      var(--ludo-color) 45%,
+      color-mix(in srgb, var(--ludo-color) 58%, black)
+    );
+    color: var(--text-inverse);
   }
   .group summary::-webkit-details-marker {
     display: none;
   }
   .group-label {
     font-weight: var(--weight-semibold);
-    color: var(--text-main);
+    color: inherit;
     text-transform: capitalize;
   }
   .chips {
     display: flex;
     gap: var(--space-2);
     flex-wrap: wrap;
-    color: var(--text-muted);
+    color: inherit;
+    opacity: 0.9;
     font-size: var(--text-small);
   }
   .group-body {
@@ -455,11 +463,16 @@
     flex-direction: column;
     gap: var(--space-4);
     padding: var(--space-4);
-    border-top: 1px solid var(--border);
-    /* Corps du mois teinté (le header reste sur fond carte) → contraste léger. */
-    background: var(--primary-light);
+    background: var(--bg-base);
   }
-  .group-body .breakdown {
+  /* Répartition par période : carte blanche, comme le tableau des séances. */
+  .period-card {
+    padding: var(--space-3) var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+  }
+  .period-card .breakdown {
     margin-top: 0;
   }
 
@@ -467,7 +480,7 @@
      garde que l'affichage des séances à la journée (cartes du SessionList). */
   @media (max-width: 639px) {
     .season-summary,
-    .breakdown {
+    .period-card {
       display: none;
     }
     .group-body {
