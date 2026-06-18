@@ -97,7 +97,7 @@
   </div>
 
   <!-- Photos d'appoint : vignettes secondaires pour présenter le thème. -->
-  {#if rest.length > 0 || (editable && cover)}
+  {#if editable || rest.length > 0}
     <div class="appoint">
       <span class="label">Photos d'appoint</span>
       <div class="grid">
@@ -118,7 +118,7 @@
           </figure>
         {/each}
 
-        {#if editable && cover && !atMax}
+        {#if editable && !atMax}
           <button
             type="button"
             class="tile-dropzone"

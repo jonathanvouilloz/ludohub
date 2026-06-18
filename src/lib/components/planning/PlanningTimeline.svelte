@@ -263,7 +263,12 @@
 
   /* Hero « Mon prochain samedi » */
   .hero {
-    background: var(--ludo-color);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ludo-color) 82%, white),
+      var(--ludo-color) 45%,
+      color-mix(in srgb, var(--ludo-color) 58%, black)
+    );
     color: var(--text-inverse);
     border-radius: var(--radius-lg);
     padding: var(--space-5) var(--space-6);
