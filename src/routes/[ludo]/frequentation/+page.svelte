@@ -358,20 +358,27 @@
     flex-direction: column;
     gap: var(--space-1);
     padding: var(--space-4);
-    background: var(--primary-light);
     border-radius: var(--radius-md);
+    background: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--ludo-color) 82%, white),
+      var(--ludo-color) 45%,
+      color-mix(in srgb, var(--ludo-color) 58%, black)
+    );
+    color: var(--text-inverse);
   }
   .tile-num {
     font-size: var(--text-h1, 2rem);
     font-weight: var(--weight-bold);
     line-height: 1.1;
-    color: var(--text-main);
+    color: inherit;
     font-variant-numeric: tabular-nums;
   }
   .tile-label {
     font-size: var(--text-small);
     font-weight: var(--weight-medium);
-    color: var(--text-muted);
+    color: inherit;
+    opacity: 0.9;
   }
   .period-detail {
     margin-top: var(--space-5);
