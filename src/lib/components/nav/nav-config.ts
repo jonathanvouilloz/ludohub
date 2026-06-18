@@ -8,6 +8,7 @@ import UsersIcon from '@lucide/svelte/icons/users'
 import PackageIcon from '@lucide/svelte/icons/package'
 import DicesIcon from '@lucide/svelte/icons/dices'
 import BellIcon from '@lucide/svelte/icons/bell'
+import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
 
 /** Zone(s) du shell où une destination apparaît. */
 export type NavZone = 'sidebar' | 'tabbar' | 'sheet'
@@ -66,6 +67,13 @@ export function buildNavConfig(slug: string): NavDest[] {
       href: `${base}/absences`,
       icon: CalendarOffIcon,
       match: (p) => p.startsWith(`${base}/absences`),
+      zones: ['sidebar', 'sheet'],
+    },
+    {
+      label: 'Fréquentation',
+      href: `${base}/frequentation`,
+      icon: ClipboardListIcon,
+      match: (p) => p.startsWith(`${base}/frequentation`),
       zones: ['sidebar', 'sheet'],
     },
     {

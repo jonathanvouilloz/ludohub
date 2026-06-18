@@ -6,11 +6,15 @@
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { DataTable } from '$lib/components/ui/data-table/index.js'
   import { DataCard } from '$lib/components/ui/data-card/index.js'
+  import * as Select from '$lib/components/ui/select/index.js'
   import EyeIcon from '@lucide/svelte/icons/eye'
   import XIcon from '@lucide/svelte/icons/x'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
+  import ListIcon from '@lucide/svelte/icons/list'
+  import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days'
   import NewAbsenceDialog from '$lib/components/absences/NewAbsenceDialog.svelte'
   import AbsenceReviewDialog from '$lib/components/absences/AbsenceReviewDialog.svelte'
+  import AbsenceCalendar from '$lib/components/absences/AbsenceCalendar.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
   import type { AbsenceRow, MemberRow } from '$lib/server/schema'
 
@@ -22,6 +26,9 @@
   let reviewOpen = $state(false)
   let reviewing = $state<AbsenceWithMember | null>(null)
 
+  let viewMode = $state<'table' | 'calendar'>('table')
+  let selectedMemberId = $state('all')
+
   const typeLabels: Record<string, string> = {
     conge: 'Congé',
     vacances: 'Vacances',
@@ -31,6 +38,17 @@
 
   const absences = $derived(data.absences as AbsenceWithMember[])
   const pending = $derived(absences.filter((a) => a.status === 'en_attente'))
+
+  // Filtre par membre (responsable) puis tri par date de début croissante.
+  const filtered = $derived(
+    absences.filter((a) => selectedMemberId === 'all' || a.memberId === selectedMemberId),
+  )
+  const tableRows = $derived([...filtered].sort((a, b) => a.startDate.localeCompare(b.startDate)))
+  const memberFilterLabel = $derived(
+    selectedMemberId === 'all'
+      ? 'Tous les membres'
+      : (data.members.find((m) => m.id === selectedMemberId)?.name ?? 'Tous les membres'),
+  )
 
   function openReview(absence: AbsenceWithMember) {
     reviewing = absence
@@ -145,8 +163,61 @@
     {/if}
   {/snippet}
 
-  {#if absences.length === 0}
-    <p class="empty">Aucune demande pour le moment.</p>
+  {#snippet memberFilter()}
+    {#if data.responsable && data.members.length > 0}
+      <div class="member-filter">
+        <Select.Root type="single" bind:value={selectedMemberId}>
+          <Select.Trigger aria-label="Filtrer par membre">{memberFilterLabel}</Select.Trigger>
+          <Select.Content>
+            <Select.Item value="all" label="Tous les membres" />
+            {#each data.members as m (m.id)}
+              <Select.Item value={m.id} label={m.name} />
+            {/each}
+          </Select.Content>
+        </Select.Root>
+      </div>
+    {/if}
+  {/snippet}
+
+  <div class="toolbar">
+    <div class="segmented" role="group" aria-label="Vue">
+      <button
+        type="button"
+        class:active={viewMode === 'table'}
+        aria-pressed={viewMode === 'table'}
+        onclick={() => (viewMode = 'table')}
+      >
+        <ListIcon aria-hidden="true" />
+        Tableau
+      </button>
+      <button
+        type="button"
+        class:active={viewMode === 'calendar'}
+        aria-pressed={viewMode === 'calendar'}
+        onclick={() => (viewMode = 'calendar')}
+      >
+        <CalendarDaysIcon aria-hidden="true" />
+        Calendrier
+      </button>
+    </div>
+
+    {#if viewMode === 'table'}
+      {@render memberFilter()}
+    {/if}
+  </div>
+
+  {#if viewMode === 'calendar'}
+    <AbsenceCalendar
+      absences={filtered}
+      slug={data.ludo.slug}
+      filter={data.responsable && data.members.length > 0 ? memberFilter : undefined}
+    />
+  {:else if tableRows.length === 0}
+    <p class="empty">
+      {selectedMemberId === 'all'
+        ? 'Aucune demande pour le moment.'
+        : 'Aucune absence pour ce membre.'}
+    </p>
   {:else}
     <DataTable>
       {#snippet head()}
@@ -160,7 +231,7 @@
         </Table.Row>
       {/snippet}
       {#snippet body()}
-        {#each absences as a (a.id)}
+        {#each tableRows as a (a.id)}
           <Table.Row>
             <Table.Cell>{a.member?.name ?? '—'}</Table.Cell>
             <Table.Cell>{typeLabels[a.type] ?? a.type}</Table.Cell>
@@ -174,7 +245,7 @@
         {/each}
       {/snippet}
       {#snippet cards()}
-        {#each absences as a (a.id)}
+        {#each tableRows as a (a.id)}
           {#snippet cardNote()}{a.responderNotes ?? a.notes}{/snippet}
           <DataCard
             title={a.member?.name ?? '—'}
@@ -235,6 +306,53 @@
   .empty {
     color: var(--text-subtle);
     font-style: italic;
+  }
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-4);
+  }
+  .segmented {
+    display: inline-flex;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+  .segmented button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    cursor: pointer;
+    transition:
+      background var(--dur-fast) var(--ease-out-strong),
+      color var(--dur-fast) var(--ease-out-strong);
+  }
+  .segmented button + button {
+    border-left: 1px solid var(--border);
+  }
+  .segmented button :global(svg) {
+    width: 1rem;
+    height: 1rem;
+  }
+  .segmented button:hover {
+    background: var(--bg-hover);
+  }
+  .segmented button.active {
+    background: var(--ludo-color, var(--text-main));
+    color: var(--text-inverse);
+  }
+  .member-filter {
+    min-width: 12rem;
   }
   .pending {
     margin-bottom: var(--space-6);

@@ -59,6 +59,41 @@ export function formatMonthYear(date: Date | string): string {
 }
 
 /**
+ * Clé triable de semaine ISO (lundi→dimanche), ex. `2026-W25`. La semaine ISO
+ * est rattachée à l'année de son jeudi. Sert à grouper la timeline par semaine.
+ */
+export function isoWeekKey(date: Date | string): string {
+  const src = typeof date === 'string' ? new Date(`${date}T12:00:00`) : date
+  const d = new Date(Date.UTC(src.getFullYear(), src.getMonth(), src.getDate()))
+  const dayNum = d.getUTCDay() || 7 // dimanche=7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum) // jeudi de la semaine
+  const isoYear = d.getUTCFullYear()
+  const yearStart = new Date(Date.UTC(isoYear, 0, 1))
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7)
+  return `${isoYear}-W${String(week).padStart(2, '0')}`
+}
+
+/**
+ * Libellé de la semaine contenant `date` (ex. « 16 – 22 juin 2026 », ou
+ * « 30 juin – 6 juil. 2026 » à cheval sur deux mois).
+ */
+export function formatWeekRange(date: Date | string): string {
+  const src = typeof date === 'string' ? new Date(`${date}T12:00:00`) : new Date(date)
+  const monday = new Date(src)
+  monday.setDate(src.getDate() - ((src.getDay() + 6) % 7))
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 6)
+  const sameMonth =
+    monday.getMonth() === sunday.getMonth() && monday.getFullYear() === sunday.getFullYear()
+  if (sameMonth) {
+    const tail = sunday.toLocaleDateString('fr-CH', { month: 'long', year: 'numeric' })
+    return `${monday.getDate()} – ${sunday.getDate()} ${tail}`
+  }
+  const fmt = (d: Date) => d.toLocaleDateString('fr-CH', { day: 'numeric', month: 'short' })
+  return `${fmt(monday)} – ${fmt(sunday)} ${sunday.getFullYear()}`
+}
+
+/**
  * Nombre de jours entiers entre deux dates ISO `YYYY-MM-DD` (to - from).
  * Positif si `to` est dans le futur. Sert au « dans N jours ».
  */

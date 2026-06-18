@@ -1,4 +1,4 @@
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
   date,
@@ -9,6 +9,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
 
@@ -261,6 +262,52 @@ export const absences = pgTable('absences', {
 export const absencesRelations = relations(absences, ({ one }) => ({
   member: one(members, {
     fields: [absences.memberId],
+    references: [members.id],
+  }),
+}))
+
+// ─── Fréquentation ─────────────────────────────────────────────────────────────
+
+export const attendancePeriod = pgEnum('attendance_period', ['matin', 'apres_midi', 'evenement'])
+
+export const weatherCondition = pgEnum('weather_condition', ['beau', 'gris', 'pluie', 'neige'])
+
+export const attendanceRecords = pgTable(
+  'attendance_records',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    date: date('date').notNull(),
+    period: attendancePeriod('period').notNull(),
+    // Libellé libre, requis uniquement pour la période `evenement`, sinon null.
+    eventLabel: text('event_label'),
+    adultsCount: integer('adults_count').notNull().default(0),
+    childrenCount: integer('children_count').notNull().default(0),
+    loansCount: integer('loans_count').notNull().default(0),
+    returnsCount: integer('returns_count').notNull().default(0),
+    weather: weatherCondition('weather'),
+    temperature: integer('temperature'),
+    // FK informatif : qui a clôturé la séance. Set null si le membre est supprimé.
+    closedByMemberId: uuid('closed_by_member_id').references(() => members.id, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    // Un seul `matin` / `apres_midi` par jour et par ludo ; les `evenement`
+    // restent libres (plusieurs événements possibles le même jour).
+    uniqueIndex('attendance_unique_slot')
+      .on(t.ludoId, t.date, t.period)
+      .where(sql`${t.period} <> 'evenement'`),
+  ],
+)
+
+export const attendanceRecordsRelations = relations(attendanceRecords, ({ one }) => ({
+  closedBy: one(members, {
+    fields: [attendanceRecords.closedByMemberId],
     references: [members.id],
   }),
 }))
@@ -676,6 +723,10 @@ export type SeasonMemberSettingRow = typeof seasonMemberSettings.$inferSelect
 export type SeasonMemberSettingInsert = typeof seasonMemberSettings.$inferInsert
 export type AbsenceRow = typeof absences.$inferSelect
 export type AbsenceInsert = typeof absences.$inferInsert
+export type AttendanceRow = typeof attendanceRecords.$inferSelect
+export type AttendanceInsert = typeof attendanceRecords.$inferInsert
+export type AttendancePeriod = (typeof attendancePeriod.enumValues)[number]
+export type WeatherCondition = (typeof weatherCondition.enumValues)[number]
 export type ThemeRow = typeof themes.$inferSelect
 export type ThemeInsert = typeof themes.$inferInsert
 export type ThemeItemRow = typeof themeItems.$inferSelect
