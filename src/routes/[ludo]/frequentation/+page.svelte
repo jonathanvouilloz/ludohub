@@ -153,7 +153,7 @@
   <header class="head">
     <div>
       <h1>Fréquentation</h1>
-      <p class="muted">Relevé des ouvertures — {scopeLabel}.</p>
+      <p class="muted">Relevé des ouvertures.</p>
     </div>
     <Button onclick={openNew}>Clôturer une ouverture</Button>
   </header>
@@ -202,8 +202,29 @@
     <p class="empty">Aucune ouverture clôturée sur cette période.</p>
   {:else}
     <section class="season-summary" aria-label="Totaux de la saison">
-      <h2>Total — {scopeLabel}</h2>
-      {@render breakdown(seasonByPeriod, seasonTotals)}
+      <h2>Total de la saison</h2>
+      <div class="tiles">
+        <div class="tile">
+          <span class="tile-num">{seasonTotals.adultsCount}</span>
+          <span class="tile-label">Adultes</span>
+        </div>
+        <div class="tile">
+          <span class="tile-num">{seasonTotals.childrenCount}</span>
+          <span class="tile-label">Enfants</span>
+        </div>
+        <div class="tile">
+          <span class="tile-num">{seasonTotals.loansCount}</span>
+          <span class="tile-label">Prêts</span>
+        </div>
+        <div class="tile">
+          <span class="tile-num">{seasonTotals.returnsCount}</span>
+          <span class="tile-label">Retours</span>
+        </div>
+      </div>
+      <details class="period-detail">
+        <summary>Détail par période</summary>
+        {@render breakdown(seasonByPeriod, seasonTotals)}
+      </details>
     </section>
 
     <div class="groups">
@@ -318,10 +339,57 @@
   }
   .season-summary {
     margin-bottom: var(--space-6);
-    padding: var(--space-4);
+    padding: var(--space-6);
     background: var(--bg-card);
     border: 1px solid var(--border);
+    border-radius: var(--radius-lg, var(--radius-md));
+    box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.04));
+  }
+  .season-summary h2 {
+    margin-bottom: var(--space-4);
+  }
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+  }
+  .tile {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    background: var(--primary-light);
     border-radius: var(--radius-md);
+  }
+  .tile-num {
+    font-size: var(--text-h1, 2rem);
+    font-weight: var(--weight-bold);
+    line-height: 1.1;
+    color: var(--text-main);
+    font-variant-numeric: tabular-nums;
+  }
+  .tile-label {
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+  }
+  .period-detail {
+    margin-top: var(--space-5);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-4);
+  }
+  .period-detail summary {
+    cursor: pointer;
+    font-size: var(--text-small);
+    font-weight: var(--weight-medium);
+    color: var(--text-muted);
+    list-style: none;
+  }
+  .period-detail summary::-webkit-details-marker {
+    display: none;
+  }
+  .period-detail[open] summary {
+    margin-bottom: var(--space-3);
   }
   .breakdown {
     width: 100%;
