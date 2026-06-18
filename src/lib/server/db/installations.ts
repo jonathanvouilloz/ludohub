@@ -68,11 +68,15 @@ export async function closeInstallation(id: string) {
 
 // ─── Check-ups ───────────────────────────────────────────────────────────────
 
-/** Enregistre un check-up daté + l'état présent/manquant de chaque item installé. */
+/** Enregistre un check-up daté + l'état présent/à réparer/manquant de chaque item installé. */
 export async function createCheckup(
   installationId: string,
   checkedByMemberId: string,
-  statuses: Array<{ installationItemId: string; status: 'present' | 'manquant'; note?: string }>,
+  statuses: Array<{
+    installationItemId: string
+    status: 'present' | 'a_reparer' | 'manquant'
+    note?: string
+  }>,
   note: string | null,
 ) {
   const [checkup] = await db
@@ -90,4 +94,27 @@ export async function createCheckup(
     )
   }
   return checkup
+}
+
+/** Applique l'état courant (condition) à chaque objet installé (depuis un check-up). */
+export async function applyConditions(
+  updates: Array<{ installationItemId: string; condition: 'present' | 'a_reparer' | 'manquant' }>,
+) {
+  for (const u of updates) {
+    await db
+      .update(themeInstallationItems)
+      .set({ condition: u.condition })
+      .where(eq(themeInstallationItems.id, u.installationItemId))
+  }
+}
+
+/** Fixe l'état courant d'un objet installé (réparé/retrouvé → présent, etc.). */
+export async function setInstallationItemCondition(
+  itemId: string,
+  condition: 'present' | 'a_reparer' | 'manquant',
+) {
+  await db
+    .update(themeInstallationItems)
+    .set({ condition })
+    .where(eq(themeInstallationItems.id, itemId))
 }

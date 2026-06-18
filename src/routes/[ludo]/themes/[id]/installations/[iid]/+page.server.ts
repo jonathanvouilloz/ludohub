@@ -2,8 +2,9 @@ import { error, fail } from '@sveltejs/kit'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import {
   getInstallationForLudo,
-  recordCheckup,
+  resolveInstallationItemForLudo,
   InstallationServiceError,
+  type ItemResolution,
 } from '$lib/server/services/installations.js'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -17,23 +18,17 @@ export const load: PageServerLoad = async ({ params, parent }) => {
 }
 
 export const actions: Actions = {
-  recordCheckup: async (event) => {
-    const { ludo, member } = await requireLudoContext(event)
+  // Résout un objet (réparé / retrouvé / perdu), à tout moment hors check-up.
+  resolveItem: async (event) => {
+    const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
-    const itemIds = data.getAll('checkupItemId').map(String)
-    const itemStatuses = data.getAll('checkupStatus').map(String)
-    const statuses = itemIds.map((installationItemId, i) => ({
-      installationItemId,
-      status: itemStatuses[i] === 'manquant' ? ('manquant' as const) : ('present' as const),
-    }))
+    const itemId = String(data.get('itemId') ?? '')
+    const raw = String(data.get('resolution') ?? '')
+    if (raw !== 'repaired' && raw !== 'found' && raw !== 'lost') {
+      return fail(400, { error: 'Résolution invalide.' })
+    }
     try {
-      await recordCheckup(
-        event.params.iid,
-        ludo.id,
-        member.id,
-        statuses,
-        String(data.get('notes') ?? ''),
-      )
+      await resolveInstallationItemForLudo(event.params.iid, itemId, ludo.id, raw as ItemResolution)
       return { success: true }
     } catch (err) {
       if (err instanceof InstallationServiceError) {

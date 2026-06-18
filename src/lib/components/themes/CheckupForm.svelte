@@ -3,21 +3,30 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
 
-  type Item = { id: string; name: string; quantity: number }
+  type Status = 'present' | 'a_reparer' | 'manquant'
+  type Item = { id: string; name: string; quantity: number; status?: Status }
 
   let { items = [] }: { items?: Item[] } = $props()
 
-  // État présent/manquant par item installé (présent par défaut).
-  let statuses = $state<Record<string, 'present' | 'manquant'>>({})
+  // État par objet, pré-rempli depuis l'état courant de l'installation.
+  let statuses = $state<Record<string, Status>>({})
   let notes = $state('')
   let error = $state('')
   let submitting = $state(false)
 
   $effect(() => {
-    statuses = Object.fromEntries(items.map((i) => [i.id, 'present' as const]))
+    statuses = Object.fromEntries(items.map((i) => [i.id, i.status ?? 'present']))
   })
 
+  const toRepairCount = $derived(Object.values(statuses).filter((s) => s === 'a_reparer').length)
   const missingCount = $derived(Object.values(statuses).filter((s) => s === 'manquant').length)
+  const submitLabel = $derived.by(() => {
+    if (submitting) return 'Enregistrement…'
+    const parts: string[] = []
+    if (toRepairCount > 0) parts.push(`${toRepairCount} à réparer`)
+    if (missingCount > 0) parts.push(`${missingCount} manquant${missingCount > 1 ? 's' : ''}`)
+    return parts.length > 0 ? `Enregistrer (${parts.join(' · ')})` : 'Enregistrer le check-up'
+  })
 </script>
 
 <form
@@ -32,7 +41,6 @@
         await update({ reset: false })
         return
       }
-      notes = ''
       await update()
     }
   }}
@@ -44,7 +52,7 @@
         <div class="toggle" role="group" aria-label={item.name}>
           <button
             type="button"
-            class:active={statuses[item.id] === 'present'}
+            class:present={statuses[item.id] === 'present'}
             aria-pressed={statuses[item.id] === 'present'}
             onclick={() => (statuses[item.id] = 'present')}
           >
@@ -52,7 +60,15 @@
           </button>
           <button
             type="button"
-            class:danger={statuses[item.id] === 'manquant'}
+            class:repair={statuses[item.id] === 'a_reparer'}
+            aria-pressed={statuses[item.id] === 'a_reparer'}
+            onclick={() => (statuses[item.id] = 'a_reparer')}
+          >
+            À réparer
+          </button>
+          <button
+            type="button"
+            class:missing={statuses[item.id] === 'manquant'}
             aria-pressed={statuses[item.id] === 'manquant'}
             onclick={() => (statuses[item.id] = 'manquant')}
           >
@@ -81,11 +97,7 @@
   {/if}
 
   <Button type="submit" disabled={submitting || items.length === 0}>
-    {submitting
-      ? 'Enregistrement…'
-      : missingCount > 0
-        ? `Enregistrer (${missingCount} manquant${missingCount > 1 ? 's' : ''})`
-        : 'Enregistrer le check-up'}
+    {submitLabel}
   </Button>
 </form>
 
@@ -132,12 +144,17 @@
   .toggle button + button {
     border-left: 1px solid var(--border);
   }
-  .toggle button.active {
+  .toggle button.present {
     background: var(--success-light);
     color: var(--success);
     font-weight: var(--weight-medium);
   }
-  .toggle button.danger {
+  .toggle button.repair {
+    background: var(--warning-light);
+    color: var(--warning);
+    font-weight: var(--weight-medium);
+  }
+  .toggle button.missing {
     background: var(--danger-light);
     color: var(--danger);
     font-weight: var(--weight-medium);

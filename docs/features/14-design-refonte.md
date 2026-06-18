@@ -2,6 +2,10 @@
 
 **Epic :** 14 (transversal) | **Taille :** L | **Statut :** DONE (itératif)
 
+## À décider (prochaine session)
+
+- **Check-up « Perdu définitivement »** : l'action supprime l'objet du **thème entier** (`deleteThemeItem`, cascade → kit + historique). Pour un thème **emprunté**, ça supprime l'objet du catalogue du **propriétaire**. → Décider s'il faut **restreindre cette action aux thèmes dont la ludo est propriétaire** (garde owner dans `resolveInstallationItemForLudo`).
+
 ## Etat session 2026-06-17
 
 **Fait :**

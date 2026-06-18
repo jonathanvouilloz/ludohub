@@ -19,6 +19,18 @@ export async function getThemesByLudo(ludoId: string) {
       items: true,
       images: { orderBy: (img, { asc, desc }) => [desc(img.isCover), asc(img.createdAt)] },
       loans: true,
+      // Installation en cours : items installés + dernier check-up (date, auteur, statut) pour le spotlight.
+      installations: {
+        where: (i, { eq: eqOp }) => eqOp(i.status, 'en_cours'),
+        with: {
+          items: { with: { themeItem: true } },
+          checkups: {
+            with: { checkedBy: true, items: true },
+            orderBy: (c, { desc }) => desc(c.checkedAt),
+            limit: 1,
+          },
+        },
+      },
     },
     orderBy: (t, { asc }) => asc(t.name),
   })

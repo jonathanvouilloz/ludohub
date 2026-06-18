@@ -47,7 +47,6 @@
       <h1>
         {theme.name}
         {#if theme.isArchived}<Badge variant="secondary">Archivé</Badge>{/if}
-        {#if theme.isShareable}<Badge variant="outline">Partagé</Badge>{/if}
       </h1>
     </div>
     <div class="head-actions">

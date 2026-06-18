@@ -1,6 +1,8 @@
 <script lang="ts">
+  import { enhance } from '$app/forms'
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import CheckupForm from '$lib/components/themes/CheckupForm.svelte'
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import CheckupHistory from '$lib/components/themes/CheckupHistory.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
@@ -8,13 +10,8 @@
 
   const inst = $derived(data.installation)
   const isOpen = $derived(inst.status === 'en_cours')
-  const formItems = $derived(
-    inst.items.map((it) => ({
-      id: it.id,
-      name: it.themeItem.name,
-      quantity: it.themeItem.quantity,
-    })),
-  )
+  const kitItems = $derived(inst.items)
+  const problemItems = $derived(kitItems.filter((it) => it.condition !== 'present'))
 </script>
 
 <svelte:head>
@@ -34,27 +31,96 @@
     </h1>
     <p class="muted">
       Installée le {formatDateShort(inst.installedAt)} par {inst.installedBy?.name ?? '—'} ·
-      {inst.items.length} item(s) sortis
+      {kitItems.length} objet(s) dans le kit
       {#if !isOpen && inst.closedAt}· clôturée le {formatDateShort(inst.closedAt)}{/if}
     </p>
     {#if inst.notes}<p class="note">{inst.notes}</p>{/if}
   </header>
 
-  {#if form?.success}
-    <p class="banner-ok" role="status">Check-up enregistré.</p>
+  {#if form?.error}
+    <p class="banner-err" role="alert">{form.error}</p>
   {/if}
 
   <div class="columns">
     <section class="col">
-      <h2>{isOpen ? 'Nouveau check-up' : 'Items installés'}</h2>
-      {#if isOpen}
-        <CheckupForm items={formItems} />
+      <div class="kit-head">
+        <h2>État du kit</h2>
+        {#if isOpen}
+          <Button
+            href="/{data.ludo.slug}/themes/{inst.themeId}/installations/{inst.id}/checkup"
+            size="sm"
+          >
+            Faire un check-up
+          </Button>
+        {/if}
+      </div>
+
+      {#if problemItems.length === 0}
+        <p class="muted">Tout est en ordre — aucun objet à traiter.</p>
       {:else}
-        <ul class="items">
-          {#each inst.items as it (it.id)}
-            <li>{it.themeItem.name} <span class="qty">×{it.themeItem.quantity}</span></li>
+        <ul class="problems">
+          {#each problemItems as it (it.id)}
+            <li class="problem">
+              <div class="problem-info">
+                <span class="problem-name">{it.themeItem.name}</span>
+                {#if it.condition === 'a_reparer'}
+                  <Badge variant="warning">À réparer</Badge>
+                {:else}
+                  <Badge variant="destructive">Manquant</Badge>
+                {/if}
+              </div>
+              {#if isOpen}
+                <div class="problem-actions">
+                  {#if it.condition === 'a_reparer'}
+                    <form method="POST" action="?/resolveItem" use:enhance>
+                      <input type="hidden" name="itemId" value={it.id} />
+                      <input type="hidden" name="resolution" value="repaired" />
+                      <Button type="submit" variant="outline" size="sm">Réparé</Button>
+                    </form>
+                  {:else}
+                    <form method="POST" action="?/resolveItem" use:enhance>
+                      <input type="hidden" name="itemId" value={it.id} />
+                      <input type="hidden" name="resolution" value="found" />
+                      <Button type="submit" variant="outline" size="sm">Retrouvé</Button>
+                    </form>
+                    <AlertDialog.Root>
+                      <AlertDialog.Trigger class={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+                        Perdu définitivement
+                      </AlertDialog.Trigger>
+                      <AlertDialog.Content>
+                        <AlertDialog.Header>
+                          <AlertDialog.Title
+                            >Objet perdu : « {it.themeItem.name} » ?</AlertDialog.Title
+                          >
+                          <AlertDialog.Description>
+                            L'objet sera <strong>définitivement retiré du thème entier</strong> (kit installé
+                            et catalogue du thème), pas seulement de cette installation. Action irréversible.
+                          </AlertDialog.Description>
+                        </AlertDialog.Header>
+                        <form method="POST" action="?/resolveItem" use:enhance>
+                          <input type="hidden" name="itemId" value={it.id} />
+                          <input type="hidden" name="resolution" value="lost" />
+                          <AlertDialog.Footer>
+                            <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
+                            <button
+                              type="submit"
+                              class={buttonVariants({ variant: 'destructive' })}
+                            >
+                              Retirer du thème
+                            </button>
+                          </AlertDialog.Footer>
+                        </form>
+                      </AlertDialog.Content>
+                    </AlertDialog.Root>
+                  {/if}
+                </div>
+              {/if}
+            </li>
           {/each}
         </ul>
+      {/if}
+
+      {#if !isOpen}
         <p class="muted">Installation clôturée : plus de check-up possible.</p>
       {/if}
     </section>
@@ -91,14 +157,21 @@
     color: var(--text-main);
     font-size: var(--text-h2);
     font-weight: var(--weight-semibold);
-    margin: 0 0 var(--space-3);
+    margin: 0;
   }
-  .banner-ok {
+  .kit-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+  .banner-err {
     margin: 0 0 var(--space-4);
     padding: var(--space-3) var(--space-4);
     border-radius: var(--radius-sm);
-    background: var(--success-light);
-    color: var(--success);
+    background: var(--danger-light);
+    color: var(--danger);
     font-size: var(--text-small);
   }
   .columns {
@@ -115,19 +188,36 @@
   .col {
     min-width: 0;
   }
-  .items {
+  .problems {
     list-style: none;
     margin: 0 0 var(--space-3);
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
   }
-  .items li {
-    padding: var(--space-1) 0;
+  .problem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    flex-wrap: wrap;
+  }
+  .problem-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .problem-name {
     color: var(--text-main);
-    border-bottom: 1px solid var(--border);
   }
-  .qty {
-    color: var(--text-muted);
-    font-size: var(--text-small);
+  .problem-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
   }
   .muted {
     color: var(--text-muted);

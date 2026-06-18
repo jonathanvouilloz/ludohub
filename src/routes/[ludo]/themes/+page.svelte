@@ -1,10 +1,13 @@
 <script lang="ts">
   import { Button } from '$lib/components/ui/button/index.js'
   import ThemeCard from '$lib/components/themes/ThemeCard.svelte'
+  import ActiveThemeCard from '$lib/components/themes/ActiveThemeCard.svelte'
 
   let { data } = $props()
 
   const themes = $derived(data.themes)
+  const activeThemes = $derived(themes.filter((t) => (t.installations?.length ?? 0) > 0))
+  const restThemes = $derived(themes.filter((t) => !(t.installations?.length ?? 0)))
 </script>
 
 <svelte:head>
@@ -25,11 +28,26 @@
   {#if themes.length === 0}
     <p class="empty">Aucun thème pour le moment. Créez-en un pour démarrer le catalogue.</p>
   {:else}
-    <div class="grid">
-      {#each themes as theme (theme.id)}
-        <ThemeCard {theme} slug={data.ludo.slug} />
-      {/each}
-    </div>
+    {#if activeThemes.length > 0}
+      <section class="active-section">
+        <h2 class="section-title">
+          Thème{activeThemes.length > 1 ? 's' : ''} actif{activeThemes.length > 1 ? 's' : ''}
+        </h2>
+        <div class="active-list">
+          {#each activeThemes as theme (theme.id)}
+            <ActiveThemeCard {theme} slug={data.ludo.slug} />
+          {/each}
+        </div>
+      </section>
+    {/if}
+
+    {#if restThemes.length > 0}
+      <div class="grid">
+        {#each restThemes as theme (theme.id)}
+          <ThemeCard {theme} slug={data.ludo.slug} />
+        {/each}
+      </div>
+    {/if}
   {/if}
 </main>
 
@@ -63,6 +81,21 @@
   .empty {
     color: var(--text-subtle);
     font-style: italic;
+  }
+  .active-section {
+    margin-bottom: var(--space-8);
+  }
+  .section-title {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-small);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+  .active-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
   }
   .grid {
     display: grid;

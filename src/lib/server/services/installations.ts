@@ -1,4 +1,5 @@
 import {
+  applyConditions,
   closeInstallation,
   createCheckup,
   createInstallation,
@@ -6,9 +7,10 @@ import {
   getInstallationById,
   getInstallationDetail,
   listInstallations,
+  setInstallationItemCondition,
 } from '../db/installations.js'
 import { getActiveLoanToLudo } from '../db/loans.js'
-import { getThemeById } from '../db/themes.js'
+import { deleteThemeItem, getThemeById } from '../db/themes.js'
 import type { ThemeCheckupRow, ThemeInstallationRow } from '../schema.js'
 import { emitEvent } from './events.js'
 
@@ -18,11 +20,15 @@ import { emitEvent } from './events.js'
  */
 export class InstallationServiceError extends Error {}
 
+type CheckupItemStatus = 'present' | 'a_reparer' | 'manquant'
+
 type CheckupStatusInput = {
   installationItemId: string
-  status: 'present' | 'manquant'
+  status: CheckupItemStatus
   note?: string
 }
+
+export type ItemResolution = 'repaired' | 'found' | 'lost'
 
 /**
  * Installe un sous-ensemble d'items d'un thème dans la ludo (« mini theme kit »).
@@ -110,9 +116,18 @@ export async function closeInstallationForLudo(
   })
 }
 
+/** Résumé FR du nombre d'objets à réparer / manquants (pour les notifs). */
+function problemSummary(toRepair: number, missing: number): string {
+  const parts: string[] = []
+  if (toRepair > 0) parts.push(`${toRepair} à réparer`)
+  if (missing > 0) parts.push(`${missing} manquant${missing > 1 ? 's' : ''}`)
+  return parts.join(' · ')
+}
+
 /**
- * Enregistre un check-up présent/manquant sur l'installation en cours.
- * Si ≥1 item est marqué `manquant`, notifie les responsables de la ludo.
+ * Enregistre un check-up présent/à réparer/manquant sur l'installation en cours,
+ * met à jour l'état courant de chaque objet, et notifie les responsables s'il
+ * reste des problèmes.
  */
 export async function recordCheckup(
   installationId: string,
@@ -137,7 +152,14 @@ export async function recordCheckup(
 
   const checkup = await createCheckup(installationId, memberId, clean, note?.trim() || null)
 
-  const missing = clean.filter((s) => s.status === 'manquant')
+  // L'état courant de chaque objet reflète la dernière observation.
+  await applyConditions(
+    clean.map((s) => ({ installationItemId: s.installationItemId, condition: s.status })),
+  )
+
+  const toRepair = clean.filter((s) => s.status === 'a_reparer').length
+  const missing = clean.filter((s) => s.status === 'manquant').length
+  const problems = toRepair + missing
 
   await emitEvent({
     type: 'checkup_recorded',
@@ -146,26 +168,55 @@ export async function recordCheckup(
     entityType: 'installation',
     entityId: installationId,
     title: `Check-up : ${installation.theme.name}`,
-    body:
-      missing.length > 0 ? `${missing.length} item(s) manquant(s).` : 'Tous les items présents.',
-    metadata: { checkupId: checkup.id, themeId: installation.themeId, missing: missing.length },
+    body: problems > 0 ? problemSummary(toRepair, missing) + '.' : 'Tous les objets présents.',
+    metadata: { checkupId: checkup.id, themeId: installation.themeId, toRepair, missing },
   })
 
-  if (missing.length > 0) {
+  if (problems > 0) {
     await emitEvent({
       type: 'checkup_missing_item',
       actorLudoId: ludoId,
       actorMemberId: memberId,
       entityType: 'installation',
       entityId: installationId,
-      title: `Items manquants : ${installation.theme.name}`,
-      body: `${missing.length} item(s) signalé(s) manquant(s) lors d'un check-up.`,
+      title: `Objets à traiter : ${installation.theme.name}`,
+      body: `${problemSummary(toRepair, missing)} lors d'un check-up.`,
       recipientResponsablesOf: ludoId,
-      metadata: { checkupId: checkup.id, themeId: installation.themeId, missing: missing.length },
+      metadata: { checkupId: checkup.id, themeId: installation.themeId, toRepair, missing },
     })
   }
 
   return checkup
+}
+
+/**
+ * Résout l'état d'un objet installé (hors check-up, à tout moment) :
+ * - `repaired`/`found` → l'objet revient à l'état présent ;
+ * - `lost` → l'objet est définitivement retiré du thème entier (l'objet maître
+ *   est supprimé ; le cascade le retire du kit installé et de l'historique).
+ */
+export async function resolveInstallationItemForLudo(
+  installationId: string,
+  installationItemId: string,
+  ludoId: string,
+  resolution: ItemResolution,
+): Promise<void> {
+  const installation = await getInstallationDetail(installationId)
+  if (!installation || installation.ludoId !== ludoId) {
+    throw new InstallationServiceError('Installation introuvable.')
+  }
+  if (installation.status !== 'en_cours') {
+    throw new InstallationServiceError('Cette installation est clôturée.')
+  }
+  const item = installation.items.find((i) => i.id === installationItemId)
+  if (!item) throw new InstallationServiceError('Objet introuvable.')
+
+  if (resolution === 'lost') {
+    // Perdu à jamais : on supprime l'objet du thème (cascade → kit + historique).
+    await deleteThemeItem(item.themeItemId)
+    return
+  }
+  await setInstallationItemCondition(installationItemId, 'present')
 }
 
 // ─── Lectures ────────────────────────────────────────────────────────────────
