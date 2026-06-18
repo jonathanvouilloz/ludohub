@@ -1,5 +1,6 @@
 import {
   applyConditions,
+  applyThemeItemConditions,
   closeInstallation,
   createCheckup,
   createInstallation,
@@ -185,6 +186,95 @@ export async function recordCheckup(
       metadata: { checkupId: checkup.id, themeId: installation.themeId, toRepair, missing },
     })
   }
+
+  return checkup
+}
+
+/**
+ * Check-up FINAL de clôture : enregistre l'état présent/à réparer/manquant de chaque
+ * objet installé, **reporte cet état final sur la liste de référence du thème** (la
+ * caisse complète), puis clôture l'installation. Notifie les responsables s'il reste
+ * des problèmes, comme un check-up normal.
+ */
+export async function closeInstallationWithCheckup(
+  installationId: string,
+  ludoId: string,
+  memberId: string,
+  statuses: CheckupStatusInput[],
+  note?: string,
+): Promise<ThemeCheckupRow> {
+  const installation = await getInstallationDetail(installationId)
+  if (!installation || installation.ludoId !== ludoId) {
+    throw new InstallationServiceError('Installation introuvable.')
+  }
+  if (installation.status !== 'en_cours') {
+    throw new InstallationServiceError('Cette installation est déjà clôturée.')
+  }
+
+  const items = installation.items
+  const itemIds = new Set(items.map((i) => i.id))
+  const clean = statuses.filter((s) => itemIds.has(s.installationItemId))
+  if (clean.length === 0) {
+    throw new InstallationServiceError('Aucun item à contrôler.')
+  }
+
+  const checkup = await createCheckup(installationId, memberId, clean, note?.trim() || null)
+
+  // État courant du sous-ensemble installé.
+  await applyConditions(
+    clean.map((s) => ({ installationItemId: s.installationItemId, condition: s.status })),
+  )
+
+  // État final reporté sur la caisse : chaque objet installé met à jour son theme_item.
+  const itemById = new Map(items.map((i) => [i.id, i]))
+  await applyThemeItemConditions(
+    clean.map((s) => ({
+      themeItemId: itemById.get(s.installationItemId)!.themeItemId,
+      condition: s.status,
+    })),
+  )
+
+  await closeInstallation(installationId)
+
+  const toRepair = clean.filter((s) => s.status === 'a_reparer').length
+  const missing = clean.filter((s) => s.status === 'manquant').length
+  const problems = toRepair + missing
+
+  await emitEvent({
+    type: 'checkup_recorded',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'installation',
+    entityId: installationId,
+    title: `Check-up final : ${installation.theme.name}`,
+    body: problems > 0 ? problemSummary(toRepair, missing) + '.' : 'Tous les objets présents.',
+    metadata: { checkupId: checkup.id, themeId: installation.themeId, toRepair, missing },
+  })
+
+  if (problems > 0) {
+    await emitEvent({
+      type: 'checkup_missing_item',
+      actorLudoId: ludoId,
+      actorMemberId: memberId,
+      entityType: 'installation',
+      entityId: installationId,
+      title: `Objets à traiter : ${installation.theme.name}`,
+      body: `${problemSummary(toRepair, missing)} à la clôture.`,
+      recipientResponsablesOf: ludoId,
+      metadata: { checkupId: checkup.id, themeId: installation.themeId, toRepair, missing },
+    })
+  }
+
+  await emitEvent({
+    type: 'installation_closed',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'installation',
+    entityId: installationId,
+    title: 'Installation clôturée',
+    body: 'Le thème a été remis dans la caisse après check-up final.',
+    metadata: { themeId: installation.themeId },
+  })
 
   return checkup
 }

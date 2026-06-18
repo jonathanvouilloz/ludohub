@@ -30,7 +30,7 @@
 {#if checkups.length === 0}
   <p class="muted">Aucun check-up enregistré.</p>
 {:else}
-  <DataTable>
+  <DataTable class="checkup-table">
     {#snippet head()}
       <Table.Row>
         <Table.Head>Date</Table.Head>
@@ -100,5 +100,11 @@
     color: var(--text-muted);
     font-size: var(--text-small);
     font-style: italic;
+    overflow-wrap: anywhere;
+  }
+  /* Rendu « simple basique » : en-tête blanc uniforme.
+     Surcharge le fond teinté du DataTable (spécificité ≥ via les 3 classes de surface). */
+  :global(.dt-surface.dt-table.checkup-table thead) {
+    background: var(--bg-card);
   }
 </style>

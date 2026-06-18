@@ -4,6 +4,7 @@
   let { data } = $props()
 
   const inst = $derived(data.installation)
+  const closing = $derived(data.closing)
   // Objets du kit, pré-remplis avec leur état courant.
   const formItems = $derived(
     inst.items.map((it) => ({
@@ -16,7 +17,7 @@
 </script>
 
 <svelte:head>
-  <title>Check-up — {inst.theme.name}</title>
+  <title>{closing ? 'Check-up final' : 'Check-up'} — {inst.theme.name}</title>
 </svelte:head>
 
 <main class="checkup">
@@ -24,11 +25,18 @@
     <a class="back" href="/{data.ludo.slug}/themes/{inst.themeId}/installations/{inst.id}">
       ← Installation
     </a>
-    <h1>Check-up — {inst.theme.name}</h1>
-    <p class="muted">Marquez chaque objet présent, à réparer ou manquant.</p>
+    <h1>{closing ? 'Check-up final — clôture' : 'Check-up'} — {inst.theme.name}</h1>
+    <p class="muted">
+      {#if closing}
+        Dernier contrôle avant de remettre le thème dans la caisse. L'état de chaque objet sera
+        reporté sur le thème.
+      {:else}
+        Marquez chaque objet présent, à réparer ou manquant.
+      {/if}
+    </p>
   </header>
 
-  <CheckupForm items={formItems} />
+  <CheckupForm items={formItems} close={closing} />
 </main>
 
 <style>

@@ -6,7 +6,7 @@
   type Status = 'present' | 'a_reparer' | 'manquant'
   type Item = { id: string; name: string; quantity: number; status?: Status }
 
-  let { items = [] }: { items?: Item[] } = $props()
+  let { items = [], close = false }: { items?: Item[]; close?: boolean } = $props()
 
   // État par objet, pré-rempli depuis l'état courant de l'installation.
   let statuses = $state<Record<string, Status>>({})
@@ -25,13 +25,14 @@
     const parts: string[] = []
     if (toRepairCount > 0) parts.push(`${toRepairCount} à réparer`)
     if (missingCount > 0) parts.push(`${missingCount} manquant${missingCount > 1 ? 's' : ''}`)
-    return parts.length > 0 ? `Enregistrer (${parts.join(' · ')})` : 'Enregistrer le check-up'
+    const base = close ? "Clôturer l'installation" : 'Enregistrer le check-up'
+    return parts.length > 0 ? `${base} (${parts.join(' · ')})` : base
   })
 </script>
 
 <form
   method="POST"
-  action="?/recordCheckup"
+  action={close ? '?/closeWithCheckup' : '?/recordCheckup'}
   use:enhance={() => {
     submitting = true
     return async ({ result, update }) => {
@@ -105,7 +106,10 @@
   .items {
     list-style: none;
     margin: 0 0 var(--space-4);
-    padding: 0;
+    padding: 0 var(--space-3);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
   }
   .item {
     display: flex;
@@ -114,13 +118,15 @@
     gap: var(--space-3);
     padding: var(--space-2) 0;
     border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
   }
   .item:last-child {
     border-bottom: none;
   }
   .item-name {
+    flex: 1;
+    min-width: 0;
     color: var(--text-main);
+    overflow-wrap: anywhere;
   }
   .qty {
     color: var(--text-muted);
@@ -128,6 +134,7 @@
   }
   .toggle {
     display: inline-flex;
+    flex-shrink: 0;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     overflow: hidden;

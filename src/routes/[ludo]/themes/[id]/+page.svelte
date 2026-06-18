@@ -134,21 +134,27 @@
   {/if}
 
   {#if activeInstallation}
-    <section class="loan-active">
-      <div>
+    <section class="install-banner">
+      <div class="install-info">
         <strong>Installé</strong> depuis le {formatDateShort(activeInstallation.installedAt)}
-        <span class="muted"> · {activeInstallation.items.length} item(s) sortis</span>
-        <a
-          class="install-link"
+        <span class="install-count"> · {activeInstallation.items.length} item(s) sortis</span>
+      </div>
+      <div class="install-actions">
+        <Button
           href="/{data.ludo.slug}/themes/{theme.id}/installations/{activeInstallation.id}"
+          size="sm"
         >
           Voir / check-up
-        </a>
+        </Button>
+        <Button
+          href="/{data.ludo
+            .slug}/themes/{theme.id}/installations/{activeInstallation.id}/checkup?close=1"
+          variant="outline"
+          size="sm"
+        >
+          Clôturer l'installation
+        </Button>
       </div>
-      <form method="POST" action="?/closeInstallation" use:enhance>
-        <input type="hidden" name="installationId" value={activeInstallation.id} />
-        <Button type="submit" variant="outline" size="sm">Clôturer l'installation</Button>
-      </form>
     </section>
   {/if}
 
@@ -386,9 +392,30 @@
   .muted {
     color: var(--text-muted);
   }
-  .install-link {
-    margin-left: var(--space-2);
-    color: var(--ludo-color, var(--primary));
+  /* Bandeau installation : mis en avant en bleu clair (info clé de la page). */
+  .install-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-6);
+    background: var(--primary-light);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-md);
+    flex-wrap: wrap;
+  }
+  .install-info {
+    color: var(--primary);
+  }
+  .install-count {
+    color: var(--primary);
+    opacity: 0.8;
     font-size: var(--text-small);
+  }
+  .install-actions {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
   }
 </style>

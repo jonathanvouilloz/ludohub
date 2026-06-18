@@ -2,13 +2,19 @@
   import { enhance } from '$app/forms'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
+  import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
 
-  type ThemeItem = { id: string; name: string; quantity: number }
+  type ThemeItem = {
+    id: string
+    name: string
+    quantity: number
+    condition?: 'present' | 'a_reparer' | 'manquant'
+  }
 
   let { items, editable }: { items: ThemeItem[]; editable: boolean } = $props()
 
@@ -48,6 +54,11 @@
           <li>
             <span class="name">{item.name}</span>
             <span class="qty">×{item.quantity}</span>
+            {#if item.condition === 'a_reparer'}
+              <Badge variant="warning">À réparer</Badge>
+            {:else if item.condition === 'manquant'}
+              <Badge variant="destructive">Manquant</Badge>
+            {/if}
             {#if editable}
               <AlertDialog.Root>
                 <AlertDialog.Trigger

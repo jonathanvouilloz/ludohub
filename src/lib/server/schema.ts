@@ -279,6 +279,10 @@ export const themes = pgTable('themes', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
 
+// État d'un objet (présent / à réparer / manquant). Partagé par les check-ups,
+// le sous-ensemble installé et la liste de référence du thème (état final).
+export const checkupItemStatus = pgEnum('checkup_item_status', ['present', 'a_reparer', 'manquant'])
+
 export const themeItems = pgTable('theme_items', {
   id: uuid('id').defaultRandom().primaryKey(),
   themeId: uuid('theme_id')
@@ -287,6 +291,8 @@ export const themeItems = pgTable('theme_items', {
   name: text('name').notNull(),
   quantity: integer('quantity').notNull().default(1),
   isArchived: boolean('is_archived').notNull().default(false),
+  // État final reporté par le dernier check-up de clôture d'une installation.
+  condition: checkupItemStatus('condition').notNull().default('present'),
 })
 
 export const themeImages = pgTable('theme_images', {
@@ -365,8 +371,6 @@ export const themeLoansRelations = relations(themeLoans, ({ one }) => ({
 // n'est jamais modifiée par ces tables. Voir docs/features/13-themes-checkup.md.
 
 export const installationStatus = pgEnum('installation_status', ['en_cours', 'cloturee'])
-
-export const checkupItemStatus = pgEnum('checkup_item_status', ['present', 'a_reparer', 'manquant'])
 
 export const themeInstallations = pgTable('theme_installations', {
   id: uuid('id').defaultRandom().primaryKey(),

@@ -8,12 +8,16 @@ vi.mock('../db/installations.js', () => ({
   closeInstallation: vi.fn(),
   createCheckup: vi.fn(),
   listInstallations: vi.fn(),
+  applyConditions: vi.fn(),
+  applyThemeItemConditions: vi.fn(),
+  setInstallationItemCondition: vi.fn(),
 }))
 vi.mock('../db/loans.js', () => ({ getActiveLoanToLudo: vi.fn() }))
 vi.mock('../db/themes.js', () => ({ getThemeById: vi.fn() }))
 vi.mock('./events.js', () => ({ emitEvent: vi.fn() }))
 
 import {
+  applyThemeItemConditions,
   closeInstallation,
   createCheckup,
   createInstallation,
@@ -26,6 +30,7 @@ import { getThemeById } from '../db/themes.js'
 import { emitEvent } from './events.js'
 import {
   closeInstallationForLudo,
+  closeInstallationWithCheckup,
   installTheme,
   recordCheckup,
   InstallationServiceError,
@@ -198,5 +203,64 @@ describe('recordCheckup', () => {
     await expect(
       recordCheckup('inst-1', OTHER, MEMBER, [{ installationItemId: 'ii-1', status: 'present' }]),
     ).rejects.toThrow(InstallationServiceError)
+  })
+})
+
+describe('closeInstallationWithCheckup', () => {
+  beforeEach(() => {
+    vi.mocked(getInstallationDetail).mockResolvedValue({
+      id: 'inst-1',
+      ludoId: OWNER,
+      themeId: THEME,
+      status: 'en_cours',
+      theme: { name: 'Pirates' },
+      items: [
+        { id: 'ii-1', themeItemId: 'it-1' },
+        { id: 'ii-2', themeItemId: 'it-2' },
+      ],
+    } as never)
+    vi.mocked(createCheckup).mockResolvedValue({ id: 'chk-final' } as never)
+  })
+
+  it('reporte l’état final sur les theme_items puis clôture', async () => {
+    await closeInstallationWithCheckup('inst-1', OWNER, MEMBER, [
+      { installationItemId: 'ii-1', status: 'present' },
+      { installationItemId: 'ii-2', status: 'manquant' },
+    ])
+    expect(applyThemeItemConditions).toHaveBeenCalledWith([
+      { themeItemId: 'it-1', condition: 'present' },
+      { themeItemId: 'it-2', condition: 'manquant' },
+    ])
+    expect(closeInstallation).toHaveBeenCalledWith('inst-1')
+    const types = vi.mocked(emitEvent).mock.calls.map((c) => c[0].type)
+    expect(types).toContain('checkup_recorded')
+    expect(types).toContain('checkup_missing_item')
+    expect(types).toContain('installation_closed')
+  })
+
+  it('ne notifie pas de manquant quand tout est présent', async () => {
+    await closeInstallationWithCheckup('inst-1', OWNER, MEMBER, [
+      { installationItemId: 'ii-1', status: 'present' },
+      { installationItemId: 'ii-2', status: 'present' },
+    ])
+    const types = vi.mocked(emitEvent).mock.calls.map((c) => c[0].type)
+    expect(types).toContain('installation_closed')
+    expect(types).not.toContain('checkup_missing_item')
+  })
+
+  it('refuse une installation déjà clôturée', async () => {
+    vi.mocked(getInstallationDetail).mockResolvedValue({
+      id: 'inst-1',
+      ludoId: OWNER,
+      status: 'cloturee',
+      theme: { name: 'Pirates' },
+      items: [{ id: 'ii-1', themeItemId: 'it-1' }],
+    } as never)
+    await expect(
+      closeInstallationWithCheckup('inst-1', OWNER, MEMBER, [
+        { installationItemId: 'ii-1', status: 'present' },
+      ]),
+    ).rejects.toThrow(/déjà clôturée/)
+    expect(closeInstallation).not.toHaveBeenCalled()
   })
 })

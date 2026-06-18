@@ -126,7 +126,7 @@
     </section>
 
     <section class="col">
-      <h2>Historique des check-ups</h2>
+      <h2 class="hist-title">Historique des check-ups</h2>
       <CheckupHistory checkups={inst.checkups} />
     </section>
   </div>
@@ -166,6 +166,10 @@
     gap: var(--space-3);
     margin-bottom: var(--space-3);
   }
+  /* Espace entre le titre et son tableau, aligné sur « État du kit ». */
+  .hist-title {
+    margin-bottom: var(--space-3);
+  }
   .banner-err {
     margin: 0 0 var(--space-4);
     padding: var(--space-3) var(--space-4);
@@ -202,22 +206,26 @@
     justify-content: space-between;
     gap: var(--space-3);
     padding: var(--space-2) var(--space-3);
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    flex-wrap: wrap;
   }
   .problem-info {
     display: flex;
+    flex: 1;
+    min-width: 0;
     align-items: center;
     gap: var(--space-2);
+    flex-wrap: wrap;
   }
   .problem-name {
     color: var(--text-main);
+    overflow-wrap: anywhere;
   }
   .problem-actions {
     display: flex;
+    flex-shrink: 0;
     gap: var(--space-2);
-    flex-wrap: wrap;
   }
   .muted {
     color: var(--text-muted);

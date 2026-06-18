@@ -5,6 +5,7 @@ import {
   themeCheckups,
   themeInstallationItems,
   themeInstallations,
+  themeItems,
   type ThemeInstallationInsert,
 } from '../schema.js'
 
@@ -105,6 +106,18 @@ export async function applyConditions(
       .update(themeInstallationItems)
       .set({ condition: u.condition })
       .where(eq(themeInstallationItems.id, u.installationItemId))
+  }
+}
+
+/** Reporte l'état final sur la liste de référence du thème (la caisse complète). */
+export async function applyThemeItemConditions(
+  updates: Array<{ themeItemId: string; condition: 'present' | 'a_reparer' | 'manquant' }>,
+) {
+  for (const u of updates) {
+    await db
+      .update(themeItems)
+      .set({ condition: u.condition })
+      .where(eq(themeItems.id, u.themeItemId))
   }
 }
 

@@ -20,7 +20,6 @@ import {
   LoanServiceError,
 } from '$lib/server/services/loans.js'
 import {
-  closeInstallationForLudo,
   getActiveInstallationForTheme,
   installTheme,
   InstallationServiceError,
@@ -147,12 +146,6 @@ export const actions: Actions = {
         String(data.get('notes') ?? ''),
       ),
     )
-  },
-
-  closeInstallation: async (event) => {
-    const { ludo } = await requireLudoContext(event)
-    const data = await event.request.formData()
-    return run(() => closeInstallationForLudo(String(data.get('installationId') ?? ''), ludo.id))
   },
 
   // Suppression définitive du thème (responsables uniquement).

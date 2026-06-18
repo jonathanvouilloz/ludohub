@@ -2,6 +2,22 @@
 
 **Epic :** 13 | **Taille :** M-L | **Statut :** DONE
 
+## Etat session 2026-06-18
+
+**Fait :**
+
+- Polish UI listes installations/check-ups : fond blanc (`--bg-card`) sur kit + formulaire, noms longs en multiligne (`overflow-wrap: anywhere`), toggle 3 boutons (Présent/À réparer/Manquant) bloqué en fin de ligne (`flex-shrink: 0`), en-tête du tableau historique en blanc, ombre des tableaux retirée (`DataTable`).
+- Token `--bg-base` éclairci `#eef2f8 → #fafbfd` (fond de page quasi blanc, proche des cartes).
+- Bandeau « Installé depuis… » mis en avant en bleu clair (`.install-banner` : `--primary-light` + bordure/texte `--primary`), CTA « Voir / check-up » en primary.
+- **Clôture via check-up final** : « Clôturer » route vers `…/checkup?close=1` (titre « Check-up final — clôture ») ; nouvelle action `closeWithCheckup` + service `closeInstallationWithCheckup` qui enregistre le check-up, **reporte l'état final sur `theme_items.condition`** (nouvelle colonne, enum `checkup_item_status` hoΙsté), clôture, notifie + `installation_closed`. Pastilles À réparer/Manquant dans « Éléments du thème » (`ThemeItemList`).
+- Action one-clic `closeInstallation` retirée de la fiche thème. Mock `installations.test.ts` complété (`applyConditions` manquait → 3 tests cassés réparés) + 3 tests `closeInstallationWithCheckup`. Suite 18/18, `pnpm check` + lint verts.
+
+**Prochain :** `pnpm db:push` (colonne `theme_items.condition`) à jouer par Jonathan avant test. Epic 13 toujours DONE ; reste les flows e2e (epic 12). Optionnel : afficher la `condition` aussi dans `InstallDialog` / au moment de re-sortir un objet déjà signalé.
+**Pièges :** L'enum `checkupItemStatus` est désormais déclaré AVANT `themeItems` dans `schema.ts` (ordre obligatoire). `theme_items.condition` n'est jamais remis à `present` automatiquement (seul un check-up final l'écrit) — un objet réparé physiquement reste « à réparer » sur la caisse tant qu'aucun nouveau check-up de clôture ne le repasse présent.
+**Commit :** feat(themes): bandeau installation bleu + clôture via check-up final (état reporté sur le thème)
+
+---
+
 ## Etat session 2026-06-17 (b)
 
 **Fait :**
@@ -34,31 +50,34 @@
 
 ## Carte du code
 
-> Mise à jour : 2026-06-17
+> Mise à jour : 2026-06-18
 
-| Fichier                                                          | Role                                                                                       |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `src/lib/server/schema.ts`                                      | 2 enums (`installation_status`, `checkup_item_status`) + 4 tables + relations + types + 4 nouveaux `notificationType` |
-| `src/lib/server/db/installations.ts`                            | Queries : `getActiveInstallation`, `getInstallationDetail`, `createInstallation`, `closeInstallation`, `createCheckup`, `listInstallations` |
-| `src/lib/server/db/loans.ts`                                    | + `getActiveLoanToLudo(themeId, toLudoId)` (autorisation install côté emprunteur)          |
-| `src/lib/server/services/installations.ts`                      | `installTheme`, `closeInstallationForLudo`, `recordCheckup` + lectures ; garde-fous + `emitEvent` |
-| `src/lib/server/services/events.ts`                             | + mappings `SEVERITY` des 4 nouveaux types (`checkup_missing_item` = `action_required`)     |
-| `src/lib/server/services/notifications.ts`                      | + `DOMAIN_OF` des 4 types (domaine `themes`)                                                |
-| `src/routes/[ludo]/themes/[id]/+page.server.ts`                 | load `activeInstallation` + actions `installTheme` / `closeInstallation`                    |
-| `src/routes/[ludo]/themes/[id]/+page.svelte`                    | Bouton « Installer » + bloc « Installé depuis… » + `InstallDialog` monté                    |
-| `src/routes/[ludo]/themes/[id]/installations/[iid]/+page.*`     | Détail installation : sous-ensemble + nouveau check-up + historique ; action `recordCheckup` |
-| `src/lib/components/themes/InstallDialog.svelte`                | Cases à cocher du sous-ensemble (tout coché par défaut), items archivés exclus              |
-| `src/lib/components/themes/CheckupForm.svelte`                  | Toggle présent/manquant par item (label `Nom ×quantité`) + note                             |
-| `src/lib/components/themes/CheckupHistory.svelte`              | Table date / auteur / présents / manquants                                                 |
-| `src/lib/components/themes/ThemeItemList.svelte`                | Input number quantité retiré du form d'ajout (quantité visuelle ; schema conservé)          |
-| `src/lib/server/services/installations.test.ts`                | 15 tests (1 install en cours, sous-ensemble vide/hors thème refusé, autorisation, check-up clôturé) |
-| `src/routes/reseau/notifications/+page.svelte`                  | + deep-links des 4 nouveaux types (→ `/[slug]/themes`)                                      |
+| Fichier                                                        | Role                                                                                                                                                         |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/server/schema.ts`                                    | 2 enums + 4 tables + relations + types + 4 `notificationType`. `checkupItemStatus` hoΙsté avant `themeItems` ; **colonne `theme_items.condition`** (état final) |
+| `src/lib/server/db/installations.ts`                          | Queries install/check-up + `applyConditions` (sous-ensemble) + **`applyThemeItemConditions`** (report sur `theme_items`)                                       |
+| `src/lib/server/db/loans.ts`                                  | + `getActiveLoanToLudo(themeId, toLudoId)` (autorisation install côté emprunteur)                                                                              |
+| `src/lib/server/services/installations.ts`                    | `installTheme`, `recordCheckup`, `closeInstallationForLudo` (non utilisé par l'UI mais testé) + **`closeInstallationWithCheckup`** (check-up final → report → clôture) |
+| `src/lib/server/services/events.ts` / `notifications.ts`      | `SEVERITY` / `DOMAIN_OF` des 4 types (`checkup_missing_item` = `action_required`, domaine `themes`)                                                            |
+| `src/routes/[ludo]/themes/[id]/+page.server.ts`               | load `activeInstallation` + action `installTheme` (action `closeInstallation` **retirée**)                                                                     |
+| `src/routes/[ludo]/themes/[id]/+page.svelte`                  | Bouton « Installer » + **bandeau `.install-banner` bleu clair** (Voir/check-up + lien clôture `…/checkup?close=1`)                                              |
+| `src/routes/[ludo]/themes/[id]/installations/[iid]/+page.svelte` | Détail installation : État du kit (fond blanc, multiligne) + historique check-ups collé au titre                                                            |
+| `src/routes/[ludo]/themes/[id]/installations/[iid]/checkup/+page.*` | Formulaire check-up ; mode `closing` (`?close=1`) → action `closeWithCheckup`                                                                            |
+| `src/lib/components/themes/CheckupForm.svelte`                | Toggle présent/à réparer/manquant (3 boutons fin de ligne, fond blanc) ; prop `close` → action + label « Clôturer »                                             |
+| `src/lib/components/themes/CheckupHistory.svelte`            | Tableau date/auteur/présents/à réparer/manquants ; en-tête blanc, note multiligne                                                                              |
+| `src/lib/components/themes/ThemeItemList.svelte`            | Liste de référence + **pastilles condition** (À réparer / Manquant)                                                                                            |
+| `src/lib/components/ui/data-table/DataTable.svelte`          | Surface tableau partagée — **`box-shadow` retiré** (rendu plat)                                                                                                |
+| `src/styles/tokens.css`                                      | `--bg-base` éclairci `#fafbfd` (fond page quasi blanc)                                                                                                          |
+| `src/lib/server/services/installations.test.ts`            | 18 tests (mock complété + clôture/report d'état final)                                                                                                          |
+| `src/routes/reseau/notifications/+page.svelte`              | deep-links des 4 types (→ `/[slug]/themes`)                                                                                                                    |
 
 ### Décisions clés (à respecter)
 
-- **`theme_items` = liste de référence complète** (contenu total de la caisse). JAMAIS modifiée par une installation.
+- **`theme_items` = liste de référence complète** (contenu total de la caisse). Le contenu (noms/quantités) n'est jamais modifié par une installation ; seule la colonne `condition` (état final) est mise à jour par le **check-up de clôture**.
+- **Clôture = check-up final obligatoire** (`closeInstallationWithCheckup`, route `…/checkup?close=1`) : enregistre l'état, le reporte sur `theme_items.condition`, puis clôture. Plus de clôture one-clic.
+- **`condition` jamais auto-reset** : un objet reste « à réparer/manquant » sur la caisse tant qu'un check-up de clôture ne le repasse pas `present`.
 - **Installation = sous-ensemble sorti**, daté/historisé. Une seule `en_cours` par thème (bouton « Installer » masqué sinon).
-- **Check-up = présent / manquant binaire** par item installé. Quantité dans le **label**, pas en input.
+- **Check-up = présent / à réparer / manquant** par item installé. Quantité dans le **label**, pas en input.
 - **Autorisation install : propriétaire OU emprunteur d'un prêt actif** (`getActiveLoanToLudo`). En pratique la fiche thème est owner-only (le `load` 404 sinon), donc la branche emprunteur n'est pas exposée par l'UI pour l'instant.
 - **`emitEvent` (epic 10)** journalise install/clôture/check-up dans `activity_log` ; **check-up avec ≥1 manquant → notif `action_required` aux responsables** (`recipientResponsablesOf`).
 - **Notifications sans `metadata`** : les 4 types pointent vers la liste `/[slug]/themes`, pas vers l'installation précise (le `themeId` n'est dispo que dans `activity_log.metadata`).

@@ -2,14 +2,13 @@
 
 ## Features actives
 
-| Feature        | Fichier                                              | Statut          |
-| -------------- | ---------------------------------------------------- | --------------- |
-| 05 — ABSENCES  | [features/05-absences.md](features/05-absences.md)   | DONE (itératif) |
-| 04 — PLANNING  | [features/04-planning.md](features/04-planning.md)   | DONE (itératif) |
-| 12 — TESTS E2E | [features/10-tests-e2e.md](features/10-tests-e2e.md) | TODO            |
+| Feature              | Fichier                                                      | Statut          |
+| -------------------- | ----------------------------------------------------------- | --------------- |
+| 13 — THÈMES check-up | [features/13-themes-checkup.md](features/13-themes-checkup.md) | DONE (itératif) |
+| 12 — TESTS E2E       | [features/10-tests-e2e.md](features/10-tests-e2e.md)        | TODO            |
 
 ## Reprendre ici
 
+**À faire avant test** : `pnpm db:push` (nouvelle colonne `theme_items.condition`).
 **Prochain epic : 12-TESTS E2E** (Playwright) — setup `playwright.config.ts` + seed DB test + helper auth, puis flows F1→F5.
-Rappel migration : activer une saison manuellement depuis `/planning/saisons` (⚡) — toutes ont `isActive=false`.
-Commit : [95b642f] feat(absences): planification responsable + suppression + DatePicker minValue
+Commit : feat(themes): bandeau installation bleu + clôture via check-up final (état reporté sur le thème)

@@ -37,7 +37,6 @@
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    box-shadow: var(--shadow-sm);
     overflow: hidden;
   }
   /* En-tête : surface légèrement teintée + texte discret. */
