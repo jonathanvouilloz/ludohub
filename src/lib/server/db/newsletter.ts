@@ -1,0 +1,189 @@
+import { and, eq, sql } from 'drizzle-orm'
+import { db } from './index.js'
+import {
+  campaigns,
+  campaignSends,
+  newsletterContacts,
+  type CampaignInsert,
+  type CampaignRow,
+  type CampaignSendInsert,
+  type NewsletterContactInsert,
+  type NewsletterContactRow,
+} from '../schema.js'
+
+// ─── Contacts ──────────────────────────────────────────────────────────────────
+
+export async function listContacts(ludoId: string): Promise<NewsletterContactRow[]> {
+  return db.query.newsletterContacts.findMany({
+    where: eq(newsletterContacts.ludoId, ludoId),
+    orderBy: (c, { desc }) => desc(c.createdAt),
+  })
+}
+
+export async function getContactById(
+  id: string,
+  ludoId: string,
+): Promise<NewsletterContactRow | undefined> {
+  return db.query.newsletterContacts.findFirst({
+    where: and(eq(newsletterContacts.id, id), eq(newsletterContacts.ludoId, ludoId)),
+  })
+}
+
+/** Recherche un contact par email (insensible à la casse) dans une ludo — dédup. */
+export async function findContactByEmail(
+  ludoId: string,
+  email: string,
+): Promise<NewsletterContactRow | undefined> {
+  return db.query.newsletterContacts.findFirst({
+    where: and(
+      eq(newsletterContacts.ludoId, ludoId),
+      sql`lower(${newsletterContacts.email}) = ${email.toLowerCase()}`,
+    ),
+  })
+}
+
+export async function getContactByToken(token: string): Promise<NewsletterContactRow | undefined> {
+  return db.query.newsletterContacts.findFirst({
+    where: eq(newsletterContacts.unsubscribeToken, token),
+  })
+}
+
+/** Tous les emails (en minuscules) d'une ludo — pour la dédup d'import en masse. */
+export async function getContactEmails(ludoId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ email: newsletterContacts.email })
+    .from(newsletterContacts)
+    .where(eq(newsletterContacts.ludoId, ludoId))
+  return new Set(rows.map((r) => r.email.toLowerCase()))
+}
+
+export async function createContact(data: NewsletterContactInsert): Promise<NewsletterContactRow> {
+  const [row] = await db.insert(newsletterContacts).values(data).returning()
+  return row
+}
+
+/** Insertion en masse (import). Ignore les collisions sur l'index unique (ludo, email). */
+export async function insertContacts(rows: NewsletterContactInsert[]): Promise<number> {
+  if (rows.length === 0) return 0
+  const inserted = await db
+    .insert(newsletterContacts)
+    .values(rows)
+    .onConflictDoNothing()
+    .returning({ id: newsletterContacts.id })
+  return inserted.length
+}
+
+export async function updateContact(
+  id: string,
+  ludoId: string,
+  data: Partial<NewsletterContactInsert>,
+): Promise<NewsletterContactRow | undefined> {
+  const [row] = await db
+    .update(newsletterContacts)
+    .set(data)
+    .where(and(eq(newsletterContacts.id, id), eq(newsletterContacts.ludoId, ludoId)))
+    .returning()
+  return row
+}
+
+export async function deleteContact(id: string, ludoId: string): Promise<boolean> {
+  const deleted = await db
+    .delete(newsletterContacts)
+    .where(and(eq(newsletterContacts.id, id), eq(newsletterContacts.ludoId, ludoId)))
+    .returning({ id: newsletterContacts.id })
+  return deleted.length > 0
+}
+
+/** Contacts destinataires d'un envoi : abonnés uniquement (exclut unsub/bounced). */
+export async function listSubscribedContacts(ludoId: string): Promise<NewsletterContactRow[]> {
+  return db.query.newsletterContacts.findMany({
+    where: and(eq(newsletterContacts.ludoId, ludoId), eq(newsletterContacts.status, 'subscribed')),
+    orderBy: (c, { asc }) => asc(c.createdAt),
+  })
+}
+
+export async function countSubscribed(ludoId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(newsletterContacts)
+    .where(and(eq(newsletterContacts.ludoId, ludoId), eq(newsletterContacts.status, 'subscribed')))
+  return row?.n ?? 0
+}
+
+export async function setContactStatusByToken(
+  token: string,
+  status: 'unsubscribed',
+): Promise<NewsletterContactRow | undefined> {
+  const [row] = await db
+    .update(newsletterContacts)
+    .set({ status })
+    .where(eq(newsletterContacts.unsubscribeToken, token))
+    .returning()
+  return row
+}
+
+/** Marque comme `bounced` un contact par email (webhook Resend). Toutes ludos. */
+export async function markBouncedByEmail(email: string): Promise<void> {
+  await db
+    .update(newsletterContacts)
+    .set({ status: 'bounced' })
+    .where(sql`lower(${newsletterContacts.email}) = ${email.toLowerCase()}`)
+}
+
+// ─── Campagnes ─────────────────────────────────────────────────────────────────
+
+export async function listCampaigns(ludoId: string): Promise<CampaignRow[]> {
+  return db.query.campaigns.findMany({
+    where: eq(campaigns.ludoId, ludoId),
+    orderBy: (c, { desc }) => desc(c.createdAt),
+  })
+}
+
+export async function getCampaignById(
+  id: string,
+  ludoId: string,
+): Promise<CampaignRow | undefined> {
+  return db.query.campaigns.findFirst({
+    where: and(eq(campaigns.id, id), eq(campaigns.ludoId, ludoId)),
+  })
+}
+
+export async function createCampaign(data: CampaignInsert): Promise<CampaignRow> {
+  const [row] = await db.insert(campaigns).values(data).returning()
+  return row
+}
+
+export async function updateCampaign(
+  id: string,
+  ludoId: string,
+  data: Partial<CampaignInsert>,
+): Promise<CampaignRow | undefined> {
+  const [row] = await db
+    .update(campaigns)
+    .set(data)
+    .where(and(eq(campaigns.id, id), eq(campaigns.ludoId, ludoId)))
+    .returning()
+  return row
+}
+
+export async function deleteCampaign(id: string, ludoId: string): Promise<boolean> {
+  const deleted = await db
+    .delete(campaigns)
+    .where(and(eq(campaigns.id, id), eq(campaigns.ludoId, ludoId)))
+    .returning({ id: campaigns.id })
+  return deleted.length > 0
+}
+
+export async function insertCampaignSends(rows: CampaignSendInsert[]): Promise<void> {
+  if (rows.length === 0) return
+  await db.insert(campaignSends).values(rows)
+}
+
+/** Ids des contacts déjà destinataires d'une campagne (garde-fou anti-doublon). */
+export async function getSentContactIds(campaignId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ contactId: campaignSends.contactId })
+    .from(campaignSends)
+    .where(eq(campaignSends.campaignId, campaignId))
+  return new Set(rows.map((r) => r.contactId))
+}

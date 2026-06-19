@@ -10,6 +10,7 @@
 
   let color = $state('')
   let saving = $state(false)
+  let logoInput = $state<HTMLInputElement | null>(null)
 
   // Synchronise la couleur avec le load (initial + après update), sans écraser la saisie.
   $effect.pre(() => {
@@ -31,6 +32,46 @@
 {#if form?.error}
   <p class="banner banner-error" role="alert">{form.error}</p>
 {/if}
+
+<section class="card logo-card">
+  <div class="logo-head">
+    <div>
+      <h2>Logo</h2>
+      <p class="muted">Affiché dans l'en-tête de vos emails (jpg, png, webp ou svg — 2 Mo max).</p>
+    </div>
+    {#if data.ludo.logoUrl}
+      <img class="logo-preview" src={data.ludo.logoUrl} alt="Logo {data.ludo.name}" />
+    {/if}
+  </div>
+
+  <div class="logo-actions">
+    <form
+      method="POST"
+      action="?/uploadLogo"
+      enctype="multipart/form-data"
+      use:enhance={toastEnhance({ success: 'Logo mis à jour.', errorMode: 'inline' })}
+    >
+      <input
+        type="file"
+        name="logo"
+        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+        required
+        bind:this={logoInput}
+        onchange={() => logoInput?.form?.requestSubmit()}
+      />
+    </form>
+
+    {#if data.ludo.logoUrl}
+      <form
+        method="POST"
+        action="?/removeLogo"
+        use:enhance={toastEnhance({ success: 'Logo retiré.' })}
+      >
+        <Button type="submit" variant="ghost" size="sm">Retirer</Button>
+      </form>
+    {/if}
+  </div>
+</section>
 
 <section class="card">
   <form
@@ -130,6 +171,34 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     padding: var(--space-6);
+  }
+  .logo-card {
+    margin-bottom: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .logo-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  h2 {
+    color: var(--text-main);
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-body);
+  }
+  .logo-preview {
+    max-height: 56px;
+    max-width: 160px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+  }
+  .logo-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
   }
   .banner {
     margin: 0 0 var(--space-4);

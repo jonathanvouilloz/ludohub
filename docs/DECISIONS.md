@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-19 | Newsletter : Resend + domaine partagé + DB source de vérité
+
+**Contexte :** Nouveau module (epic 17) pour que les ludothèques envoient des newsletters/campagnes à leur public. Staff non-technique, pas de domaine ni d'accès DNS côté ludos, besoin de CRM léger (import CSV, édition, notes).
+
+**Décision :** Envoi via **Resend** depuis **un seul domaine LudoHub vérifié** (`noreply@ludohub.ch`), `from`=nom ludo, `reply-to`=email ludo. Les **contacts vivent dans la DB Neon** (source de vérité unique) ; Resend ne fait que livrer l'email. Désabonnement géré nous-mêmes (token + page publique + headers `List-Unsubscribe`). Template **fixe à champs structurés** (pas de WYSIWYG). v1 sans tags/segments, envoi immédiat seulement.
+
+**Alternatives :** Brevo (rejeté : on tente full custom léger sur Resend) ; domaine par ludo (rejeté : DNS trop lourd pour le staff) ; Resend Audiences comme stockage contacts (rejeté : modèle pauvre, sync à 2 copies) ; WYSIWYG libre (rejeté : emails cassés chez non-techniciens).
+
+---
+
 ## 2026-06-18 | DatePicker : prop `minValue` pour les couples début/fin
 
 **Contexte :** Sur les double date pickers, le picker de fin rouvrait sur le mois courant (pas sur la date de début) et n'empêchait pas une date de fin antérieure au début.

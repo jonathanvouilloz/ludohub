@@ -27,6 +27,9 @@ BETTER_AUTH_SECRET=     # Secret session Better Auth
 BLOB_READ_WRITE_TOKEN=  # Vercel Blob
 PUBLIC_APP_URL=         # https://ludohub.ch (ou vercel preview URL)
 SUPER_ADMIN_PASSWORD=   # Mot de passe admin Jonathan
+RESEND_API_KEY=         # Clé API Resend (envoi newsletter)
+NEWSLETTER_FROM=        # noreply@ludohub.ch (domaine vérifié dans Resend)
+RESEND_WEBHOOK_SECRET=  # Secret Svix des webhooks Resend (bounces/plaintes)
 ```
 
 ## Commandes utiles

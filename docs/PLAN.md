@@ -20,6 +20,7 @@
 | 14  | DESIGN — Refonte UI transversale (système de composants)         | L      | **DONE**     | [14-design-refonte.md](features/14-design-refonte.md)         |
 | 15  | FRÉQUENTATION — Relevé & clôture d'ouverture (+ météo)           | M      | **DONE**     | [14-frequentation.md](features/14-frequentation.md)           |
 | 16  | POLISH — États, Feedback (toasts/skeleton/empty) & Motion        | M      | **DONE**     | [16-polish-feedback-motion.md](features/16-polish-feedback-motion.md) |
+| 17  | NEWSLETTER — Audience, campagnes & envoi email (Resend)          | L      | **EN COURS** | [17-newsletter.md](features/17-newsletter.md)                 |
 
 ## Prochaines étapes prioritaires
 

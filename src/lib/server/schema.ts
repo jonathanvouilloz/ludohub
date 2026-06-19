@@ -79,6 +79,8 @@ export const ludotheques = pgTable('ludotheques', {
   slug: text('slug').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   color: text('color').notNull().default('#0073E6'),
+  // Logo (URL Vercel Blob) — utilisé dans l'en-tête des emails newsletter
+  logoUrl: text('logo_url'),
   address: text('address'),
   // Contact public (source : fiches Ville de Genève — voir docs/data/ludotheques-geneve.json)
   phone: text('phone'),
@@ -671,6 +673,7 @@ export const notificationType = pgEnum('notification_type', [
   'checkup_recorded',
   'checkup_missing_item',
   'supply_request',
+  'campaign_sent',
 ])
 
 export const notificationSeverity = pgEnum('notification_severity', ['info', 'action_required'])
@@ -702,6 +705,106 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   recipientMember: one(members, {
     fields: [notifications.recipientMemberId],
     references: [members.id],
+  }),
+}))
+
+// ─── Newsletter ──────────────────────────────────────────────────────────────
+
+export const newsletterContactStatus = pgEnum('newsletter_contact_status', [
+  'subscribed',
+  'unsubscribed',
+  'bounced',
+])
+
+export const newsletterContactSource = pgEnum('newsletter_contact_source', ['manual', 'import'])
+
+export const newsletterContacts = pgTable(
+  'newsletter_contacts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    firstName: text('first_name'),
+    lastName: text('last_name'),
+    status: newsletterContactStatus('status').notNull().default('subscribed'),
+    // Token public pour le désabonnement (page hors auth).
+    unsubscribeToken: text('unsubscribe_token').notNull().unique(),
+    source: newsletterContactSource('source').notNull().default('manual'),
+    notes: text('notes'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  // Dédup par ludo, insensible à la casse de l'email.
+  (t) => [uniqueIndex('newsletter_contacts_ludo_email_idx').on(t.ludoId, sql`lower(${t.email})`)],
+)
+
+/** Contenu structuré d'une campagne (champs fixes, pas de WYSIWYG). */
+export interface CampaignContent {
+  title?: string
+  body: string
+  imageUrl?: string
+  ctaLabel?: string
+  ctaUrl?: string
+  pdfUrl?: string
+  pdfAsAttachment?: boolean
+}
+
+export const campaignStatus = pgEnum('campaign_status', ['draft', 'sent'])
+
+export const campaigns = pgTable('campaigns', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  ludoId: uuid('ludo_id')
+    .notNull()
+    .references(() => ludotheques.id, { onDelete: 'cascade' }),
+  subject: text('subject').notNull(),
+  previewText: text('preview_text'),
+  content: jsonb('content').$type<CampaignContent>(),
+  status: campaignStatus('status').notNull().default('draft'),
+  recipientCount: integer('recipient_count').notNull().default(0),
+  sentAt: timestamp('sent_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const campaignSendStatus = pgEnum('campaign_send_status', ['sent', 'failed', 'bounced'])
+
+export const campaignSends = pgTable('campaign_sends', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  campaignId: uuid('campaign_id')
+    .notNull()
+    .references(() => campaigns.id, { onDelete: 'cascade' }),
+  contactId: uuid('contact_id')
+    .notNull()
+    .references(() => newsletterContacts.id, { onDelete: 'cascade' }),
+  status: campaignSendStatus('status').notNull(),
+  resendId: text('resend_id'),
+  error: text('error'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+})
+
+export const newsletterContactsRelations = relations(newsletterContacts, ({ one }) => ({
+  ludo: one(ludotheques, {
+    fields: [newsletterContacts.ludoId],
+    references: [ludotheques.id],
+  }),
+}))
+
+export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [campaigns.ludoId],
+    references: [ludotheques.id],
+  }),
+  sends: many(campaignSends),
+}))
+
+export const campaignSendsRelations = relations(campaignSends, ({ one }) => ({
+  campaign: one(campaigns, {
+    fields: [campaignSends.campaignId],
+    references: [campaigns.id],
+  }),
+  contact: one(newsletterContacts, {
+    fields: [campaignSends.contactId],
+    references: [newsletterContacts.id],
   }),
 }))
 
@@ -755,3 +858,13 @@ export type NotificationRow = typeof notifications.$inferSelect
 export type NotificationInsert = typeof notifications.$inferInsert
 export type NotificationType = (typeof notificationType.enumValues)[number]
 export type NotificationSeverity = (typeof notificationSeverity.enumValues)[number]
+export type NewsletterContactRow = typeof newsletterContacts.$inferSelect
+export type NewsletterContactInsert = typeof newsletterContacts.$inferInsert
+export type NewsletterContactStatus = (typeof newsletterContactStatus.enumValues)[number]
+export type NewsletterContactSource = (typeof newsletterContactSource.enumValues)[number]
+export type CampaignRow = typeof campaigns.$inferSelect
+export type CampaignInsert = typeof campaigns.$inferInsert
+export type CampaignStatus = (typeof campaignStatus.enumValues)[number]
+export type CampaignSendRow = typeof campaignSends.$inferSelect
+export type CampaignSendInsert = typeof campaignSends.$inferInsert
+export type CampaignSendStatus = (typeof campaignSendStatus.enumValues)[number]

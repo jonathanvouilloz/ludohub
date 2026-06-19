@@ -63,10 +63,7 @@ export interface LudoInfoInput {
  * Met à jour les informations publiques d'une ludothèque (côté responsable).
  * Le slug et le mot de passe restent réservés au super-admin.
  */
-export async function updateLudoInfo(
-  ludoId: string,
-  data: LudoInfoInput,
-): Promise<LudothequeRow> {
+export async function updateLudoInfo(ludoId: string, data: LudoInfoInput): Promise<LudothequeRow> {
   return updateLudoById(ludoId, {
     name: parseName(data.name),
     color: parseColor(data.color),
@@ -76,4 +73,12 @@ export async function updateLudoInfo(
     email: parseEmail(data.email),
     website: parseWebsite(data.website),
   })
+}
+
+/**
+ * Met à jour l'URL du logo (Blob) d'une ludothèque. `null` = retrait du logo.
+ * L'upload/suppression du fichier Blob est orchestré côté route (cf. pattern thèmes).
+ */
+export async function setLudoLogo(ludoId: string, logoUrl: string | null): Promise<LudothequeRow> {
+  return updateLudoById(ludoId, { logoUrl })
 }

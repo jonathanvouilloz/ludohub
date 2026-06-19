@@ -36,6 +36,7 @@
       checkup_recorded: `/${slug}/themes`,
       checkup_missing_item: `/${slug}/themes`,
       supply_request: `/${slug}/supplies`,
+      campaign_sent: `/${slug}/newsletter`,
     }
     return byType[n.type]
   }

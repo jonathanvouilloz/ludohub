@@ -9,6 +9,7 @@ import PackageIcon from '@lucide/svelte/icons/package'
 import DicesIcon from '@lucide/svelte/icons/dices'
 import BellIcon from '@lucide/svelte/icons/bell'
 import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
+import MailIcon from '@lucide/svelte/icons/mail'
 
 /** Zone(s) du shell où une destination apparaît. */
 export type NavZone = 'sidebar' | 'tabbar' | 'sheet'
@@ -97,6 +98,14 @@ export function buildNavConfig(slug: string): NavDest[] {
       match: (p) => p.startsWith('/reseau/notifications'),
       zones: ['sidebar', 'sheet'],
       badgeKey: 'notifications',
+    },
+    {
+      label: 'Newsletter',
+      href: `${base}/newsletter`,
+      icon: MailIcon,
+      match: (p) => p.startsWith(`${base}/newsletter`),
+      zones: ['sidebar', 'sheet'],
+      responsableOnly: true,
     },
     {
       label: 'Équipe',
