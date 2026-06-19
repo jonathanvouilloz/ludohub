@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -19,7 +20,6 @@
   } = $props()
 
   let memberId = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   const available = $derived(members.filter((m) => !assignedIds.includes(m.id)))
@@ -30,7 +30,6 @@
   $effect(() => {
     if (open) {
       memberId = ''
-      error = ''
     }
   })
 </script>
@@ -45,19 +44,11 @@
     <form
       method="POST"
       action="?/assign"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: null,
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <input type="hidden" name="slotId" value={slotId} />
 
@@ -75,10 +66,6 @@
 
       {#if available.length === 0}
         <p class="muted">Tous les membres actifs sont déjà assignés à ce samedi.</p>
-      {/if}
-
-      {#if error}
-        <p class="error" role="alert">{error}</p>
       {/if}
 
       <Dialog.Footer>
@@ -106,10 +93,5 @@
     margin: 0;
     font-size: var(--text-small);
     color: var(--text-muted);
-  }
-  .error {
-    margin: 0;
-    font-size: var(--text-small);
-    color: var(--danger);
   }
 </style>

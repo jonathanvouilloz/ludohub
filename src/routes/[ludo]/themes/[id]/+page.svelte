@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Table from '$lib/components/ui/table/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge, StatusBadge } from '$lib/components/ui/badge/index.js'
@@ -15,7 +16,7 @@
   import InstallDialog from '$lib/components/themes/InstallDialog.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   const theme = $derived(data.theme)
   const editable = $derived(!theme.isArchived)
@@ -73,7 +74,14 @@
                 historique des prêts et installations. Action irréversible.
               </AlertDialog.Description>
             </AlertDialog.Header>
-            <form method="POST" action="?/delete" use:enhance>
+            <form
+              method="POST"
+              action="?/delete"
+              use:enhance={toastEnhance({
+                success: 'Thème supprimé.',
+                redirect: 'Thème supprimé.',
+              })}
+            >
               <AlertDialog.Footer>
                 <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
                 <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
@@ -86,10 +94,6 @@
       {/if}
     </div>
   </header>
-
-  {#if form?.error}
-    <p class="banner" role="alert">{form.error}</p>
-  {/if}
 
   {#if pendingRequests.length > 0}
     <section class="requests">
@@ -105,11 +109,19 @@
             {#if req.notes}<p class="note">{req.notes}</p>{/if}
           </div>
           <div class="request-actions">
-            <form method="POST" action="?/confirmRequest" use:enhance>
+            <form
+              method="POST"
+              action="?/confirmRequest"
+              use:enhance={toastEnhance({ success: 'Demande confirmée.' })}
+            >
               <input type="hidden" name="loanId" value={req.id} />
               <Button type="submit" size="sm" disabled={!!activeLoan}>Accepter</Button>
             </form>
-            <form method="POST" action="?/declineRequest" use:enhance>
+            <form
+              method="POST"
+              action="?/declineRequest"
+              use:enhance={toastEnhance({ success: 'Demande refusée.' })}
+            >
               <input type="hidden" name="loanId" value={req.id} />
               <Button type="submit" variant="outline" size="sm">Refuser</Button>
             </form>
@@ -126,7 +138,11 @@
         depuis le {formatDateShort(activeLoan.createdAt)}
         {#if activeLoan.notes}<span class="muted"> · {activeLoan.notes}</span>{/if}
       </div>
-      <form method="POST" action="?/returnLoan" use:enhance>
+      <form
+        method="POST"
+        action="?/returnLoan"
+        use:enhance={toastEnhance({ success: 'Retour enregistré.' })}
+      >
         <input type="hidden" name="loanId" value={activeLoan.id} />
         <Button type="submit" variant="outline" size="sm">Marquer comme retourné</Button>
       </form>
@@ -162,7 +178,12 @@
     <section class="col">
       <h2>Détails</h2>
       {#if editable}
-        <form method="POST" action="?/update" use:enhance class="edit">
+        <form
+          method="POST"
+          action="?/update"
+          use:enhance={toastEnhance({ success: 'Thème mis à jour.' })}
+          class="edit"
+        >
           <div class="field">
             <Label for="name">Nom</Label>
             <Input id="name" name="name" value={theme.name} required />
@@ -176,7 +197,12 @@
           <Button type="submit" size="sm">Enregistrer</Button>
         </form>
 
-        <form method="POST" action="?/toggleShareable" use:enhance class="share">
+        <form
+          method="POST"
+          action="?/toggleShareable"
+          use:enhance={toastEnhance({ success: null })}
+          class="share"
+        >
           <input type="hidden" name="shareable" value={theme.isShareable ? 'false' : 'true'} />
           <Button type="submit" variant="ghost" size="sm">
             {theme.isShareable ? 'Retirer du catalogue réseau' : 'Partager dans le réseau'}
@@ -276,14 +302,6 @@
   }
   .head-actions :global(.danger-icon) {
     color: var(--danger);
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
   .loan-active {
     display: flex;

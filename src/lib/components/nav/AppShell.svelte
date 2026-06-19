@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
+  import { navigating } from '$app/state'
   import type { LudothequeRow, MemberRow } from '$lib/server/schema.js'
+  import { PageSkeleton } from '$lib/components/ui/skeleton/index.js'
   import AppSidebar from './AppSidebar.svelte'
   import BottomTabBar from './BottomTabBar.svelte'
   import MoreSheet from './MoreSheet.svelte'
@@ -18,12 +20,34 @@
   } = $props()
 
   let sheetOpen = $state(false)
+
+  // Pages dont le `load` interroge la DB : on affiche un skeleton pendant la
+  // navigation client vers elles (ou un rechargement en place, ex. changement
+  // de saison sur la fréquentation). Les pages légères naviguent normalement.
+  const HEAVY_ROUTES = new Set([
+    '/[ludo]/themes',
+    '/[ludo]/planning',
+    '/[ludo]/planning/saisons',
+    '/[ludo]/planning/saisons/[id]',
+    '/[ludo]/frequentation',
+    '/[ludo]/absences',
+    '/reseau/themes',
+    '/reseau/aide',
+    '/reseau/notifications',
+  ])
+  const loadingHeavy = $derived(
+    !!navigating.to?.route.id && HEAVY_ROUTES.has(navigating.to.route.id),
+  )
 </script>
 
 <div class="app-shell">
   <AppSidebar {ludo} {member} {notifCount} />
   <main class="app-shell__content">
-    {@render children()}
+    {#if loadingHeavy}
+      <PageSkeleton />
+    {:else}
+      {@render children()}
+    {/if}
   </main>
 </div>
 

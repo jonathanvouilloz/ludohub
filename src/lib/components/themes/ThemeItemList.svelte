@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -8,6 +9,8 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import PackageOpenIcon from '@lucide/svelte/icons/package-open'
 
   type ThemeItem = {
     id: string
@@ -47,7 +50,7 @@
 
   <div class="items">
     {#if items.length === 0}
-      <p class="empty">Aucun élément pour le moment.</p>
+      <EmptyState icon={PackageOpenIcon} title="Aucun élément pour le moment." compact />
     {:else}
       <ul>
         {#each items as item (item.id)}
@@ -75,7 +78,11 @@
                       L'élément sera retiré de ce thème. Action définitive.
                     </AlertDialog.Description>
                   </AlertDialog.Header>
-                  <form method="POST" action="?/removeItem" use:enhance>
+                  <form
+                    method="POST"
+                    action="?/removeItem"
+                    use:enhance={toastEnhance({ success: 'Objet retiré.' })}
+                  >
                     <input type="hidden" name="itemId" value={item.id} />
                     <AlertDialog.Footer>
                       <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
@@ -97,14 +104,11 @@
         class="add"
         method="POST"
         action="?/addItem"
-        use:enhance={() => {
-          adding = true
-          return async ({ update }) => {
-            adding = false
-            name = ''
-            await update()
-          }
-        }}
+        use:enhance={toastEnhance({
+          success: 'Objet ajouté.',
+          onPending: (p) => (adding = p),
+          onSuccess: () => (name = ''),
+        })}
       >
         <div class="field grow">
           <Label for="item-name">Nouvel élément</Label>
@@ -132,15 +136,14 @@
       <form
         method="POST"
         action="?/addItem"
-        use:enhance={() => {
-          dialogAdding = true
-          return async ({ update }) => {
-            dialogAdding = false
+        use:enhance={toastEnhance({
+          success: 'Objet ajouté.',
+          onPending: (p) => (dialogAdding = p),
+          onSuccess: () => {
             dialogName = ''
             dialogOpen = false
-            await update()
-          }
-        }}
+          },
+        })}
       >
         <div class="field">
           <Label for="dialog-item-name">Nom</Label>
@@ -215,11 +218,6 @@
   }
   li :global(.danger-icon) {
     color: var(--danger);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
-    margin: 0;
   }
   .add {
     display: flex;

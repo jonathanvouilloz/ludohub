@@ -2,6 +2,8 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import ThemeCard from '$lib/components/themes/ThemeCard.svelte'
   import ActiveThemeCard from '$lib/components/themes/ActiveThemeCard.svelte'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import BoxesIcon from '@lucide/svelte/icons/boxes'
 
   let { data } = $props()
 
@@ -26,7 +28,15 @@
   </header>
 
   {#if themes.length === 0}
-    <p class="empty">Aucun thème pour le moment. Créez-en un pour démarrer le catalogue.</p>
+    <EmptyState
+      icon={BoxesIcon}
+      title="Aucun thème pour le moment"
+      description="Créez-en un pour démarrer le catalogue."
+    >
+      {#snippet action()}
+        <Button href="/{data.ludo.slug}/themes/new">Nouveau thème</Button>
+      {/snippet}
+    </EmptyState>
   {:else}
     {#if activeThemes.length > 0}
       <section class="active-section">
@@ -77,10 +87,6 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
   }
   .active-section {
     margin-bottom: var(--space-8);

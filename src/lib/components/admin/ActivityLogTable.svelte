@@ -6,6 +6,8 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import { DataTable } from '$lib/components/ui/data-table/index.js'
   import { DataCard } from '$lib/components/ui/data-card/index.js'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import ScrollTextIcon from '@lucide/svelte/icons/scroll-text'
 
   type LogRow = {
     id: string
@@ -68,7 +70,7 @@
 </form>
 
 {#if logs.length === 0}
-  <p class="empty">Aucune activité ne correspond à ces filtres.</p>
+  <EmptyState icon={ScrollTextIcon} title="Aucune activité ne correspond à ces filtres." />
 {:else}
   <DataTable>
     {#snippet head()}
@@ -132,14 +134,6 @@
   .filter-actions {
     display: flex;
     gap: var(--space-2);
-  }
-  .empty {
-    padding: var(--space-6);
-    text-align: center;
-    color: var(--text-muted);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
   }
   :global(.meta-cell code) {
     display: inline-block;

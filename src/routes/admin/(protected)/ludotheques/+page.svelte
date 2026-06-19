@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Table from '$lib/components/ui/table/index.js'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -7,18 +8,18 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import LudothequeCard from '$lib/components/admin/LudothequeCard.svelte'
   import ColorPicker from '$lib/components/admin/ColorPicker.svelte'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import Building2Icon from '@lucide/svelte/icons/building-2'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   let dialogOpen = $state(false)
   let submitting = $state(false)
-  let error = $state('')
 
   // Couleur : input natif + champ hexa synchronisés (le service valide #RRGGBB).
   let color = $state('#0073e6')
 
   function openCreate() {
-    error = ''
     color = '#0073e6'
     dialogOpen = true
   }
@@ -38,12 +39,16 @@
   <Button onclick={openCreate}>Nouvelle ludothèque</Button>
 </header>
 
-{#if form?.error}
-  <p class="banner" role="alert">{form.error}</p>
-{/if}
-
 {#if data.ludos.length === 0}
-  <p class="empty">Aucune ludothèque pour le moment. Créez-en une pour démarrer.</p>
+  <EmptyState
+    icon={Building2Icon}
+    title="Aucune ludothèque pour le moment"
+    description="Créez-en une pour démarrer."
+  >
+    {#snippet action()}
+      <Button onclick={openCreate}>Nouvelle ludothèque</Button>
+    {/snippet}
+  </EmptyState>
 {:else}
   <Table.Root>
     <Table.Header>
@@ -76,19 +81,11 @@
     <form
       method="POST"
       action="?/create"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          dialogOpen = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Ludothèque créée.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (dialogOpen = false),
+      })}
     >
       <div class="field">
         <Label for="ludo-name">Nom</Label>
@@ -117,10 +114,6 @@
         <Label for="ludo-address">Adresse (optionnel)</Label>
         <Input id="ludo-address" name="address" placeholder="Rue, ville" />
       </div>
-
-      {#if error}
-        <p class="error" role="alert">{error}</p>
-      {/if}
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (dialogOpen = false)}>Annuler</Button
@@ -159,31 +152,10 @@
     color: var(--text-muted);
     margin: 0;
   }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
-  }
-  .empty {
-    padding: var(--space-6);
-    text-align: center;
-    color: var(--text-muted);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-  }
   .field {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-  }
-  .error {
-    margin: 0;
-    font-size: var(--text-small);
-    color: var(--danger);
   }
   form {
     display: flex;

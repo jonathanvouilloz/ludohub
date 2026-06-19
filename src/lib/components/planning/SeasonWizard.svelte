@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import ClosurePeriodsPanel from './ClosurePeriodsPanel.svelte'
   import SeasonMemberConfig from './SeasonMemberConfig.svelte'
@@ -81,8 +82,8 @@
     <div class="step-body">
       <h2 class="step-title">Configuration des membres</h2>
       <p class="step-hint">
-        Marquez les membres <strong>permanents</strong> (présents tous les samedis) et ajoutez leurs
-        indisponibilités déjà connues.
+        Marquez les membres <strong>permanents</strong> (présents tous les samedis) et ajoutez leurs indisponibilités
+        déjà connues.
       </p>
       <SeasonMemberConfig {members} {memberSettings} {seasonAbsences} readOnly={false} />
     </div>
@@ -136,13 +137,11 @@
       <form
         method="POST"
         action="?/generatePlanning"
-        use:enhance={() => {
-          generating = true
-          return async ({ update }) => {
-            generating = false
-            await update()
-          }
-        }}
+        use:enhance={toastEnhance({
+          success: 'Planning généré.',
+          redirect: 'Planning généré.',
+          onPending: (p) => (generating = p),
+        })}
       >
         <input type="hidden" name="requiredCount" value={requiredCount} />
         <Button type="submit" disabled={generating} class="generate-btn">
@@ -151,7 +150,8 @@
       </form>
 
       <p class="generate-note">
-        Cette action génère automatiquement toutes les assignations. Vous pourrez ajuster manuellement après.
+        Cette action génère automatiquement toutes les assignations. Vous pourrez ajuster
+        manuellement après.
       </p>
     </div>
     <div class="step-nav">

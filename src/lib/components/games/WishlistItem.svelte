@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { buttonVariants } from '$lib/components/ui/button/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -42,7 +43,7 @@
 
   {#snippet actions()}
     {#if bought}
-      <form method="POST" action="?/markWanted" use:enhance>
+      <form method="POST" action="?/markWanted" use:enhance={toastEnhance({ success: null })}>
         <input type="hidden" name="id" value={wish.id} />
         <Button type="submit" variant="ghost" size="icon-sm" title="Annuler l'achat">
           <Undo2Icon aria-hidden="true" />
@@ -65,7 +66,7 @@
               Le jeu sera déplacé dans la liste des achats. Réversible à tout moment.
             </AlertDialog.Description>
           </AlertDialog.Header>
-          <form method="POST" action="?/markBought" use:enhance>
+          <form method="POST" action="?/markBought" use:enhance={toastEnhance({ success: null })}>
             <input type="hidden" name="id" value={wish.id} />
             <AlertDialog.Footer>
               <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
@@ -89,7 +90,11 @@
           <AlertDialog.Title>Supprimer « {wish.title} » ?</AlertDialog.Title>
           <AlertDialog.Description>Action définitive.</AlertDialog.Description>
         </AlertDialog.Header>
-        <form method="POST" action="?/delete" use:enhance>
+        <form
+          method="POST"
+          action="?/delete"
+          use:enhance={toastEnhance({ success: 'Jeu supprimé.' })}
+        >
           <input type="hidden" name="id" value={wish.id} />
           <AlertDialog.Footer>
             <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>

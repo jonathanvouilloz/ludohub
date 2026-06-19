@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -17,7 +18,6 @@
   let link = $state('')
   let urgency = $state<string>('normale')
   let notes = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   // Réinitialise les champs à chaque ouverture.
@@ -27,7 +27,6 @@
       link = ''
       urgency = 'normale'
       notes = ''
-      error = ''
     }
   })
 </script>
@@ -43,19 +42,11 @@
     <form
       method="POST"
       action="?/create"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Demande créée.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <div class="field">
         <Label for="supply-name">Nom</Label>
@@ -101,10 +92,6 @@
           placeholder="Précisez si besoin…"
         ></textarea>
       </div>
-
-      {#if error}
-        <p class="error" role="alert">{error}</p>
-      {/if}
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
@@ -181,10 +168,5 @@
     font-family: inherit;
     font-size: var(--text-body);
     resize: vertical;
-  }
-  .error {
-    margin: 0 0 var(--space-4);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
 </style>

@@ -15,10 +15,11 @@
 | 09  | WISHLIST + MATÉRIEL — Listes internes simples                    | S      | **DONE**     | [09-wishlist-materiaux.md](features/09-wishlist-materiaux.md) |
 | 10  | NOTIFICATIONS — Notifs in-app + dispatcher + activity_log        | M      | **DONE**     | [10-notifications.md](features/10-notifications.md)           |
 | 11  | ADMIN — Super admin (CRUD ludos, logs)                           | M      | **DONE**     | [11-admin.md](features/11-admin.md)                           |
-| 12  | TESTS E2E — Playwright flows critiques                           | M      | TODO         | [12-tests-e2e.md](features/12-tests-e2e.md)                   |
+| 12  | TESTS E2E — Playwright flows critiques                           | M      | TODO         | [10-tests-e2e.md](features/10-tests-e2e.md)                   |
 | 13  | THÈMES — Installations & check-ups                               | M-L    | **DONE**     | [13-themes-checkup.md](features/13-themes-checkup.md)         |
 | 14  | DESIGN — Refonte UI transversale (système de composants)         | L      | **DONE**     | [14-design-refonte.md](features/14-design-refonte.md)         |
 | 15  | FRÉQUENTATION — Relevé & clôture d'ouverture (+ météo)           | M      | **DONE**     | [14-frequentation.md](features/14-frequentation.md)           |
+| 16  | POLISH — États, Feedback (toasts/skeleton/empty) & Motion        | M      | **DONE**     | [16-polish-feedback-motion.md](features/16-polish-feedback-motion.md) |
 
 ## Prochaines étapes prioritaires
 

@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { ComponentProps } from 'svelte'
   import HelpRequestCard from './HelpRequestCard.svelte'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import InboxIcon from '@lucide/svelte/icons/inbox'
 
   type CardRequest = ComponentProps<typeof HelpRequestCard>['request']
 
@@ -8,7 +10,7 @@
 </script>
 
 {#if requests.length === 0}
-  <p class="empty">Aucune demande pour le moment.</p>
+  <EmptyState icon={InboxIcon} title="Aucune demande pour le moment." />
 {:else}
   <div class="feed">
     {#each requests as request (request.id)}
@@ -22,9 +24,5 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
     gap: var(--space-4);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
   }
 </style>

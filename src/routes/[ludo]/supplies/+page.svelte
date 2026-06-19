@@ -5,6 +5,8 @@
   import { CollapsibleSection } from '$lib/components/ui/collapsible-section/index.js'
   import SupplyCard from '$lib/components/supplies/SupplyCard.svelte'
   import NewSupplyDialog from '$lib/components/supplies/NewSupplyDialog.svelte'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import PackageIcon from '@lucide/svelte/icons/package'
   import type { SupplyRequestRow as SupplyRow, MemberRow } from '$lib/server/schema'
 
   type SupplyWithMember = SupplyRow & { member?: MemberRow | null }
@@ -66,7 +68,15 @@
   {/if}
 
   {#if supplies.length === 0}
-    <p class="empty">Aucune demande pour le moment.</p>
+    <EmptyState
+      icon={PackageIcon}
+      title="Aucune demande pour le moment"
+      description="Créez une demande pour signaler un besoin de matériel."
+    >
+      {#snippet action()}
+        <Button onclick={() => (newOpen = true)}>Nouvelle demande</Button>
+      {/snippet}
+    </EmptyState>
   {:else}
     {#if pending.length > 0}
       <div class="tabs" role="tablist" aria-label="Filtrer par urgence">
@@ -86,7 +96,7 @@
       </div>
 
       {#if filtered.length === 0}
-        <p class="empty">Aucune demande pour cette urgence.</p>
+        <EmptyState icon={PackageIcon} title="Aucune demande pour cette urgence" compact />
       {:else}
         <div class="list">
           {#each filtered as supply (supply.id)}
@@ -99,7 +109,7 @@
         </div>
       {/if}
     {:else}
-      <p class="empty">Aucune demande en attente.</p>
+      <EmptyState icon={PackageIcon} title="Aucune demande en attente" compact />
     {/if}
 
     {#if received.length > 0}
@@ -149,11 +159,6 @@
     color: var(--danger);
     font-size: var(--text-small);
   }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
-  }
-
   .tabs {
     display: flex;
     gap: var(--space-1);

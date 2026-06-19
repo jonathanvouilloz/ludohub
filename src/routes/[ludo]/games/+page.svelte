@@ -5,6 +5,8 @@
   import { CollapsibleSection } from '$lib/components/ui/collapsible-section/index.js'
   import WishlistItem from '$lib/components/games/WishlistItem.svelte'
   import NewGameWishDialog from '$lib/components/games/NewGameWishDialog.svelte'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import Dice5Icon from '@lucide/svelte/icons/dice-5'
   import type { GameWishRow, MemberRow } from '$lib/server/schema'
 
   type WishWithMembers = GameWishRow & {
@@ -50,7 +52,15 @@
   {/if}
 
   {#if wishes.length === 0}
-    <p class="empty">Aucun souhait pour le moment. Ajoutez le premier jeu à acheter.</p>
+    <EmptyState
+      icon={Dice5Icon}
+      title="Aucun souhait pour le moment"
+      description="Ajoutez le premier jeu à acheter."
+    >
+      {#snippet action()}
+        <Button onclick={() => (newOpen = true)}>Nouveau souhait</Button>
+      {/snippet}
+    </EmptyState>
   {:else}
     <div class="list">
       {#each wanted as wish (wish.id)}
@@ -100,10 +110,6 @@
     background: var(--danger-light);
     color: var(--danger);
     font-size: var(--text-small);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
   }
   .list {
     display: flex;

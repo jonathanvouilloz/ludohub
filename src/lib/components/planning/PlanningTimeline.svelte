@@ -1,7 +1,10 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Select from '$lib/components/ui/select/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import CalendarOffIcon from '@lucide/svelte/icons/calendar-off'
   import AssignMemberDialog from './AssignMemberDialog.svelte'
   import MemberSwapDialog from './MemberSwapDialog.svelte'
   import {
@@ -126,7 +129,7 @@
       {:else if !slot.isCancelled}
         <div class="members" class:warn={understaffed}>
           {#if slot.assignments.length === 0}
-            <span class="empty">Personne d'assigné</span>
+            <EmptyState icon={CalendarOffIcon} title="Personne d'assigné" compact />
           {:else}
             {#each slot.assignments as a (a.id)}
               <span
@@ -136,7 +139,11 @@
               >
                 {a.member.name}{#if a.absence}<span class="absent-tag"> · absent</span>{/if}
                 {#if responsable && !isPast}
-                  <form method="POST" action="?/remove" use:enhance>
+                  <form
+                    method="POST"
+                    action="?/remove"
+                    use:enhance={toastEnhance({ success: 'Assignation retirée.' })}
+                  >
                     <input type="hidden" name="slotId" value={slot.id} />
                     <input type="hidden" name="memberId" value={a.member.id} />
                     <button type="submit" class="x" aria-label="Retirer {a.member.name}">×</button>
@@ -162,7 +169,7 @@
       {/if}
       {#if responsable && !slot.closure && !isPast}
         {#if slot.isCancelled}
-          <form method="POST" action="?/reopenSlot" use:enhance>
+          <form method="POST" action="?/reopenSlot" use:enhance={toastEnhance({ success: null })}>
             <input type="hidden" name="slotId" value={slot.id} />
             <button type="submit" class="text-btn">Rouvrir</button>
           </form>
@@ -170,7 +177,11 @@
           <button type="button" class="text-btn" onclick={() => openAssign(slot.id)}
             >+ Assigner</button
           >
-          <form method="POST" action="?/cancelSlot" use:enhance>
+          <form
+            method="POST"
+            action="?/cancelSlot"
+            use:enhance={toastEnhance({ success: 'Samedi annulé.' })}
+          >
             <input type="hidden" name="slotId" value={slot.id} />
             <button type="submit" class="text-btn subtle">Annuler</button>
           </form>
@@ -446,10 +457,6 @@
   .absent-tag {
     text-decoration: none;
     color: var(--danger);
-  }
-  .empty {
-    font-style: italic;
-    color: var(--text-subtle);
   }
   .member form {
     display: inline;

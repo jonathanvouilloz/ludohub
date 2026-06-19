@@ -1,12 +1,13 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import CheckupHistory from '$lib/components/themes/CheckupHistory.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   const inst = $derived(data.installation)
   const isOpen = $derived(inst.status === 'en_cours')
@@ -36,10 +37,6 @@
     </p>
     {#if inst.notes}<p class="note">{inst.notes}</p>{/if}
   </header>
-
-  {#if form?.error}
-    <p class="banner-err" role="alert">{form.error}</p>
-  {/if}
 
   <div class="columns">
     <section class="col">
@@ -72,13 +69,21 @@
               {#if isOpen}
                 <div class="problem-actions">
                   {#if it.condition === 'a_reparer'}
-                    <form method="POST" action="?/resolveItem" use:enhance>
+                    <form
+                      method="POST"
+                      action="?/resolveItem"
+                      use:enhance={toastEnhance({ success: null })}
+                    >
                       <input type="hidden" name="itemId" value={it.id} />
                       <input type="hidden" name="resolution" value="repaired" />
                       <Button type="submit" variant="outline" size="sm">Réparé</Button>
                     </form>
                   {:else}
-                    <form method="POST" action="?/resolveItem" use:enhance>
+                    <form
+                      method="POST"
+                      action="?/resolveItem"
+                      use:enhance={toastEnhance({ success: null })}
+                    >
                       <input type="hidden" name="itemId" value={it.id} />
                       <input type="hidden" name="resolution" value="found" />
                       <Button type="submit" variant="outline" size="sm">Retrouvé</Button>
@@ -97,7 +102,11 @@
                             et catalogue du thème), pas seulement de cette installation. Action irréversible.
                           </AlertDialog.Description>
                         </AlertDialog.Header>
-                        <form method="POST" action="?/resolveItem" use:enhance>
+                        <form
+                          method="POST"
+                          action="?/resolveItem"
+                          use:enhance={toastEnhance({ success: null })}
+                        >
                           <input type="hidden" name="itemId" value={it.id} />
                           <input type="hidden" name="resolution" value="lost" />
                           <AlertDialog.Footer>
@@ -169,14 +178,6 @@
   /* Espace entre le titre et son tableau, aligné sur « État du kit ». */
   .hist-title {
     margin-bottom: var(--space-3);
-  }
-  .banner-err {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
   .columns {
     display: grid;

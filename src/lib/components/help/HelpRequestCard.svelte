@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { formatDateCH } from '$lib/utils/dates.js'
@@ -73,7 +74,12 @@
       />
     </div>
     {#if !readonly && request.status === 'ouverte'}
-      <form method="POST" action="?/cancel" use:enhance class="cancel">
+      <form
+        method="POST"
+        action="?/cancel"
+        use:enhance={toastEnhance({ success: 'Demande annulée.' })}
+        class="cancel"
+      >
         <input type="hidden" name="requestId" value={request.id} />
         <Button type="submit" variant="ghost" size="sm">Annuler la demande</Button>
       </form>
@@ -83,7 +89,7 @@
       {#if request.myResponse}
         <Badge variant="secondary">Vous êtes volontaire</Badge>
       {:else}
-        <form method="POST" action="?/respond" use:enhance>
+        <form method="POST" action="?/respond" use:enhance={toastEnhance({ success: 'Inscrit.' })}>
           <input type="hidden" name="requestId" value={request.id} />
           <Button type="submit" size="sm">Je suis disponible</Button>
         </form>

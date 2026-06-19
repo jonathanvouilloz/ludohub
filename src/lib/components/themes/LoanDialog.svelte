@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -15,7 +16,6 @@
 
   let toLudoId = $state('')
   let notes = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   const selectedName = $derived(
@@ -26,7 +26,6 @@
     if (open) {
       toLudoId = ''
       notes = ''
-      error = ''
     }
   })
 </script>
@@ -44,19 +43,11 @@
     <form
       method="POST"
       action="?/loan"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Prêt enregistré.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <input type="hidden" name="themeId" value={themeId} />
       <input type="hidden" name="toLudoId" value={toLudoId} />
@@ -83,8 +74,6 @@
           placeholder="Durée prévue, état du matériel…"
         ></textarea>
       </div>
-
-      {#if error}<p class="error" role="alert">{error}</p>{/if}
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
@@ -119,10 +108,5 @@
   textarea:focus-visible {
     outline: 2px solid var(--ring, var(--ludo-color));
     outline-offset: 1px;
-  }
-  .error {
-    margin: 0;
-    color: var(--danger);
-    font-size: var(--text-small);
   }
 </style>

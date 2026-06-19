@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -10,7 +11,6 @@
   let title = $state('')
   let link = $state('')
   let priceChf = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   // Réinitialise les champs à chaque ouverture.
@@ -19,7 +19,6 @@
       title = ''
       link = ''
       priceChf = ''
-      error = ''
     }
   })
 </script>
@@ -34,19 +33,11 @@
     <form
       method="POST"
       action="?/add"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Jeu ajouté.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <div class="field">
         <Label for="wish-title">Titre</Label>
@@ -69,10 +60,6 @@
         />
       </div>
 
-      {#if error}
-        <p class="error" role="alert">{error}</p>
-      {/if}
-
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
         <Button type="submit" disabled={submitting}>
@@ -89,10 +76,5 @@
     flex-direction: column;
     gap: var(--space-2);
     margin-bottom: var(--space-4);
-  }
-  .error {
-    margin: 0 0 var(--space-4);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
 </style>

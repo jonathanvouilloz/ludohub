@@ -4,6 +4,8 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left'
   import ChevronRightIcon from '@lucide/svelte/icons/chevron-right'
+  import CalendarXIcon from '@lucide/svelte/icons/calendar-x'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import { formatDateShort, formatMonthYear, toDateString } from '$lib/utils/dates.js'
   import type { AbsenceRow, MemberRow } from '$lib/server/schema'
   import type { Snippet } from 'svelte'
@@ -188,7 +190,7 @@
   </div>
 
   {#if approved.length === 0}
-    <p class="empty">Aucune absence approuvée à afficher.</p>
+    <EmptyState icon={CalendarXIcon} title="Aucune absence approuvée à afficher." />
   {/if}
 </div>
 
@@ -367,11 +369,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-  .empty {
-    margin-top: var(--space-4);
-    color: var(--text-subtle);
-    font-style: italic;
   }
   .detail {
     margin: var(--space-2) 0 0;

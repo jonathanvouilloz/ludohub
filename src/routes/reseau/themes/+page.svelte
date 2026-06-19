@@ -1,5 +1,7 @@
 <script lang="ts">
   import NetworkThemeCard from '$lib/components/themes/NetworkThemeCard.svelte'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import Share2Icon from '@lucide/svelte/icons/share-2'
 
   let { data } = $props()
 
@@ -17,7 +19,7 @@
   </header>
 
   {#if themes.length === 0}
-    <p class="empty">Aucun thème partagé pour le moment.</p>
+    <EmptyState icon={Share2Icon} title="Aucun thème partagé pour le moment" />
   {:else}
     <div class="grid">
       {#each themes as theme (theme.id)}
@@ -40,10 +42,6 @@
   .muted {
     color: var(--text-muted);
     margin: 0 0 var(--space-6);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
   }
   .grid {
     display: grid;

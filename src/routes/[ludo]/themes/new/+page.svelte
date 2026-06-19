@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
@@ -34,13 +35,12 @@
   <form
     method="POST"
     action="?/create"
-    use:enhance={() => {
-      submitting = true
-      return async ({ update }) => {
-        submitting = false
-        await update()
-      }
-    }}
+    use:enhance={toastEnhance({
+      success: null,
+      redirect: 'Thème créé.',
+      errorMode: 'inline',
+      onPending: (p) => (submitting = p),
+    })}
   >
     <div class="field">
       <Label for="name">Nom du thème</Label>

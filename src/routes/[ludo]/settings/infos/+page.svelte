@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
@@ -29,21 +30,18 @@
 
 {#if form?.error}
   <p class="banner banner-error" role="alert">{form.error}</p>
-{:else if form?.success}
-  <p class="banner banner-ok" role="status">Modifications enregistrées.</p>
 {/if}
 
 <section class="card">
   <form
     method="POST"
     action="?/update"
-    use:enhance={() => {
-      saving = true
-      return async ({ update }) => {
-        saving = false
-        await update({ reset: false })
-      }
-    }}
+    use:enhance={toastEnhance({
+      success: 'Infos mises à jour.',
+      errorMode: 'inline',
+      onPending: (p) => (saving = p),
+      updateOptions: { reset: false },
+    })}
   >
     <div class="field">
       <Label for="ludo-name">Nom</Label>
@@ -142,10 +140,6 @@
   .banner-error {
     background: var(--danger-light);
     color: var(--danger);
-  }
-  .banner-ok {
-    background: var(--success-light);
-    color: var(--success);
   }
   form {
     display: flex;

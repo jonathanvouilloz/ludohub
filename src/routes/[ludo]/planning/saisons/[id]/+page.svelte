@@ -5,7 +5,7 @@
   import SeasonWizard from '$lib/components/planning/SeasonWizard.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   // Avant génération (aucune assignation) → wizard guidé
   // Après génération → grille de planification + fermetures éditables
@@ -34,10 +34,6 @@
       <Badge variant="destructive">Archivée — lecture seule</Badge>
     {/if}
   </header>
-
-  {#if form?.error}
-    <p class="banner" role="alert">{form.error}</p>
-  {/if}
 
   {#if showWizard}
     <SeasonWizard
@@ -96,13 +92,5 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
 </style>

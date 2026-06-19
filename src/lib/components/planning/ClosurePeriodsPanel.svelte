@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
@@ -21,7 +22,6 @@
   let label = $state('')
   let startDate = $state('')
   let endDate = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   // Import depuis ge.ch
@@ -37,7 +37,8 @@
     <div>
       <h2>Vacances & fermetures</h2>
       <p class="hint">
-        Les samedis tombant dans une plage sont affichés « fermés » et ne comptent pas dans l'effectif.
+        Les samedis tombant dans une plage sont affichés « fermés » et ne comptent pas dans
+        l'effectif.
       </p>
     </div>
 
@@ -45,20 +46,22 @@
       <form
         method="POST"
         action="?/importFromGE"
-        use:enhance={() => {
-          importing = true
-          importCount = null
-          importError = ''
-          return async ({ result, update }) => {
-            importing = false
-            if (result.type === 'failure') {
-              importError = String(result.data?.error ?? "Erreur lors de l'import.")
-            } else if (result.type === 'success' && result.data) {
-              importCount = (result.data as { imported: number }).imported
+        use:enhance={toastEnhance({
+          success: 'Import effectué.',
+          errorMode: 'inline',
+          errorFallback: "Erreur lors de l'import.",
+          onPending: (p) => {
+            importing = p
+            if (p) {
+              importCount = null
+              importError = ''
             }
-            await update()
-          }
-        }}
+          },
+          onSuccess: (data) => {
+            if (data) importCount = (data as { imported: number }).imported
+          },
+          onError: (m) => (importError = m),
+        })}
       >
         <div class="import-row">
           <Button type="submit" variant="outline" size="sm" disabled={importing}>
@@ -74,7 +77,8 @@
 
   {#if importCount !== null}
     <p class="import-ok" role="status">
-      ✓ {importCount} période{importCount !== 1 ? 's' : ''} importée{importCount !== 1 ? 's' : ''} depuis ge.ch
+      ✓ {importCount} période{importCount !== 1 ? 's' : ''} importée{importCount !== 1 ? 's' : ''} depuis
+      ge.ch
     </p>
   {/if}
   {#if importError}
@@ -92,7 +96,11 @@
             <span class="range">{formatDateShort(c.startDate)} – {formatDateShort(c.endDate)}</span>
           </div>
           {#if !readOnly}
-            <form method="POST" action="?/deleteClosure" use:enhance>
+            <form
+              method="POST"
+              action="?/deleteClosure"
+              use:enhance={toastEnhance({ success: 'Fermeture supprimée.' })}
+            >
               <input type="hidden" name="closureId" value={c.id} />
               <button type="submit" class="x" aria-label="Supprimer {c.label}">×</button>
             </form>
@@ -107,22 +115,15 @@
       class="add"
       method="POST"
       action="?/createClosure"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          error = ''
+      use:enhance={toastEnhance({
+        success: 'Fermeture ajoutée.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => {
           label = ''
           startDate = ''
           endDate = ''
-          await update()
-        }
-      }}
+        },
+      })}
     >
       <div class="field grow">
         <Label for="closure-label">Libellé</Label>
@@ -134,15 +135,17 @@
       </div>
       <div class="field">
         <Label>Au</Label>
-        <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" minValue={startDate} />
+        <DatePicker
+          bind:value={endDate}
+          name="endDate"
+          placeholder="Date de fin"
+          minValue={startDate}
+        />
       </div>
       <Button type="submit" disabled={submitting || !label || !startDate || !endDate}>
         {submitting ? 'Ajout…' : 'Ajouter'}
       </Button>
     </form>
-    {#if error}
-      <p class="error" role="alert">{error}</p>
-    {/if}
   {/if}
 </section>
 

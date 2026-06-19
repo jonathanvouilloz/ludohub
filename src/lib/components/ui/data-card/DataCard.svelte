@@ -64,6 +64,15 @@
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
+    transition:
+      box-shadow var(--dur-fast) var(--ease-out-strong),
+      border-color var(--dur-fast) var(--ease-out-strong);
+  }
+  /* Élévation discrète au survol (la carte n'est pas cliquable : pas de
+     translate qui suggérerait une navigation). */
+  .card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
   }
   .card.muted {
     opacity: 0.7;

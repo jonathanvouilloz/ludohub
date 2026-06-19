@@ -9,10 +9,24 @@
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import { buttonVariants } from '$lib/components/ui/button/index.js'
+  import { toast } from '$lib/components/ui/sonner/index.js'
+  import { Spinner } from '$lib/components/ui/spinner/index.js'
+  import { Skeleton, SkeletonCard } from '$lib/components/ui/skeleton/index.js'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import InboxIcon from '@lucide/svelte/icons/inbox'
 
   let active = $state(true)
   let role = $state('membre')
   const roleLabels: Record<string, string> = { membre: 'Membre', responsable: 'Responsable' }
+
+  let demoPending = $state(false)
+  function fakeSubmit() {
+    demoPending = true
+    setTimeout(() => {
+      demoPending = false
+      toast.success('Action enregistrée.')
+    }, 1200)
+  }
 </script>
 
 <svelte:head>
@@ -320,6 +334,73 @@
         </AlertDialog.Footer>
       </AlertDialog.Content>
     </AlertDialog.Root>
+  </section>
+
+  <!-- ─── FEEDBACK (toasts + pending) ──────────────────────── -->
+  <section class="sg-section" id="feedback">
+    <h2>Feedback</h2>
+    <p class="sg-note">
+      Câblé via <code>toastEnhance</code> (<code>src/lib/utils/enhance.ts</code>) sur les form
+      actions. Toaster monté au layout racine, position <code>bottom-center</code>.
+    </p>
+
+    <h3>Toasts</h3>
+    <div class="sg-row sg-row--gap">
+      <Button variant="secondary" onclick={() => toast.success('Membre ajouté.')}>
+        Toast succès
+      </Button>
+      <Button variant="destructive" onclick={() => toast.error('Une erreur est survenue.')}>
+        Toast erreur
+      </Button>
+    </div>
+
+    <h3>Bouton pending</h3>
+    <div class="sg-row sg-row--gap">
+      <Button onclick={fakeSubmit} disabled={demoPending}>
+        {#if demoPending}<Spinner size={16} />{/if}
+        {demoPending ? 'Enregistrement…' : 'Enregistrer'}
+      </Button>
+    </div>
+  </section>
+
+  <!-- ─── SKELETON ─────────────────────────────────────────── -->
+  <section class="sg-section" id="skeleton">
+    <h2>Skeleton</h2>
+    <p class="sg-note">
+      Chargement perçu pendant une navigation client (store <code>navigating</code>). Anim figée si
+      <code>prefers-reduced-motion</code>.
+    </p>
+
+    <h3>Blocs</h3>
+    <div class="sg-stack">
+      <Skeleton width="40%" height="1.5rem" />
+      <Skeleton width="100%" />
+      <Skeleton width="80%" />
+    </div>
+
+    <h3>Carte de liste</h3>
+    <div class="sg-skeleton-grid">
+      <SkeletonCard />
+      <SkeletonCard lines={3} />
+    </div>
+  </section>
+
+  <!-- ─── EMPTY STATE ──────────────────────────────────────── -->
+  <section class="sg-section" id="empty-state">
+    <h2>Empty State</h2>
+    <p class="sg-note">Remplace les <code>&lt;p class="empty"&gt;</code> ad-hoc.</p>
+
+    <div class="sg-empty-demo">
+      <EmptyState
+        icon={InboxIcon}
+        title="Aucune demande pour le moment"
+        description="Les demandes d'aide du réseau apparaîtront ici."
+      >
+        {#snippet action()}
+          <Button>Créer une demande</Button>
+        {/snippet}
+      </EmptyState>
+    </div>
   </section>
 </div>
 
@@ -649,5 +730,22 @@
     font-size: var(--text-small);
     color: var(--text-muted);
     font-style: italic;
+  }
+
+  .sg-stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-width: 480px;
+  }
+  .sg-skeleton-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--space-3);
+  }
+  .sg-empty-demo {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
   }
 </style>

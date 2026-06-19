@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import DatePicker from '$lib/components/ui/date-picker/DatePicker.svelte'
@@ -79,7 +80,7 @@
               <form
                 method="POST"
                 action="?/saveMemberConfig"
-                use:enhance={() => async ({ update }) => update()}
+                use:enhance={toastEnhance({ success: 'Configuration enregistrée.' })}
               >
                 <input type="hidden" name="memberId" value={member.id} />
                 <input type="hidden" name="isPermanent" value={isPermanent ? 'false' : 'true'} />
@@ -113,7 +114,8 @@
               <button
                 type="button"
                 class="btn-indispo"
-                onclick={() => (addingIndispo === member.id ? closeIndispo() : openIndispo(member.id))}
+                onclick={() =>
+                  addingIndispo === member.id ? closeIndispo() : openIndispo(member.id)}
               >
                 {addingIndispo === member.id ? 'Annuler' : '+ Indispo'}
               </button>
@@ -128,30 +130,38 @@
                 class="indispo-form"
                 method="POST"
                 action="?/addUnavailability"
-                use:enhance={() => {
-                  submitting = true
-                  return async ({ result, update }) => {
-                    submitting = false
-                    if (result.type === 'failure') {
-                      indispoError = String(result.data?.error ?? 'Erreur.')
-                      await update({ reset: false })
-                      return
-                    }
-                    closeIndispo()
-                    await update()
-                  }
-                }}
+                use:enhance={toastEnhance({
+                  success: 'Indisponibilité ajoutée.',
+                  errorMode: 'inline',
+                  errorFallback: 'Erreur.',
+                  onPending: (p) => (submitting = p),
+                  onError: (m) => (indispoError = m),
+                  onSuccess: () => closeIndispo(),
+                })}
               >
                 <input type="hidden" name="memberId" value={member.id} />
                 <div class="field">
                   <Label>Du</Label>
-                  <DatePicker bind:value={indispoStart} name="startDate" placeholder="Date de début" />
+                  <DatePicker
+                    bind:value={indispoStart}
+                    name="startDate"
+                    placeholder="Date de début"
+                  />
                 </div>
                 <div class="field">
                   <Label>Au</Label>
-                  <DatePicker bind:value={indispoEnd} name="endDate" placeholder="Date de fin" minValue={indispoStart} />
+                  <DatePicker
+                    bind:value={indispoEnd}
+                    name="endDate"
+                    placeholder="Date de fin"
+                    minValue={indispoStart}
+                  />
                 </div>
-                <Button type="submit" size="sm" disabled={submitting || !indispoStart || !indispoEnd}>
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={submitting || !indispoStart || !indispoEnd}
+                >
                   {submitting ? 'Ajout…' : 'Ajouter'}
                 </Button>
               </form>

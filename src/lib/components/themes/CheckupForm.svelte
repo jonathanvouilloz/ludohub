@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
 
@@ -33,18 +34,13 @@
 <form
   method="POST"
   action={close ? '?/closeWithCheckup' : '?/recordCheckup'}
-  use:enhance={() => {
-    submitting = true
-    return async ({ result, update }) => {
-      submitting = false
-      if (result.type === 'failure') {
-        error = String(result.data?.error ?? 'Une erreur est survenue.')
-        await update({ reset: false })
-        return
-      }
-      await update()
-    }
-  }}
+  use:enhance={toastEnhance({
+    success: close ? 'Installation clôturée.' : 'Check-up enregistré.',
+    redirect: close ? 'Installation clôturée.' : 'Check-up enregistré.',
+    errorMode: 'inline',
+    onPending: (p) => (submitting = p),
+    onError: (m) => (error = m),
+  })}
 >
   <ul class="items">
     {#each items as item (item.id)}

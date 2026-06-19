@@ -1,5 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import UsersIcon from '@lucide/svelte/icons/users'
   import type { MemberRow } from '$lib/server/schema'
 
   let {
@@ -19,7 +22,11 @@
   {/if}
 
   {#if members.length === 0}
-    <p class="empty">Aucun membre actif. Contactez votre responsable.</p>
+    <EmptyState
+      icon={UsersIcon}
+      title="Aucun membre actif."
+      description="Contactez votre responsable."
+    />
   {:else}
     <ul class="list">
       {#each members as member (member.id)}
@@ -27,13 +34,12 @@
           <form
             method="POST"
             action="?/login"
-            use:enhance={() => {
-              submittingId = member.id
-              return async ({ update }) => {
-                await update()
-                submittingId = null
-              }
-            }}
+            use:enhance={toastEnhance({
+              success: null,
+              errorMode: 'inline',
+              onPending: (p) => (submittingId = p ? member.id : null),
+              onError: (m) => (error = m),
+            })}
           >
             <input type="hidden" name="password" value={password} />
             <input type="hidden" name="memberId" value={member.id} />
@@ -66,15 +72,6 @@
     margin: 0;
     font-size: var(--text-small);
     color: var(--danger);
-  }
-  .empty {
-    margin: 0;
-    padding: var(--space-4);
-    text-align: center;
-    font-size: var(--text-body);
-    color: var(--text-muted);
-    background: var(--bg-hover);
-    border-radius: var(--radius-md);
   }
   .list {
     list-style: none;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Table from '$lib/components/ui/table/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { StatusBadge } from '$lib/components/ui/badge/index.js'
@@ -12,6 +13,8 @@
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import ListIcon from '@lucide/svelte/icons/list'
   import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days'
+  import CalendarXIcon from '@lucide/svelte/icons/calendar-x'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import NewAbsenceDialog from '$lib/components/absences/NewAbsenceDialog.svelte'
   import AbsenceReviewDialog from '$lib/components/absences/AbsenceReviewDialog.svelte'
   import AbsenceCalendar from '$lib/components/absences/AbsenceCalendar.svelte'
@@ -20,7 +23,7 @@
 
   type AbsenceWithMember = AbsenceRow & { member?: MemberRow | null }
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   let newOpen = $state(false)
   let reviewOpen = $state(false)
@@ -73,10 +76,6 @@
     </Button>
   </header>
 
-  {#if form?.error}
-    <p class="banner" role="alert">{form.error}</p>
-  {/if}
-
   {#if data.responsable && pending.length > 0}
     <section class="pending">
       <h2>À traiter ({pending.length})</h2>
@@ -121,7 +120,11 @@
               L'absence de {a.member?.name ?? 'ce membre'} sera définitivement supprimée.
             </AlertDialog.Description>
           </AlertDialog.Header>
-          <form method="POST" action="?/deleteAbsence" use:enhance>
+          <form
+            method="POST"
+            action="?/deleteAbsence"
+            use:enhance={toastEnhance({ success: 'Absence supprimée.' })}
+          >
             <input type="hidden" name="id" value={a.id} />
             <AlertDialog.Footer>
               <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>
@@ -149,7 +152,11 @@
               La demande sera supprimée. Vous pourrez en refaire une si besoin.
             </AlertDialog.Description>
           </AlertDialog.Header>
-          <form method="POST" action="?/cancel" use:enhance>
+          <form
+            method="POST"
+            action="?/cancel"
+            use:enhance={toastEnhance({ success: 'Demande annulée.' })}
+          >
             <input type="hidden" name="id" value={a.id} />
             <AlertDialog.Footer>
               <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>
@@ -213,11 +220,12 @@
       filter={data.responsable && data.members.length > 0 ? memberFilter : undefined}
     />
   {:else if tableRows.length === 0}
-    <p class="empty">
-      {selectedMemberId === 'all'
-        ? 'Aucune demande pour le moment.'
-        : 'Aucune absence pour ce membre.'}
-    </p>
+    <EmptyState
+      icon={CalendarXIcon}
+      title={selectedMemberId === 'all'
+        ? 'Aucune demande pour le moment'
+        : 'Aucune absence pour ce membre'}
+    />
   {:else}
     <DataTable>
       {#snippet head()}
@@ -294,18 +302,6 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
   }
   .toolbar {
     display: flex;

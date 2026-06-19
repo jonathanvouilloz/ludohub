@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Table from '$lib/components/ui/table/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
@@ -58,7 +59,11 @@
           définitivement supprimée.
         </AlertDialog.Description>
       </AlertDialog.Header>
-      <form method="POST" action="?/delete" use:enhance>
+      <form
+        method="POST"
+        action="?/delete"
+        use:enhance={toastEnhance({ success: 'Ouverture supprimée.' })}
+      >
         <input type="hidden" name="id" value={r.id} />
         <AlertDialog.Footer>
           <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>

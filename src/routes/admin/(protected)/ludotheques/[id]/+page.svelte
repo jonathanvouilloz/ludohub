@@ -1,12 +1,13 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import ColorPicker from '$lib/components/admin/ColorPicker.svelte'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   let color = $state('')
   let savingInfo = $state(false)
@@ -35,22 +36,14 @@
 <section class="card">
   <h2>Informations</h2>
 
-  {#if form?.error}
-    <p class="banner banner-error" role="alert">{form.error}</p>
-  {:else if form?.success}
-    <p class="banner banner-ok" role="status">Modifications enregistrées.</p>
-  {/if}
-
   <form
     method="POST"
     action="?/update"
-    use:enhance={() => {
-      savingInfo = true
-      return async ({ update }) => {
-        savingInfo = false
-        await update({ reset: false })
-      }
-    }}
+    use:enhance={toastEnhance({
+      success: 'Ludothèque mise à jour.',
+      onPending: (p) => (savingInfo = p),
+      updateOptions: { reset: false },
+    })}
   >
     <div class="field">
       <Label for="ludo-name">Nom</Label>
@@ -83,22 +76,13 @@
     Le nouveau mot de passe remplace immédiatement l'ancien pour cette ludothèque.
   </p>
 
-  {#if form?.passwordError}
-    <p class="banner banner-error" role="alert">{form.passwordError}</p>
-  {:else if form?.passwordSuccess}
-    <p class="banner banner-ok" role="status">Mot de passe réinitialisé.</p>
-  {/if}
-
   <form
     method="POST"
     action="?/resetPassword"
-    use:enhance={() => {
-      savingPassword = true
-      return async ({ result, update }) => {
-        savingPassword = false
-        await update({ reset: result.type === 'success' })
-      }
-    }}
+    use:enhance={toastEnhance({
+      success: 'Mot de passe réinitialisé.',
+      onPending: (p) => (savingPassword = p),
+    })}
   >
     <div class="field">
       <Label for="ludo-password">Nouveau mot de passe</Label>
@@ -166,20 +150,6 @@
     color: var(--text-muted);
     margin: 0 0 var(--space-4);
     font-size: var(--text-small);
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    font-size: var(--text-small);
-  }
-  .banner-error {
-    background: var(--danger-light);
-    color: var(--danger);
-  }
-  .banner-ok {
-    background: var(--success-light);
-    color: var(--success);
   }
   form {
     display: flex;

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
 
   let { form } = $props()
 
@@ -21,13 +22,11 @@
 
     <form
       method="POST"
-      use:enhance={() => {
-        submitting = true
-        return async ({ update }) => {
-          await update()
-          submitting = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: null,
+        errorMode: 'inline',
+        onPending: (p) => (submitting = p),
+      })}
     >
       <label class="field">
         <span class="label">Mot de passe administrateur</span>

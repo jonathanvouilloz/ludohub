@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
 
@@ -57,13 +58,10 @@
       <form
         method="POST"
         action="?/request"
-        use:enhance={() => {
-          submitting = true
-          return async ({ update }) => {
-            submitting = false
-            await update()
-          }
-        }}
+        use:enhance={toastEnhance({
+          success: 'Demande envoyée.',
+          onPending: (p) => (submitting = p),
+        })}
       >
         <input type="hidden" name="themeId" value={theme.id} />
         <Button type="submit" size="sm" disabled={submitting}>

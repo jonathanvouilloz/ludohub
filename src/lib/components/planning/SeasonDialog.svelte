@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -12,7 +13,6 @@
   let startDate = $state('')
   let endDate = $state('')
   let activateNow = $state(false)
-  let error = $state('')
   let submitting = $state(false)
 
   $effect(() => {
@@ -21,7 +21,6 @@
       startDate = ''
       endDate = ''
       activateNow = false
-      error = ''
     }
   })
 </script>
@@ -38,23 +37,21 @@
     <form
       method="POST"
       action="?/create"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Saison créée.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <div class="field">
         <Label for="season-name">Nom</Label>
-        <Input id="season-name" name="name" bind:value={name} placeholder="Saison 2026-27" required />
+        <Input
+          id="season-name"
+          name="name"
+          bind:value={name}
+          placeholder="Saison 2026-27"
+          required
+        />
       </div>
 
       <div class="row">
@@ -64,26 +61,22 @@
         </div>
         <div class="field">
           <Label>Fin</Label>
-          <DatePicker bind:value={endDate} name="endDate" placeholder="Date de fin" minValue={startDate} />
+          <DatePicker
+            bind:value={endDate}
+            name="endDate"
+            placeholder="Date de fin"
+            minValue={startDate}
+          />
         </div>
       </div>
 
       <label class="activate-check">
-        <input
-          type="checkbox"
-          bind:checked={activateNow}
-          name="activateNow"
-          value="true"
-        />
+        <input type="checkbox" bind:checked={activateNow} name="activateNow" value="true" />
         <span>
           Activer immédiatement
           <span class="activate-note">— la saison actuellement active sera archivée</span>
         </span>
       </label>
-
-      {#if error}
-        <p class="error" role="alert">{error}</p>
-      {/if}
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
@@ -127,10 +120,5 @@
   }
   .activate-note {
     color: var(--text-muted);
-  }
-  .error {
-    margin: 0;
-    font-size: var(--text-small);
-    color: var(--danger);
   }
 </style>

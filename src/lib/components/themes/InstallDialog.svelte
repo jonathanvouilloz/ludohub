@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Checkbox } from '$lib/components/ui/checkbox/index.js'
@@ -14,7 +15,6 @@
 
   let selected = $state<string[]>([])
   let notes = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   // Réinitialise à chaque ouverture (tout coché par défaut : on sort souvent ~80 %).
@@ -22,7 +22,6 @@
     if (open) {
       selected = available.map((i) => i.id)
       notes = ''
-      error = ''
     }
   })
 
@@ -43,19 +42,11 @@
     <form
       method="POST"
       action="?/installTheme"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Installation créée.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <fieldset class="items">
         <legend class="sr-only">Items du thème</legend>
@@ -88,10 +79,6 @@
           placeholder="État, observations…"
         ></textarea>
       </div>
-
-      {#if error}
-        <p class="error" role="alert">{error}</p>
-      {/if}
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
@@ -143,11 +130,6 @@
     font-family: inherit;
     font-size: var(--text-body);
     resize: vertical;
-  }
-  .error {
-    margin: 0 0 var(--space-4);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
   .muted {
     color: var(--text-muted);

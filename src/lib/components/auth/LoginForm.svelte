@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
 
   let { error = '' }: { error?: string } = $props()
 
@@ -9,13 +10,12 @@
 <form
   method="POST"
   action="?/checkPassword"
-  use:enhance={() => {
-    submitting = true
-    return async ({ update }) => {
-      await update()
-      submitting = false
-    }
-  }}
+  use:enhance={toastEnhance({
+    success: null,
+    errorMode: 'inline',
+    onPending: (p) => (submitting = p),
+    onError: (m) => (error = m),
+  })}
 >
   <label class="field">
     <span class="label">Mot de passe de la ludothèque</span>

@@ -5,12 +5,14 @@
   import * as Select from '$lib/components/ui/select/index.js'
   import ListIcon from '@lucide/svelte/icons/list'
   import CalendarRangeIcon from '@lucide/svelte/icons/calendar-range'
+  import CalendarOffIcon from '@lucide/svelte/icons/calendar-off'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import CloseSessionDialog from '$lib/components/frequentation/CloseSessionDialog.svelte'
   import SessionList from '$lib/components/frequentation/SessionList.svelte'
   import { formatMonthYear, formatWeekRange, isoWeekKey, toDateString } from '$lib/utils/dates.js'
   import type { AttendanceRow } from '$lib/server/schema'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   let dialogOpen = $state(false)
   let editing = $state<AttendanceRow | null>(null)
@@ -158,10 +160,6 @@
     <Button onclick={openNew}>Clôturer une ouverture</Button>
   </header>
 
-  {#if form?.error}
-    <p class="banner" role="alert">{form.error}</p>
-  {/if}
-
   <div class="toolbar">
     {#if data.seasons.length > 0}
       <div class="season-select">
@@ -199,7 +197,11 @@
   </div>
 
   {#if records.length === 0}
-    <p class="empty">Aucune ouverture clôturée sur cette période.</p>
+    <EmptyState
+      icon={CalendarOffIcon}
+      title="Aucune ouverture clôturée"
+      description="Aucune ouverture sur cette période."
+    />
   {:else}
     <section class="season-summary" aria-label="Totaux de la saison">
       <h2>Total de la saison</h2>
@@ -277,18 +279,6 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
   }
   .toolbar {
     display: flex;

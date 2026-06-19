@@ -1,9 +1,12 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { buttonVariants } from '$lib/components/ui/button/index.js'
   import CheckIcon from '@lucide/svelte/icons/check'
   import PhoneIcon from '@lucide/svelte/icons/phone'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import HandHelpingIcon from '@lucide/svelte/icons/hand-helping'
 
   type Response = {
     id: string
@@ -20,7 +23,7 @@
 </script>
 
 {#if responses.length === 0}
-  <p class="empty">Aucun volontaire pour l'instant.</p>
+  <EmptyState icon={HandHelpingIcon} title="Aucun volontaire pour l'instant." compact />
 {:else}
   <ul class="responses">
     {#each responses as resp (resp.id)}
@@ -48,7 +51,7 @@
           {:else if resp.status === 'refuse'}
             <Badge variant="outline">Non retenu·e</Badge>
           {:else if confirmable}
-            <form method="POST" action="?/confirm" use:enhance>
+            <form method="POST" action="?/confirm" use:enhance={toastEnhance({ success: null })}>
               <input type="hidden" name="requestId" value={requestId} />
               <input type="hidden" name="responseId" value={resp.id} />
               <button
@@ -114,11 +117,5 @@
   }
   .resp-actions :global(form) {
     display: inline-flex;
-  }
-  .empty {
-    margin: 0;
-    color: var(--text-subtle);
-    font-size: var(--text-small);
-    font-style: italic;
   }
 </style>

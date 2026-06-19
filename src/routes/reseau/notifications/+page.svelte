@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import BellOffIcon from '@lucide/svelte/icons/bell-off'
   import type { NotificationRow, NotificationType } from '$lib/server/schema'
   import type { NotificationGroup } from '$lib/server/services/notifications'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   const slug = $derived(data.ludo.slug)
   const groups = $derived(data.groups as NotificationGroup[])
@@ -56,18 +60,18 @@
       <p class="muted">Les actions et réponses qui concernent votre ludothèque.</p>
     </div>
     {#if hasAny}
-      <form method="POST" action="?/readAll">
+      <form
+        method="POST"
+        action="?/readAll"
+        use:enhance={toastEnhance({ success: 'Tout marqué lu.' })}
+      >
         <Button type="submit" variant="outline">Tout marquer comme lu</Button>
       </form>
     {/if}
   </header>
 
-  {#if form?.error}
-    <p class="banner" role="alert">{form.error}</p>
-  {/if}
-
   {#if !hasAny}
-    <p class="empty">Aucune notification pour le moment.</p>
+    <EmptyState icon={BellOffIcon} title="Aucune notification pour le moment" />
   {:else}
     <div class="filters" role="tablist" aria-label="Filtrer par domaine">
       <button
@@ -92,7 +96,13 @@
         <ul class="list">
           {#each group.items as n (n.id)}
             <li>
-              <form method="POST" action="?/read" class="notif" class:notif--unread={!n.isRead}>
+              <form
+                method="POST"
+                action="?/read"
+                use:enhance={toastEnhance({ success: null })}
+                class="notif"
+                class:notif--unread={!n.isRead}
+              >
                 <input type="hidden" name="id" value={n.id} />
                 <input type="hidden" name="href" value={linkFor(n)} />
                 <button type="submit" class="notif__btn">
@@ -137,19 +147,6 @@
     color: var(--text-muted);
     margin: 0;
   }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
-  }
-  .empty {
-    color: var(--text-subtle);
-    font-style: italic;
-  }
-
   .filters {
     display: flex;
     flex-wrap: wrap;

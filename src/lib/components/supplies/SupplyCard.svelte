@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { DataCard } from '$lib/components/ui/data-card/index.js'
@@ -48,7 +49,7 @@
 
   {#snippet actions()}
     {#if bought}
-      <form method="POST" action="?/updateStatus" use:enhance>
+      <form method="POST" action="?/updateStatus" use:enhance={toastEnhance({ success: null })}>
         <input type="hidden" name="id" value={supply.id} />
         <input type="hidden" name="status" value="en_attente" />
         <Button type="submit" variant="ghost" size="icon-sm" title="Annuler l'achat">
@@ -57,7 +58,7 @@
         </Button>
       </form>
     {:else}
-      <form method="POST" action="?/updateStatus" use:enhance>
+      <form method="POST" action="?/updateStatus" use:enhance={toastEnhance({ success: null })}>
         <input type="hidden" name="id" value={supply.id} />
         <input type="hidden" name="status" value="recu" />
         <Button type="submit" variant="ghost" size="icon-sm" title="Marquer acheté">
@@ -81,7 +82,11 @@
             <AlertDialog.Title>Supprimer « {supply.name} » ?</AlertDialog.Title>
             <AlertDialog.Description>Action définitive.</AlertDialog.Description>
           </AlertDialog.Header>
-          <form method="POST" action="?/delete" use:enhance>
+          <form
+            method="POST"
+            action="?/delete"
+            use:enhance={toastEnhance({ success: 'Demande supprimée.' })}
+          >
             <input type="hidden" name="id" value={supply.id} />
             <AlertDialog.Footer>
               <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>

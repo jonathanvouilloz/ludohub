@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -63,19 +64,13 @@
     <form
       method="POST"
       action={responsable ? '?/createForMember' : '?/request'}
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: responsable ? 'Absence créée.' : 'Demande envoyée.',
+        errorMode: 'inline',
+        onPending: (p) => (submitting = p),
+        onError: (m) => (error = m),
+        onSuccess: () => (open = false),
+      })}
     >
       {#if responsable}
         <div class="field">

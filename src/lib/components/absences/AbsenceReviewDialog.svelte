@@ -1,5 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
+  import { toast } from '$lib/components/ui/sonner/index.js'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
@@ -23,6 +25,8 @@
   let note = $state('')
   let error = $state('')
   let submitting = $state(false)
+  // Mémorise quelle décision a été soumise (refuse/approve) pour le message toast.
+  let pendingAction = $state<'refuse' | 'approve' | null>(null)
 
   $effect(() => {
     if (open) {
@@ -31,19 +35,16 @@
     }
   })
 
-  const handler: import('@sveltejs/kit').SubmitFunction = () => {
-    submitting = true
-    return async ({ result, update }) => {
-      submitting = false
-      if (result.type === 'failure') {
-        error = String(result.data?.error ?? 'Une erreur est survenue.')
-        await update({ reset: false })
-        return
-      }
-      await update()
+  const handler = toastEnhance({
+    success: null,
+    errorMode: 'inline',
+    onPending: (p) => (submitting = p),
+    onError: (m) => (error = m),
+    onSuccess: () => {
+      toast.success(pendingAction === 'refuse' ? 'Demande refusée.' : 'Demande approuvée.')
       open = false
-    }
-  }
+    },
+  })
 </script>
 
 <Dialog.Root bind:open>
@@ -88,10 +89,23 @@
         {/if}
 
         <Dialog.Footer>
-          <Button type="submit" formaction="?/refuse" variant="destructive" disabled={submitting}>
+          <Button
+            type="submit"
+            formaction="?/refuse"
+            variant="destructive"
+            disabled={submitting}
+            onclick={() => (pendingAction = 'refuse')}
+          >
             Refuser
           </Button>
-          <Button type="submit" formaction="?/approve" disabled={submitting}>Approuver</Button>
+          <Button
+            type="submit"
+            formaction="?/approve"
+            disabled={submitting}
+            onclick={() => (pendingAction = 'approve')}
+          >
+            Approuver
+          </Button>
         </Dialog.Footer>
       </form>
     {/if}

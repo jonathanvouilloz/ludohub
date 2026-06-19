@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Table from '$lib/components/ui/table/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -13,7 +14,7 @@
   import MemberDialog from '$lib/components/membres/MemberDialog.svelte'
   import type { MemberRow } from '$lib/server/schema'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   let dialogOpen = $state(false)
   let editing = $state<MemberRow | null>(null)
@@ -54,10 +55,6 @@
   <Button onclick={openCreate}>Ajouter un membre</Button>
 </header>
 
-{#if form?.error}
-  <p class="banner" role="alert">{form.error}</p>
-{/if}
-
 {#snippet rowActions(member: MemberRow)}
   <Button variant="ghost" size="icon-sm" title="Modifier" onclick={() => openEdit(member)}>
     <PencilIcon aria-hidden="true" />
@@ -65,7 +62,11 @@
   </Button>
 
   {#if member.isActive}
-    <form method="POST" action="?/deactivate" use:enhance>
+    <form
+      method="POST"
+      action="?/deactivate"
+      use:enhance={toastEnhance({ success: 'Membre désactivé.' })}
+    >
       <input type="hidden" name="id" value={member.id} />
       <Button
         type="submit"
@@ -79,7 +80,7 @@
       </Button>
     </form>
   {:else}
-    <form method="POST" action="?/reactivate" use:enhance>
+    <form method="POST" action="?/reactivate" use:enhance={toastEnhance({ success: null })}>
       <input type="hidden" name="id" value={member.id} />
       <Button type="submit" variant="ghost" size="icon-sm" title="Réactiver">
         <UserCheckIcon aria-hidden="true" />
@@ -105,7 +106,11 @@
           — désactivez-le dans ce cas.
         </AlertDialog.Description>
       </AlertDialog.Header>
-      <form method="POST" action="?/delete" use:enhance>
+      <form
+        method="POST"
+        action="?/delete"
+        use:enhance={toastEnhance({ success: 'Membre supprimé.' })}
+      >
         <input type="hidden" name="id" value={member.id} />
         <AlertDialog.Footer>
           <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
@@ -191,14 +196,6 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
   .actions {
     display: flex;

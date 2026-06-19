@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
@@ -11,7 +12,6 @@
   let date = $state('')
   let slotInfo = $state('')
   let notes = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   $effect(() => {
@@ -19,7 +19,6 @@
       date = ''
       slotInfo = ''
       notes = ''
-      error = ''
     }
   })
 </script>
@@ -36,19 +35,11 @@
     <form
       method="POST"
       action="?/create"
-      use:enhance={() => {
-        submitting = true
-        return async ({ result, update }) => {
-          submitting = false
-          if (result.type === 'failure') {
-            error = String(result.data?.error ?? 'Une erreur est survenue.')
-            await update({ reset: false })
-            return
-          }
-          await update()
-          open = false
-        }
-      }}
+      use:enhance={toastEnhance({
+        success: 'Demande publiée.',
+        onPending: (p) => (submitting = p),
+        onSuccess: () => (open = false),
+      })}
     >
       <div class="field">
         <Label for="help-date">Date</Label>
@@ -75,8 +66,6 @@
           placeholder="Précisez le besoin…"
         ></textarea>
       </div>
-
-      {#if error}<p class="error" role="alert">{error}</p>{/if}
 
       <Dialog.Footer>
         <Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button>
@@ -111,10 +100,5 @@
   textarea:focus-visible {
     outline: 2px solid var(--ring, var(--ludo-color));
     outline-offset: 1px;
-  }
-  .error {
-    margin: 0;
-    font-size: var(--text-small);
-    color: var(--danger);
   }
 </style>

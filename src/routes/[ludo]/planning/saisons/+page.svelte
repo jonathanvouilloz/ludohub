@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Table from '$lib/components/ui/table/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -13,7 +14,7 @@
   import SeasonDialog from '$lib/components/planning/SeasonDialog.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
 
-  let { data, form } = $props()
+  let { data } = $props()
 
   type Season = (typeof data.seasons)[number]
 
@@ -39,10 +40,6 @@
     {/if}
   </header>
 
-  {#if form?.error}
-    <p class="banner" role="alert">{form.error}</p>
-  {/if}
-
   {#snippet rowActions(season: Season)}
     <Button
       variant="ghost"
@@ -56,7 +53,7 @@
 
     {#if data.responsable}
       {#if !season.isActive && !season.isArchived}
-        <form method="POST" action="?/activate" use:enhance>
+        <form method="POST" action="?/activate" use:enhance={toastEnhance({ success: null })}>
           <input type="hidden" name="id" value={season.id} />
           <Button type="submit" variant="ghost" size="icon-sm" title="Activer cette saison">
             <ZapIcon aria-hidden="true" />
@@ -65,7 +62,11 @@
         </form>
       {/if}
 
-      <form method="POST" action="?/archive" use:enhance>
+      <form
+        method="POST"
+        action="?/archive"
+        use:enhance={toastEnhance({ success: 'Saison archivée.' })}
+      >
         <input type="hidden" name="id" value={season.id} />
         <input type="hidden" name="archived" value={(!season.isArchived).toString()} />
         <Button
@@ -94,7 +95,11 @@
               Action définitive : tous les samedis et assignations de cette saison seront supprimés.
             </AlertDialog.Description>
           </AlertDialog.Header>
-          <form method="POST" action="?/delete" use:enhance>
+          <form
+            method="POST"
+            action="?/delete"
+            use:enhance={toastEnhance({ success: 'Saison supprimée.' })}
+          >
             <input type="hidden" name="id" value={season.id} />
             <AlertDialog.Footer>
               <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
@@ -198,14 +203,6 @@
   }
   .name:hover {
     text-decoration: underline;
-  }
-  .banner {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--danger-light);
-    color: var(--danger);
-    font-size: var(--text-small);
   }
   .actions {
     display: flex;

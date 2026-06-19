@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
+  import { toastEnhance } from '$lib/utils/enhance'
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -30,7 +31,6 @@
 
   let slotBId = $state('')
   let memberBId = $state('')
-  let error = $state('')
   let submitting = $state(false)
 
   // Samedis échangeables : à venir, ouverts, hors fermeture, où quelqu'un d'autre
@@ -68,7 +68,6 @@
     if (open) {
       slotBId = ''
       memberBId = ''
-      error = ''
     }
   })
 </script>
@@ -95,19 +94,11 @@
       <form
         method="POST"
         action="?/swap"
-        use:enhance={() => {
-          submitting = true
-          return async ({ result, update }) => {
-            submitting = false
-            if (result.type === 'failure') {
-              error = String(result.data?.error ?? 'Une erreur est survenue.')
-              await update({ reset: false })
-              return
-            }
-            await update()
-            open = false
-          }
-        }}
+        use:enhance={toastEnhance({
+          success: 'Échange effectué.',
+          onPending: (p) => (submitting = p),
+          onSuccess: () => (open = false),
+        })}
       >
         <input type="hidden" name="slotAId" value={mySlot?.id} />
         <input type="hidden" name="memberAId" value={currentMemberId} />
@@ -138,10 +129,6 @@
               </Select.Content>
             </Select.Root>
           </div>
-        {/if}
-
-        {#if error}
-          <p class="error" role="alert">{error}</p>
         {/if}
 
         <Dialog.Footer>
@@ -186,10 +173,5 @@
     margin: var(--space-2) 0 0;
     font-size: var(--text-small);
     color: var(--text-muted);
-  }
-  .error {
-    margin: 0;
-    font-size: var(--text-small);
-    color: var(--danger);
   }
 </style>
