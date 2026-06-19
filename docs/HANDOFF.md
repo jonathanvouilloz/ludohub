@@ -12,4 +12,4 @@
 ## Reprendre ici
 
 **Prochain epic : 12-TESTS E2E** (Playwright sur les flows critiques). 16-POLISH terminé (toasts via `toastEnhance`, Skeleton/EmptyState, motion tokens) — reste la passe manuelle de Jonathan + le toggle `prefers-reduced-motion`.
-Commit : [2e92560] feat(polish): feedback toasts + skeleton/empty-state + motion tokens (epic 16)
+Commit : [0b96cf8] feat(polish): feedback toasts + skeleton/empty-state + motion tokens (epic 16)

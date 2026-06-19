@@ -37,7 +37,7 @@ vide/navigation lourde + toggle OS `prefers-reduced-motion`). Puis enchaîner **
 - Détail UX : pendant une nav entre onglets réseau (aide ↔ catalogue), le `PageSkeleton`
   remplace aussi la barre d'onglets brièvement (AppShell enveloppe tout). Affinable si gênant.
 
-**Commit :** [2e92560] feat(polish): feedback toasts + skeleton/empty-state + motion tokens (epic 16)
+**Commit :** [0b96cf8] feat(polish): feedback toasts + skeleton/empty-state + motion tokens (epic 16)
 
 ---
 
