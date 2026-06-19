@@ -23,7 +23,7 @@
 - Surbrillance via inline style `var(--hl-N)` (l'index est de la logique, pas une couleur en dur → respecte « tokens uniquement »).
 - Soumissions inline : formulaires cachés pilotés par `$state` + `await tick()` avant `requestSubmit()` ; keyer la cellule sur l'id d'assignation.
 
-**Commit :** [0e9953b] feat(planning): tableau éditable inline + liste mobile + échange in-table
+**Commit :** [6f55697] feat(planning): tableau éditable inline + liste mobile + échange in-table
 
 ---
 

@@ -11,4 +11,4 @@
 ## Reprendre ici
 
 **Epic 04-PLANNING** — refonte vue post-génération en `PlanningTable.svelte` (tableau éditable desktop + liste mobile, échange in-table, surbrillance multi). Reste : **corriger les erreurs runtime signalées** + vérifier l'échange/le mobile.
-Commit : [0e9953b] feat(planning): tableau éditable inline + liste mobile + échange in-table
+Commit : [6f55697] feat(planning): tableau éditable inline + liste mobile + échange in-table
