@@ -2,6 +2,31 @@
 
 **Epic :** 04 | **Taille :** L | **Statut :** DONE (itératif)
 
+## Etat session 2026-06-19 (refonte vue post-génération : tableau éditable + liste mobile)
+
+**Fait :**
+
+- **Nouveau composant `PlanningTable.svelte`** remplace `PlanningGrid` (cartes) dans la vue responsable après génération : tableau dense **éditable inline** (un `Select` par place), en-têtes de **mois repliables** (mois passés repliés par défaut), fonds différenciés vacances/fériés/fermetures/annulés, **lignes passées désactivées** (texte seul, atténuées).
+- **Édition inline atomique** : nouvelle action `?/setMember` + service `setMember` + db `replaceAssignment` (`db.batch()` delete+insert). Assign/remove/swap réutilisent l'existant.
+- **Surbrillance multi-membres** : `Select type="multiple"` + légende à puces ; couleur par membre via palette `--hl-1..6` / `--hl-bar-1..6` (nouveaux tokens), appliquée en inline style.
+- **Échange cellule→cellule** (mode « Échanger » iconisé, remplace le `SwapDialog` modal) : clic membre A → clic membre B d'un **autre** samedi → `?/swap`. (Le swap était câblé mais le bouton peu visible → iconisé + visible mobile.)
+- **Responsive** : tableau desktop (≥640px) ↔ **liste de cartes blanches** en mobile (<640px), via snippet `memberControl` partagé. Polish : date plus grande, actions Fermer/Rouvrir en boutons icône.
+- `today` ajouté au `load` de `saisons/[id]` (fuseau serveur). `pnpm check` 0/0, lint vert.
+
+**Prochain :** Quelques erreurs runtime restantes signalées par Jonathan — à reprendre. Vérifier en runtime l'échange entre 2 samedis + le rendu mobile <640px. `PlanningGrid`/`SlotCard`/`SwapDialog` désormais orphelins dans cette route → supprimables après validation (grep avant).
+
+**Pièges :**
+
+- Pas d'index de colonne en DB : cellule `i` = `assignments[i]` ; l'échange ne marche **qu'entre 2 samedis différents** (l'ordre au sein d'un samedi n'est pas stocké).
+- `db.batch()` obligatoire (neon-http) pour `setMember` (`replaceAssignment`) et `swapMembers`.
+- Bascule desktop/mobile en **CSS pur** (seuil 640px, comme DataTable) ; une seule toolbar partagée (ne pas dupliquer l'état highlight/swap).
+- Surbrillance via inline style `var(--hl-N)` (l'index est de la logique, pas une couleur en dur → respecte « tokens uniquement »).
+- Soumissions inline : formulaires cachés pilotés par `$state` + `await tick()` avant `requestSubmit()` ; keyer la cellule sur l'id d'assignation.
+
+**Commit :** [0e9953b] feat(planning): tableau éditable inline + liste mobile + échange in-table
+
+---
+
 ## Etat session 2026-06-18 (auto-génération planning + wizard + saison active + import ge.ch)
 
 **Fait :**
@@ -27,30 +52,33 @@
 
 ## Carte du code
 
-> Mise à jour : 2026-06-18
+> Mise à jour : 2026-06-19
 
 | Fichier | Rôle |
 |---------|------|
-| `src/lib/server/schema.ts` | Tables `season_member_settings` (isPermanent) + colonne `seasons.isActive` + `seasons.requiredCount` default 3 |
-| `src/lib/server/db/planning.ts` | `upsertMemberSetting`, `getMemberSettingsBySeason`, `clearAssignmentsBySeason`, `updateSlotsRequiredCount`, `activateSeasonInDb`, `archiveSeason` (+ deactivate) |
-| `src/lib/server/services/planning.ts` | `generatePlanning` (algo 2 phases), `saveMemberConfig`, `addMemberUnavailability`, `importGEVacations`, `activateSeason`, `createSeason` (activateNow) |
-| `src/lib/utils/ge-vacances.ts` | **Nouveau** — `parseGEVacancesHTML` (title attr + `<a href="*/telecharger">`), `geAcademicYear`, `geAcademicYears` |
-| `src/routes/[ludo]/planning/saisons/+page.server.ts` | Action `activate` + `create` lit `activateNow` |
-| `src/routes/[ludo]/planning/saisons/+page.svelte` | Badge 3 états (Active/En préparation/Archivée) + bouton ⚡ Activer |
-| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Actions `saveMemberConfig`, `addUnavailability`, `generatePlanning` (lit `requiredCount`), `importFromGE` |
-| `src/routes/[ludo]/planning/saisons/[id]/+page.svelte` | Bascule wizard ↔ grille selon `existingAssignmentsCount` |
-| `src/lib/components/planning/SeasonWizard.svelte` | **Nouveau** — wizard 3 étapes, step pills fond primaire bleu |
-| `src/lib/components/planning/SeasonMemberConfig.svelte` | DataTable + DatePicker shadcn + toggle permanent + ajout indispo inline |
-| `src/lib/components/planning/ClosurePeriodsPanel.svelte` | DatePicker shadcn + bouton import ge.ch + fond blanc cards |
-| `src/lib/components/planning/SeasonDialog.svelte` | DatePicker shadcn + case « Activer immédiatement » |
+| `src/lib/server/schema.ts` | Tables planning + `season_member_settings` + `seasons.isActive`/`requiredCount` + `closure_periods` |
+| `src/lib/server/db/planning.ts` | Queries saisons/slots/assignations ; `swapAssignments`, **`replaceAssignment`** (db.batch), `upsertMemberSetting`, `clearAssignmentsBySeason`, `activateSeasonInDb` |
+| `src/lib/server/services/planning.ts` | Métier : `generatePlanning`, `assignMember`/`removeMember`/`swapMembers`/**`setMember`**, `getSeasonGrid`, CRUD fermetures, `activateSeason`, `importGEVacations` |
+| `src/lib/utils/dates.ts` | `getSwissSaturdays`, `isGenevaHoliday`, `formatDateShort`/`formatDayMonth`/`formatMonthYear`, `toDateString` |
+| `src/styles/tokens.css` | **Palette surbrillance** `--hl-1..6` / `--hl-bar-1..6` |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Load grille + **`today`** ; actions assign/remove/**setMember**/swap/cancel/reopen + config/génération/fermetures |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.svelte` | Bascule wizard ↔ `PlanningTable` selon `existingAssignmentsCount` |
+| `src/lib/components/planning/PlanningTable.svelte` | **Nouveau** — vue post-génération : tableau éditable desktop + liste cartes mobile, mois repliables, surbrillance multi, échange in-table, lignes passées désactivées |
+| `src/lib/components/planning/SeasonWizard.svelte` | Wizard 3 étapes (avant génération) |
+| `src/lib/components/planning/SeasonMemberConfig.svelte` | DataTable + DatePicker + toggle permanent + indispo inline |
+| `src/lib/components/planning/ClosurePeriodsPanel.svelte` | CRUD plages de fermeture + import ge.ch |
+| `src/lib/components/planning/SeasonDialog.svelte` | Création saison (DatePicker + activer immédiatement) |
+| `src/lib/components/planning/PlanningTimeline.svelte` | **Vue membre `/planning`** (timeline) — non touchée cette session, sert de référence design |
+| `src/lib/components/planning/{PlanningGrid,SlotCard,SwapDialog}.svelte` | **Orphelins** depuis `PlanningTable` (échange désormais in-table) — supprimables après validation |
 
 ### Décisions clés
 
-- **Permanent = par saison** (table `season_member_settings`), pas global sur le membre.
-- **Indisponibilités wizard → absences approuvées** (status `approuve` direct), réutilise le système existant + warnings planning.
-- **Saison active explicite** (`is_active` boolean) ; `activateSeason` archive atomiquement l'ancienne (`db.batch()`).
-- **Import ge.ch** : cibler `title=` sur `<a href="*/telecharger">` (le contenu texte contient un `<span class="material-icons">` qui casse `[^<]+`).
-- **Wizard disparaît** dès qu'il existe des assignations (`existingAssignmentsCount > 0`) — génération est une action unique, pas régénérable.
+- **Vue post-génération = `PlanningTable`** (tableau éditable inline) en remplacement de la grille de cartes ; édition par `Select` par place, sans page intermédiaire.
+- **Colonnes = simples places** : cellule `i` = `assignments[i]`, pas d'index de colonne en DB → l'échange n'a de sens qu'entre **2 samedis différents**.
+- **`setMember` atomique** (`replaceAssignment` en `db.batch()`) plutôt que remove+assign chaînés côté client (flicker, non atomique).
+- **Responsive sans JS** : tableau desktop ↔ liste de cartes mobile via `@media` 640px ; toolbar + état (highlight/swap) partagés.
+- **Surbrillance multi-membres** par palette de tokens `--hl-*` (inline style indexé), l'échange reste prioritaire sur la couleur de surbrillance.
+- **Permanent = par saison** ; indispos wizard → absences approuvées ; saison active explicite (`db.batch()`) ; import ge.ch via attribut `title=`.
 
 ---
 

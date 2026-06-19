@@ -41,6 +41,21 @@
     --danger-light: #fee8ec;
     --info: #0073e6; /* = primary */
 
+    /* ─── Palette surbrillance planning (multi-membres) ──── */
+    /* Fond clair par membre surligné + barre saturée assortie. */
+    --hl-1: #e8f2fe;
+    --hl-bar-1: #0073e6; /* bleu */
+    --hl-2: #fde8f4;
+    --hl-bar-2: #c0007a; /* rose */
+    --hl-3: #e6f7f1;
+    --hl-bar-3: #0e9e6e; /* vert */
+    --hl-4: #fef3e6;
+    --hl-bar-4: #e07800; /* orange */
+    --hl-5: #efe9fc;
+    --hl-bar-5: #7c5cdb; /* violet */
+    --hl-6: #e6f6fb;
+    --hl-bar-6: #0b9bd6; /* cyan */
+
     /* ─── Spacing ────────────────────────────────────────── */
     --space-1: 4px;
     --space-2: 8px;

@@ -2,13 +2,13 @@
 
 ## Features actives
 
-| Feature                 | Fichier                                                        | Statut                       |
-| ----------------------- | ------------------------------------------------------------- | ---------------------------- |
-| 17 — NEWSLETTER         | [features/17-newsletter.md](features/17-newsletter.md)        | **EN COURS** (codé, non commité) |
-| 12 — TESTS E2E          | [features/10-tests-e2e.md](features/10-tests-e2e.md)          | EN ATTENTE                   |
-| 16 — POLISH feedback    | [features/16-polish-feedback-motion.md](features/16-polish-feedback-motion.md) | DONE (passe manuelle à faire) |
+| Feature              | Fichier                                                                        | Statut                          |
+| -------------------- | ----------------------------------------------------------------------------- | ------------------------------- |
+| 04 — PLANNING        | [features/04-planning.md](features/04-planning.md)                            | **EN COURS** (polish, erreurs à reprendre) |
+| 17 — NEWSLETTER      | [features/17-newsletter.md](features/17-newsletter.md)                        | DONE code (setup Resend hors-code) |
+| 12 — TESTS E2E       | [features/10-tests-e2e.md](features/10-tests-e2e.md)                          | EN ATTENTE                      |
 
 ## Reprendre ici
 
-**Epic 17-NEWSLETTER** — **Phases 0→7 codées, non commitées**. Reste : relire le diff + `pnpm check`/`lint` → commit. Hors code (Jonathan) : souscrire Resend **Pro (20 $/mo)** + vérifier le domaine `ludohub.ch` (DNS) avant tout envoi réel.
-Commit : _(à venir — wrap session)_
+**Epic 04-PLANNING** — refonte vue post-génération en `PlanningTable.svelte` (tableau éditable desktop + liste mobile, échange in-table, surbrillance multi). Reste : **corriger les erreurs runtime signalées** + vérifier l'échange/le mobile.
+Commit : [0e9953b] feat(planning): tableau éditable inline + liste mobile + échange in-table

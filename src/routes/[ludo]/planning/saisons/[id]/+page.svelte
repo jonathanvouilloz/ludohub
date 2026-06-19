@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import PlanningGrid from '$lib/components/planning/PlanningGrid.svelte'
+  import PlanningTable from '$lib/components/planning/PlanningTable.svelte'
   import ClosurePeriodsPanel from '$lib/components/planning/ClosurePeriodsPanel.svelte'
   import SeasonWizard from '$lib/components/planning/SeasonWizard.svelte'
   import { formatDateShort } from '$lib/utils/dates.js'
@@ -47,9 +47,10 @@
       poolCount={data.poolCount}
     />
   {:else}
-    <PlanningGrid
+    <PlanningTable
       slots={data.slots}
       members={data.members}
+      today={data.today}
       readOnly={data.season.isArchived || !data.responsable}
     />
 

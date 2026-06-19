@@ -1,7 +1,6 @@
 import {
   activateSeasonInDb,
   archiveSeason as dbArchiveSeason,
-  clearAssignmentsBySeason,
   deleteAssignment,
   deleteClosurePeriod as dbDeleteClosurePeriod,
   deleteSeason as dbDeleteSeason,
@@ -19,6 +18,7 @@ import {
   insertClosurePeriod,
   insertSeason,
   insertSlots,
+  replaceAssignment,
   setSlotCancelled,
   swapAssignments,
   updateSlotsRequiredCount,
@@ -28,7 +28,13 @@ import { getMemberById, getActiveMembersByLudo } from '../db/members.js'
 import { insertAbsence } from '../db/absences.js'
 import { getApprovedAbsencesByMember } from './absences.js'
 import { belongsToLudo, isActiveMember } from '$lib/utils/permissions.js'
-import { daysBetween, getSwissSaturdays, isDateInRange, isGenevaHoliday, toDateString } from '$lib/utils/dates.js'
+import {
+  daysBetween,
+  getSwissSaturdays,
+  isDateInRange,
+  isGenevaHoliday,
+  toDateString,
+} from '$lib/utils/dates.js'
 import { type GEPeriod, geAcademicYears, parseGEVacancesHTML } from '$lib/utils/ge-vacances.js'
 import type { AbsenceRow, ClosurePeriodRow, SeasonRow } from '../schema.js'
 
@@ -242,7 +248,8 @@ export async function createClosurePeriod(
  */
 export async function importGEVacations(seasonId: string, ludoId: string): Promise<number> {
   const season = await requireSeasonInLudo(seasonId, ludoId)
-  if (season.isArchived) throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+  if (season.isArchived)
+    throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
 
   // Déterminer les années académiques couvertes par la saison (1 ou 2 si la saison chevauche deux années scolaires)
   const academicYears = geAcademicYears(season.startDate, season.endDate)
@@ -337,6 +344,35 @@ export async function removeMember(
 }
 
 /**
+ * Remplace inline un membre par un autre sur un samedi (édition directe dans le
+ * tableau). Atomique (db.batch). Mêmes validations que `assignMember` pour le
+ * nouveau membre.
+ */
+export async function setMember(
+  slotId: string,
+  oldMemberId: string,
+  newMemberId: string,
+  ludoId: string,
+): Promise<void> {
+  await requireWritableSlot(slotId, ludoId)
+
+  const member = await getMemberById(newMemberId)
+  if (!member || !belongsToLudo(member, ludoId)) {
+    throw new PlanningServiceError('Membre introuvable.')
+  }
+  if (!isActiveMember(member)) {
+    throw new PlanningServiceError('Ce membre est inactif.')
+  }
+
+  const existing = await getAssignment(slotId, newMemberId)
+  if (existing) {
+    throw new PlanningServiceError('Ce membre est déjà assigné à ce samedi.')
+  }
+
+  await replaceAssignment(slotId, oldMemberId, newMemberId)
+}
+
+/**
  * Échange croisé entre deux membres sur deux samedis distincts (atomique).
  */
 export async function swapMembers(
@@ -421,7 +457,8 @@ export async function addMemberUnavailability(
   endDate: string,
 ): Promise<void> {
   const season = await requireSeasonInLudo(seasonId, ludoId)
-  if (season.isArchived) throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+  if (season.isArchived)
+    throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
 
   const member = await getMemberById(memberId)
   if (!member || !belongsToLudo(member, ludoId)) {
@@ -473,7 +510,8 @@ export async function generatePlanning(
   requiredCount?: number,
 ): Promise<GenerateResult> {
   const season = await requireSeasonInLudo(seasonId, ludoId)
-  if (season.isArchived) throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
+  if (season.isArchived)
+    throw new PlanningServiceError('Cette saison est archivée (lecture seule).')
 
   // Mettre à jour l'effectif requis sur tous les slots si fourni
   if (requiredCount !== undefined && requiredCount >= 1) {

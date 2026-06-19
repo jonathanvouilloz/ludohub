@@ -15,11 +15,12 @@ import {
   removeMember,
   reopenSlot,
   saveMemberConfig,
+  setMember,
   swapMembers,
 } from '$lib/server/services/planning.js'
 import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import { isResponsable } from '$lib/utils/permissions.js'
-import { isGenevaHoliday, isDateInRange } from '$lib/utils/dates.js'
+import { isGenevaHoliday, isDateInRange, toDateString } from '$lib/utils/dates.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ params, parent }) => {
@@ -57,6 +58,7 @@ export const load: PageServerLoad = async ({ params, parent }) => {
     poolCount: members.length - permanentCount,
     workableSlotsCount,
     existingAssignmentsCount,
+    today: toDateString(new Date()),
   }
 }
 
@@ -84,6 +86,19 @@ export const actions: Actions = {
     const data = await event.request.formData()
     return run(() =>
       removeMember(String(data.get('slotId') ?? ''), String(data.get('memberId') ?? ''), ludo.id),
+    )
+  },
+
+  setMember: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() =>
+      setMember(
+        String(data.get('slotId') ?? ''),
+        String(data.get('memberId') ?? ''),
+        String(data.get('newMemberId') ?? ''),
+        ludo.id,
+      ),
     )
   },
 

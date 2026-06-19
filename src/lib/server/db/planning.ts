@@ -161,6 +161,20 @@ export async function swapAssignments(
   ])
 }
 
+/** Remplace atomiquement un membre par un autre sur un slot (db.batch, neon-http). */
+export async function replaceAssignment(
+  slotId: string,
+  oldMemberId: string,
+  newMemberId: string,
+): Promise<void> {
+  await db.batch([
+    db
+      .delete(assignments)
+      .where(and(eq(assignments.slotId, slotId), eq(assignments.memberId, oldMemberId))),
+    db.insert(assignments).values({ slotId, memberId: newMemberId }),
+  ])
+}
+
 // ─── Plages de fermeture / vacances ──────────────────────────────────────────
 
 export async function getClosurePeriodsBySeason(seasonId: string): Promise<ClosurePeriodRow[]> {
@@ -211,10 +225,7 @@ export async function updateSlotsRequiredCount(
   seasonId: string,
   requiredCount: number,
 ): Promise<void> {
-  await db
-    .update(saturdaySlots)
-    .set({ requiredCount })
-    .where(eq(saturdaySlots.seasonId, seasonId))
+  await db.update(saturdaySlots).set({ requiredCount }).where(eq(saturdaySlots.seasonId, seasonId))
 }
 
 export async function clearAssignmentsBySeason(seasonId: string): Promise<void> {
