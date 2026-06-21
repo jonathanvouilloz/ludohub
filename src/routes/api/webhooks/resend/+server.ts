@@ -57,6 +57,14 @@ export const POST: RequestHandler = async (event) => {
     return json({ error: 'Invalid signature' }, { status: 401 })
   }
 
+  // Anti-rejeu : le timestamp Svix (secondes Unix) entre dans le HMAC mais reste
+  // valable indéfiniment tant qu'on ne le borne pas. On rejette hors fenêtre ±5 min
+  // pour empêcher de rejouer une requête signée capturée.
+  const ts = Number(timestamp)
+  if (!Number.isFinite(ts) || Math.abs(Date.now() / 1000 - ts) > 5 * 60) {
+    return json({ error: 'Timestamp outside tolerance' }, { status: 401 })
+  }
+
   let payload: { type?: string; data?: unknown }
   try {
     payload = JSON.parse(body)
