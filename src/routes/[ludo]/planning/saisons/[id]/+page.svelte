@@ -51,6 +51,7 @@
       slots={data.slots}
       members={data.members}
       today={data.today}
+      showStats
       readOnly={data.season.isArchived || !data.responsable}
     />
 

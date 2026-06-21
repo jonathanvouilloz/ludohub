@@ -394,6 +394,17 @@ export async function swapMembers(
     throw new PlanningServiceError('Les assignations à échanger sont introuvables.')
   }
 
+  // Filet de sécurité : un échange ne doit jamais inscrire deux fois la même
+  // personne le même samedi (sinon violation de `unique(slot_id, member_id)` →
+  // 500). L'UI désactive déjà ces cibles, mais on garde la garde côté serveur.
+  const aOnB = await getAssignment(slotBId, memberAId)
+  const bOnA = await getAssignment(slotAId, memberBId)
+  if (aOnB || bOnA) {
+    throw new PlanningServiceError(
+      'Échange impossible : un membre serait inscrit deux fois le même samedi.',
+    )
+  }
+
   await swapAssignments(slotAId, memberAId, slotBId, memberBId)
 }
 

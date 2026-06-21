@@ -4,16 +4,12 @@
   import { toastEnhance } from '$lib/utils/enhance'
   import { toast } from '$lib/components/ui/sonner/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
-  import { Button } from '$lib/components/ui/button/index.js'
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right'
   import CalendarOffIcon from '@lucide/svelte/icons/calendar-off'
   import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw'
-  import {
-    formatDateShort,
-    formatDayMonth,
-    formatMonthYear,
-    isGenevaHoliday,
-  } from '$lib/utils/dates.js'
+  import { formatDayWeekday, formatMonthYear, isGenevaHoliday } from '$lib/utils/dates.js'
   import type {
     AbsenceRow,
     AssignmentRow,
@@ -33,12 +29,24 @@
     members = [],
     today = '',
     readOnly = false,
+    currentMemberId = '',
+    canSwapOwn = false,
+    showStats = false,
   }: {
     slots: SlotWithAssignments[]
     members?: MemberRow[]
     today?: string
     readOnly?: boolean
+    /** Membre courant : restreint la source d'échange à ses propres samedis. */
+    currentMemberId?: string
+    /** Membre simple : lecture seule, mais peut échanger SON samedi. */
+    canSwapOwn?: boolean
+    /** Affiche le panneau « samedis par personne » (éditeur de saison). */
+    showStats?: boolean
   } = $props()
+
+  // Échange possible si édition complète (responsable) OU échange perso (membre).
+  const canSwap = $derived(!readOnly || canSwapOwn)
 
   // Sentinelle « retirer » dans le Select d'une cellule occupée.
   const REMOVE = '__remove__'
@@ -77,18 +85,48 @@
   function removeHighlight(id: string) {
     highlightMemberIds = highlightMemberIds.filter((x) => x !== id)
   }
-
-  // Mode échange : clic membre A → clic membre B (autre samedi) → échange.
-  let swapMode = $state(false)
-  let swapSource = $state<{ slotId: string; memberId: string; name: string } | null>(null)
-
-  // Repli des mois : les mois passés sont repliés par défaut.
-  let monthOverride = $state<Record<string, boolean>>({})
-  const monthOpen = (key: string, past: boolean) =>
-    key in monthOverride ? monthOverride[key] : !past
-  function toggleMonth(key: string, past: boolean) {
-    monthOverride = { ...monthOverride, [key]: !monthOpen(key, past) }
+  function toggleStatHighlight(id: string) {
+    highlightMemberIds = highlightMemberIds.includes(id)
+      ? highlightMemberIds.filter((x) => x !== id)
+      : [...highlightMemberIds, id]
   }
+
+  // ─── Stats « samedis par personne » (panneau éditeur) ───────────────────────
+  // Compte les assignations sur les samedis réellement travaillés (hors annulés
+  // et fermetures). Inclut les membres à 0 pour repérer les oublis.
+  let statsOpen = $state(true)
+  const statRows = $derived.by(() => {
+    const count = new Map<string, number>()
+    for (const s of slots) {
+      if (s.isCancelled || s.closure) continue
+      for (const a of s.assignments) count.set(a.member.id, (count.get(a.member.id) ?? 0) + 1)
+    }
+    return members
+      .map((m) => ({ id: m.id, name: m.name, n: count.get(m.id) ?? 0 }))
+      .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name))
+  })
+  const statMax = $derived(Math.max(1, ...statRows.map((r) => r.n)))
+  const statAvg = $derived(
+    statRows.length ? Math.round(statRows.reduce((t, r) => t + r.n, 0) / statRows.length) : 0,
+  )
+  const statMin = $derived(statRows.length ? statRows[statRows.length - 1].n : 0)
+
+  // Mode échange : clic membre A → clic membre B (autre samedi) → confirmation → échange.
+  type SwapEnd = { slotId: string; memberId: string; name: string; date: string }
+  let swapMode = $state(false)
+  let swapSource = $state<SwapEnd | null>(null)
+  // Échange en attente de confirmation (alimente le modal récapitulatif).
+  let pendingSwap = $state<{ a: SwapEnd; b: SwapEnd } | null>(null)
+
+  // Repli des mois. Tous les mois passés sont regroupés derrière un seul toggle
+  // « N samedis passés » (sinon les en-têtes de mois passés s'accumulent au fil
+  // de l'année). Une fois ce bloc déplié, chaque mois passé s'affiche ouvert.
+  let monthOverride = $state<Record<string, boolean>>({})
+  const monthOpen = (key: string) => (key in monthOverride ? monthOverride[key] : true)
+  function toggleMonth(key: string) {
+    monthOverride = { ...monthOverride, [key]: !monthOpen(key) }
+  }
+  let showPast = $state(false)
 
   function groupByMonth(list: SlotWithAssignments[]) {
     const groups: { key: string; label: string; past: boolean; slots: SlotWithAssignments[] }[] = []
@@ -103,6 +141,9 @@
     return groups
   }
   const monthGroups = $derived(groupByMonth(slots))
+  const pastGroups = $derived(monthGroups.filter((g) => g.past))
+  const futureGroups = $derived(monthGroups.filter((g) => !g.past))
+  const pastSlotCount = $derived(pastGroups.reduce((n, g) => n + g.slots.length, 0))
 
   const freeMembers = (slot: SlotWithAssignments) =>
     members.filter((m) => !slot.assignments.some((a) => a.member.id === m.id))
@@ -164,7 +205,17 @@
 
   function cellSwapClick(slot: SlotWithAssignments, a: AssignmentWithMember) {
     if (!swapSource) {
-      swapSource = { slotId: slot.id, memberId: a.member.id, name: a.member.name }
+      // Membre simple : il ne peut prendre comme source que son propre samedi.
+      if (readOnly && canSwapOwn && a.member.id !== currentMemberId) {
+        toast.error('Vous ne pouvez échanger que votre propre samedi.')
+        return
+      }
+      swapSource = {
+        slotId: slot.id,
+        memberId: a.member.id,
+        name: a.member.name,
+        date: slot.date,
+      }
       return
     }
     // Re-clic sur la source → désélection.
@@ -176,9 +227,19 @@
       toast.error('Choisis un membre d’un autre samedi.')
       return
     }
-    const src = swapSource
+    // Cible valide → on demande confirmation au lieu d'échanger directement.
+    pendingSwap = {
+      a: swapSource,
+      b: { slotId: slot.id, memberId: a.member.id, name: a.member.name, date: slot.date },
+    }
     swapSource = null
-    doSwap(src, { slotId: slot.id, memberId: a.member.id })
+  }
+
+  function confirmSwap() {
+    if (!pendingSwap) return
+    const { a, b } = pendingSwap
+    pendingSwap = null
+    doSwap({ slotId: a.slotId, memberId: a.memberId }, { slotId: b.slotId, memberId: b.memberId })
   }
 
   function toggleSwapMode() {
@@ -188,6 +249,23 @@
 
   const isSwapSrc = (slotId: string, memberId: string) =>
     swapSource?.slotId === slotId && swapSource?.memberId === memberId
+
+  // Cellule non sélectionnable en mode échange : préviendrait un doublon (même
+  // personne deux fois le même samedi) ou n'est pas un samedi/source autorisé.
+  function swapDisabled(slot: SlotWithAssignments, a: AssignmentWithMember | undefined): boolean {
+    if (!a) return true
+    if (!swapSource) {
+      // Pas encore de source : membre = seulement la sienne ; responsable = toutes.
+      return readOnly && canSwapOwn ? a.member.id !== currentMemberId : false
+    }
+    if (isSwapSrc(slot.id, a.member.id)) return false // la source (re-clic = annuler)
+    if (slot.id === swapSource.slotId) return true // même samedi
+    const srcAlreadyHere = slot.assignments.some((x) => x.member.id === swapSource!.memberId)
+    const targetOnSrcSlot = slots
+      .find((s) => s.id === swapSource!.slotId)
+      ?.assignments.some((x) => x.member.id === a.member.id)
+    return srcAlreadyHere || !!targetOnSrcSlot
+  }
 </script>
 
 <!-- Contrôle d'une place membre, partagé desktop (cellule) et mobile (chip). -->
@@ -198,16 +276,24 @@
   rowRO: boolean,
 )}
   {#key a?.id ?? `empty-${i}`}
-    {#if rowRO}
-      {#if a}<span class="name">{a.member.name}</span>{:else}<span class="empty">—</span>{/if}
-    {:else if swapMode}
-      {#if a}
-        <button type="button" class="cell-btn" onclick={() => cellSwapClick(slot, a)}>
+    {#if swapMode}
+      {#if a && !isPastSlot(slot)}
+        <button
+          type="button"
+          class="cell-btn"
+          class:swap-disabled={swapDisabled(slot, a)}
+          disabled={swapDisabled(slot, a)}
+          onclick={() => cellSwapClick(slot, a)}
+        >
           {a.member.name}
         </button>
+      {:else if a}
+        <span class="name">{a.member.name}</span>
       {:else}
         <span class="empty">—</span>
       {/if}
+    {:else if rowRO}
+      {#if a}<span class="name">{a.member.name}</span>{:else}<span class="empty">—</span>{/if}
     {:else if a}
       <Select.Root
         type="single"
@@ -263,6 +349,138 @@
   {/if}
 {/snippet}
 
+<!-- Un mois (en-tête repliable + lignes), version tableau desktop. -->
+{#snippet desktopGroup(group: { key: string; label: string; slots: SlotWithAssignments[] })}
+  {@const open = monthOpen(group.key)}
+  <tr class="month-row">
+    <td colspan={columnCount + 1}>
+      <button type="button" class="month-toggle" onclick={() => toggleMonth(group.key)}>
+        <span class="chevron">{open ? '▾' : '▸'}</span>
+        {group.label}
+        <span class="month-count">
+          {group.slots.length} samedi{group.slots.length > 1 ? 's' : ''}
+        </span>
+      </button>
+    </td>
+  </tr>
+  {#if open}
+    {#each group.slots as slot (slot.id)}
+      {@const holiday = isGenevaHoliday(slot.date)}
+      {@const filled = slot.assignments.filter((a) => !a.absence).length}
+      {@const understaffed = !slot.isCancelled && !slot.closure && filled < slot.requiredCount}
+      {@const rowRO = readOnly || isPastSlot(slot)}
+      <tr
+        class:row-closure={!!slot.closure}
+        class:row-cancelled={slot.isCancelled}
+        class:row-past={isPastSlot(slot)}
+      >
+        <td class="date-col date">
+          <div class="date-top">
+            <span class="date-label">{formatDayWeekday(slot.date)}</span>
+            {#if slot.closure}
+              <span class="tag">{slot.closure.label}</span>
+            {:else if holiday}
+              <span class="tag">Férié</span>
+            {/if}
+          </div>
+          <div class="date-bottom">
+            {#if !slot.closure && !slot.isCancelled}
+              <span class="count" class:warn={understaffed}>
+                {filled}/{slot.requiredCount}
+              </span>
+            {/if}
+            {@render slotActions(slot, rowRO)}
+          </div>
+        </td>
+
+        {#if slot.closure}
+          <td class="span-cell" colspan={columnCount}>Fermé — {slot.closure.label}</td>
+        {:else if slot.isCancelled}
+          <td class="span-cell" colspan={columnCount}>Samedi fermé pour tout le monde</td>
+        {:else}
+          {#each columns as i (i)}
+            {@const a = slot.assignments[i]}
+            {@const srcSel = !!a && isSwapSrc(slot.id, a.member.id)}
+            <td
+              class="cell"
+              class:absent={a?.absence}
+              class:swap-src={srcSel}
+              style={a ? highlightStyle(a.member.id, srcSel) : ''}
+            >
+              {@render memberControl(slot, a, i, rowRO)}
+              {#if a?.absence}<span class="absence-tag">Absent</span>{/if}
+            </td>
+          {/each}
+        {/if}
+      </tr>
+    {/each}
+  {/if}
+{/snippet}
+
+<!-- Un mois (en-tête repliable + cartes), version liste mobile. -->
+{#snippet mobileGroup(group: { key: string; label: string; slots: SlotWithAssignments[] })}
+  {@const open = monthOpen(group.key)}
+  <button type="button" class="m-month" onclick={() => toggleMonth(group.key)}>
+    <span class="chevron">{open ? '▾' : '▸'}</span>
+    {group.label}
+    <span class="month-count">
+      {group.slots.length} samedi{group.slots.length > 1 ? 's' : ''}
+    </span>
+  </button>
+  {#if open}
+    {#each group.slots as slot (slot.id)}
+      {@const holiday = isGenevaHoliday(slot.date)}
+      {@const filled = slot.assignments.filter((a) => !a.absence).length}
+      {@const understaffed = !slot.isCancelled && !slot.closure && filled < slot.requiredCount}
+      {@const rowRO = readOnly || isPastSlot(slot)}
+      <div
+        class="m-card"
+        class:m-closure={!!slot.closure}
+        class:m-cancelled={slot.isCancelled}
+        class:m-past={isPastSlot(slot)}
+      >
+        <div class="m-head">
+          <strong class="m-date">{formatDayWeekday(slot.date)}</strong>
+          <div class="m-tags">
+            {#if slot.closure}
+              <span class="tag">{slot.closure.label}</span>
+            {:else if holiday}
+              <span class="tag">Férié</span>
+            {/if}
+            {#if slot.isCancelled}<span class="tag cancel">Annulé</span>{/if}
+            {#if !slot.closure && !slot.isCancelled}
+              <span class="count" class:warn={understaffed}>{filled}/{slot.requiredCount}</span>
+            {/if}
+          </div>
+          {@render slotActions(slot, rowRO)}
+        </div>
+
+        {#if slot.closure}
+          <p class="m-span">Fermé — {slot.closure.label}</p>
+        {:else if slot.isCancelled}
+          <p class="m-span">Samedi fermé pour tout le monde</p>
+        {:else}
+          <div class="m-members">
+            {#each columns as i (i)}
+              {@const a = slot.assignments[i]}
+              {@const srcSel = !!a && isSwapSrc(slot.id, a.member.id)}
+              <span
+                class="m-chip"
+                class:absent={a?.absence}
+                class:swap-src={srcSel}
+                style={a ? highlightStyle(a.member.id, srcSel) : ''}
+              >
+                {@render memberControl(slot, a, i, rowRO)}
+                {#if a?.absence}<span class="absence-tag">Absent</span>{/if}
+              </span>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/each}
+  {/if}
+{/snippet}
+
 <div class="toolbar">
   <Select.Root type="multiple" bind:value={highlightMemberIds}>
     <Select.Trigger class="filter">{highlightLabel}</Select.Trigger>
@@ -273,7 +491,7 @@
     </Select.Content>
   </Select.Root>
 
-  {#if !readOnly}
+  {#if canSwap}
     <Button variant={swapMode ? 'default' : 'outline'} size="sm" onclick={toggleSwapMode}>
       {#if swapMode}
         ✕ Quitter l’échange
@@ -283,6 +501,42 @@
     </Button>
   {/if}
 </div>
+
+{#if showStats && members.length > 0}
+  <section class="stats">
+    <button type="button" class="stats-toggle" onclick={() => (statsOpen = !statsOpen)}>
+      <span class="chevron">{statsOpen ? '▾' : '▸'}</span>
+      Statistiques — samedis par personne
+      <span class="stats-meta">moy. {statAvg} · min {statMin} · max {statMax}</span>
+    </button>
+    {#if statsOpen}
+      <ul class="stats-body">
+        {#each statRows as r (r.id)}
+          {@const on = highlightMemberIds.includes(r.id)}
+          <li>
+            <button
+              type="button"
+              class="stat-row"
+              class:on
+              onclick={() => toggleStatHighlight(r.id)}
+            >
+              <span class="stat-name">{r.name}</span>
+              <span class="stat-bar">
+                <span
+                  class="stat-fill"
+                  style="width: {(r.n / statMax) * 100}%; background: {on
+                    ? `var(--hl-bar-${hlColor(r.id)})`
+                    : 'var(--primary)'};"
+                ></span>
+              </span>
+              <span class="stat-n">{r.n}</span>
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {/if}
+  </section>
+{/if}
 
 {#if highlightMemberIds.length > 0}
   <div class="legend">
@@ -321,79 +575,25 @@
       <div class="table-scroll">
         <table>
           <tbody>
-            {#each monthGroups as group (group.key)}
-              {@const open = monthOpen(group.key, group.past)}
-              <tr class="month-row" class:is-past={group.past}>
+            {#if pastGroups.length > 0}
+              <tr class="month-row">
                 <td colspan={columnCount + 1}>
-                  <button
-                    type="button"
-                    class="month-toggle"
-                    onclick={() => toggleMonth(group.key, group.past)}
-                  >
-                    <span class="chevron">{open ? '▾' : '▸'}</span>
-                    {group.label}
-                    <span class="month-count"
-                      >{group.slots.length} samedi{group.slots.length > 1 ? 's' : ''}</span
-                    >
-                    {#if group.past}<span class="past-tag">passé</span>{/if}
+                  <button type="button" class="month-toggle" onclick={() => (showPast = !showPast)}>
+                    <span class="chevron">{showPast ? '▾' : '▸'}</span>
+                    {pastSlotCount} samedi{pastSlotCount > 1 ? 's' : ''} passé{pastSlotCount > 1
+                      ? 's'
+                      : ''}
                   </button>
                 </td>
               </tr>
-              {#if open}
-                {#each group.slots as slot (slot.id)}
-                  {@const holiday = isGenevaHoliday(slot.date)}
-                  {@const filled = slot.assignments.filter((a) => !a.absence).length}
-                  {@const understaffed =
-                    !slot.isCancelled && !slot.closure && filled < slot.requiredCount}
-                  {@const rowRO = readOnly || isPastSlot(slot)}
-                  <tr
-                    class:row-closure={!!slot.closure}
-                    class:row-cancelled={slot.isCancelled}
-                    class:row-past={isPastSlot(slot)}
-                  >
-                    <td class="date-col date">
-                      <div class="date-top">
-                        <span class="date-label">{formatDateShort(slot.date)}</span>
-                        {#if slot.closure}
-                          <span class="tag">{slot.closure.label}</span>
-                        {:else if holiday}
-                          <span class="tag">Férié</span>
-                        {/if}
-                      </div>
-                      <div class="date-bottom">
-                        {#if !slot.closure && !slot.isCancelled}
-                          <span class="count" class:warn={understaffed}>
-                            {filled}/{slot.requiredCount}
-                          </span>
-                        {/if}
-                        {@render slotActions(slot, rowRO)}
-                      </div>
-                    </td>
-
-                    {#if slot.closure}
-                      <td class="span-cell" colspan={columnCount}>Fermé — {slot.closure.label}</td>
-                    {:else if slot.isCancelled}
-                      <td class="span-cell" colspan={columnCount}
-                        >Samedi fermé pour tout le monde</td
-                      >
-                    {:else}
-                      {#each columns as i (i)}
-                        {@const a = slot.assignments[i]}
-                        {@const srcSel = !!a && isSwapSrc(slot.id, a.member.id)}
-                        <td
-                          class="cell"
-                          class:absent={a?.absence}
-                          class:swap-src={srcSel}
-                          style={a ? highlightStyle(a.member.id, srcSel) : ''}
-                        >
-                          {@render memberControl(slot, a, i, rowRO)}
-                          {#if a?.absence}<span class="absence-tag">Absent</span>{/if}
-                        </td>
-                      {/each}
-                    {/if}
-                  </tr>
+              {#if showPast}
+                {#each pastGroups as group (group.key)}
+                  {@render desktopGroup(group)}
                 {/each}
               {/if}
+            {/if}
+            {#each futureGroups as group (group.key)}
+              {@render desktopGroup(group)}
             {/each}
           </tbody>
         </table>
@@ -403,68 +603,19 @@
 
   <!-- ─── Mobile : liste de cartes blanches ─────────────────────────────── -->
   <div class="pt-mobile">
-    {#each monthGroups as group (group.key)}
-      {@const open = monthOpen(group.key, group.past)}
-      <button type="button" class="m-month" onclick={() => toggleMonth(group.key, group.past)}>
-        <span class="chevron">{open ? '▾' : '▸'}</span>
-        {group.label}
-        <span class="month-count"
-          >{group.slots.length} samedi{group.slots.length > 1 ? 's' : ''}</span
-        >
-        {#if group.past}<span class="past-tag">passé</span>{/if}
+    {#if pastGroups.length > 0}
+      <button type="button" class="m-month" onclick={() => (showPast = !showPast)}>
+        <span class="chevron">{showPast ? '▾' : '▸'}</span>
+        {pastSlotCount} samedi{pastSlotCount > 1 ? 's' : ''} passé{pastSlotCount > 1 ? 's' : ''}
       </button>
-      {#if open}
-        {#each group.slots as slot (slot.id)}
-          {@const holiday = isGenevaHoliday(slot.date)}
-          {@const filled = slot.assignments.filter((a) => !a.absence).length}
-          {@const understaffed = !slot.isCancelled && !slot.closure && filled < slot.requiredCount}
-          {@const rowRO = readOnly || isPastSlot(slot)}
-          <div
-            class="m-card"
-            class:m-closure={!!slot.closure}
-            class:m-cancelled={slot.isCancelled}
-            class:m-past={isPastSlot(slot)}
-          >
-            <div class="m-head">
-              <strong class="m-date">{formatDayMonth(slot.date)}</strong>
-              <div class="m-tags">
-                {#if slot.closure}
-                  <span class="tag">{slot.closure.label}</span>
-                {:else if holiday}
-                  <span class="tag">Férié</span>
-                {/if}
-                {#if slot.isCancelled}<span class="tag cancel">Annulé</span>{/if}
-                {#if !slot.closure && !slot.isCancelled}
-                  <span class="count" class:warn={understaffed}>{filled}/{slot.requiredCount}</span>
-                {/if}
-              </div>
-              {@render slotActions(slot, rowRO)}
-            </div>
-
-            {#if slot.closure}
-              <p class="m-span">Fermé — {slot.closure.label}</p>
-            {:else if slot.isCancelled}
-              <p class="m-span">Samedi fermé pour tout le monde</p>
-            {:else}
-              <div class="m-members">
-                {#each columns as i (i)}
-                  {@const a = slot.assignments[i]}
-                  {@const srcSel = !!a && isSwapSrc(slot.id, a.member.id)}
-                  <span
-                    class="m-chip"
-                    class:absent={a?.absence}
-                    class:swap-src={srcSel}
-                    style={a ? highlightStyle(a.member.id, srcSel) : ''}
-                  >
-                    {@render memberControl(slot, a, i, rowRO)}
-                    {#if a?.absence}<span class="absence-tag">Absent</span>{/if}
-                  </span>
-                {/each}
-              </div>
-            {/if}
-          </div>
+      {#if showPast}
+        {#each pastGroups as group (group.key)}
+          {@render mobileGroup(group)}
         {/each}
       {/if}
+    {/if}
+    {#each futureGroups as group (group.key)}
+      {@render mobileGroup(group)}
     {/each}
   </div>
 {/if}
@@ -502,6 +653,9 @@
     <input type="hidden" name="slotId" value={fSlotId} />
     <input type="hidden" name="memberId" value={fMemberId} />
   </form>
+{/if}
+
+{#if canSwap}
   <form
     bind:this={swapFormEl}
     method="POST"
@@ -514,6 +668,44 @@
     <input type="hidden" name="slotBId" value={fSlotBId} />
     <input type="hidden" name="memberBId" value={fMemberBId} />
   </form>
+
+  <!-- Confirmation de l'échange (résumé avant soumission). -->
+  <AlertDialog.Root
+    open={pendingSwap !== null}
+    onOpenChange={(o) => {
+      if (!o) pendingSwap = null
+    }}
+  >
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Confirmer l’échange</AlertDialog.Title>
+        <AlertDialog.Description>
+          {#if pendingSwap}
+            Échanger ces deux samedis :
+          {/if}
+        </AlertDialog.Description>
+      </AlertDialog.Header>
+      {#if pendingSwap}
+        <div class="swap-summary">
+          <div class="swap-row">
+            <strong>{pendingSwap.a.name}</strong>
+            <span class="swap-when">{formatDayWeekday(pendingSwap.a.date)}</span>
+          </div>
+          <ArrowLeftRightIcon class="swap-icon" aria-hidden="true" />
+          <div class="swap-row">
+            <strong>{pendingSwap.b.name}</strong>
+            <span class="swap-when">{formatDayWeekday(pendingSwap.b.date)}</span>
+          </div>
+        </div>
+      {/if}
+      <AlertDialog.Footer>
+        <AlertDialog.Cancel type="button">Annuler</AlertDialog.Cancel>
+        <button type="button" class={buttonVariants({ variant: 'default' })} onclick={confirmSwap}>
+          Échanger
+        </button>
+      </AlertDialog.Footer>
+    </AlertDialog.Content>
+  </AlertDialog.Root>
 {/if}
 
 <style>
@@ -566,6 +758,97 @@
   }
   .muted {
     color: var(--text-muted);
+  }
+
+  /* ─── Panneau stats « samedis par personne » ────────────────────────────── */
+  .stats {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-4);
+    overflow: hidden;
+  }
+  .stats-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    border: none;
+    background: var(--bg-sidebar);
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+    text-align: left;
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+  }
+  .stats-toggle:hover {
+    color: var(--text-main);
+    background: var(--bg-hover);
+  }
+  .stats-meta {
+    margin-left: auto;
+    font-weight: var(--weight-normal);
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .stats-body {
+    list-style: none;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .stat-row {
+    display: grid;
+    grid-template-columns: minmax(6rem, 9rem) 1fr 2rem;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: var(--text-small);
+    color: var(--text-main);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    text-align: left;
+  }
+  .stat-row:hover {
+    background: var(--bg-hover);
+  }
+  .stat-row.on {
+    background: var(--bg-sidebar);
+    font-weight: var(--weight-semibold);
+  }
+  .stat-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .stat-bar {
+    height: 0.5rem;
+    background: var(--bg-sidebar);
+    border-radius: var(--radius-pill);
+    overflow: hidden;
+  }
+  .stat-fill {
+    display: block;
+    height: 100%;
+    border-radius: var(--radius-pill);
+    transition: width var(--dur-fast) var(--ease-out-strong);
+  }
+  .stat-n {
+    text-align: right;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-row.on .stat-n {
+    color: var(--text-main);
   }
 
   /* Bascule des deux layouts (comme DataTable : seuil 640px). */
@@ -638,7 +921,7 @@
     color: var(--text-main);
     font-weight: var(--weight-semibold);
     font-size: var(--text-body);
-    font-variant-numeric: tabular-nums;
+    text-transform: capitalize;
   }
   .count {
     font-size: var(--text-label);
@@ -699,13 +982,6 @@
     letter-spacing: normal;
     font-weight: var(--weight-normal);
     color: var(--text-muted);
-  }
-  .past-tag {
-    text-transform: none;
-    letter-spacing: normal;
-    color: var(--text-subtle);
-    font-weight: var(--weight-normal);
-    font-style: italic;
   }
 
   /* Lignes spéciales : fonds différenciés. */
@@ -769,6 +1045,38 @@
   }
   .cell-btn:hover {
     background: var(--bg-hover);
+  }
+  .cell-btn.swap-disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .cell-btn.swap-disabled:hover {
+    background: var(--bg-card);
+  }
+
+  /* Récapitulatif d'échange dans le modal de confirmation. */
+  .swap-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+  }
+  .swap-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    text-align: center;
+    color: var(--text-main);
+  }
+  .swap-when {
+    font-size: var(--text-small);
+    color: var(--text-muted);
+    text-transform: capitalize;
+  }
+  :global(.swap-icon) {
+    color: var(--text-muted);
+    flex-shrink: 0;
   }
   .absence-tag {
     margin-left: var(--space-1);

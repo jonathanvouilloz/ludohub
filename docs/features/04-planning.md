@@ -2,6 +2,28 @@
 
 **Epic :** 04 | **Taille :** L | **Statut :** DONE (itératif)
 
+## Etat session 2026-06-21 (unification vue /planning + fiabilisation échange + stats)
+
+**Fait :**
+
+- **`/planning` (vue membre) unifiée sur `PlanningTable`** (remplace `PlanningTimeline`) : tableau éditable desktop / liste cartes mobile, rôle-aware via props `currentMemberId`/`canSwapOwn` — responsable = édition inline complète (assign/set/remove/cancel + échange libre), membre = lecture + échange de SON samedi uniquement. Action route `swap` rendue rôle-aware (`swapMembers` vs `requestSwap`) + nouvelle action `setMember` ajoutée à `/planning`.
+- **Bug 500 échange corrigé** : garde anti-doublon dans `swapMembers` (refuse d'inscrire 2× la même personne le même samedi → `PlanningServiceError`/`fail(400)`). Défense en profondeur : **désactivation en amont** des cibles impossibles (`swapDisabled`) + **modal de confirmation** (AlertDialog) résumant l'échange avant soumission.
+- **Dates lisibles** « Samedi 22 août » (`formatDayWeekday`) en desktop + mobile ; fonds clairs vacances/fermetures déjà fournis par `PlanningTable`.
+- **Mois passés repliés** derrière un seul toggle « N samedis passés » (au lieu d'un en-tête par mois passé) ; rendu d'un mois extrait en snippets `desktopGroup`/`mobileGroup`. Carte hero **« Mon prochain samedi »** restaurée (dégradé couleur ludo + co-assignés) au-dessus du tableau.
+- **Stats « samedis par personne »** : panneau repliable dans l'éditeur de saison (prop `showStats`), barre proportionnelle + moy/min/max, **clic = surbrillance** (réutilise `highlightMemberIds`). Calcul 100 % client, samedis annulés/fermés exclus.
+
+**Prochain :** Epic 04 stable. Reste l'epic **12-TESTS E2E** (Playwright) : ajouter « échange dupliqué refusé » + « membre échange son samedi » + « stats par personne ». Nettoyage possible : `PlanningTimeline.svelte` / `MemberSwapDialog.svelte` / `AssignMemberDialog.svelte` désormais orphelins (grep avant suppression).
+
+**Pièges :**
+
+- L'action `swap` de `/planning` doit brancher selon le rôle (`isResponsable(member)`) : `requestSwap` exige demandeur = partie A, donc un responsable échangeant 2 tiers passerait sinon en échec.
+- `swapDisabled` est le miroir UI de la garde serveur — garder les deux synchrones (doublon = source déjà sur slot cible OU cible déjà sur slot source).
+- `showStats` par défaut `false` : ne PAS le passer sur `/planning` (réservé à l'éditeur de saison).
+
+**Commit :** feat(planning): vue /planning unifiée (PlanningTable), échange fiabilisé + modal, mois passés repliés, stats par personne
+
+---
+
 ## Etat session 2026-06-19 (refonte vue post-génération : tableau éditable + liste mobile)
 
 **Fait :**
@@ -52,32 +74,34 @@
 
 ## Carte du code
 
-> Mise à jour : 2026-06-19
+> Mise à jour : 2026-06-21
 
 | Fichier | Rôle |
 |---------|------|
-| `src/lib/server/schema.ts` | Tables planning + `season_member_settings` + `seasons.isActive`/`requiredCount` + `closure_periods` |
-| `src/lib/server/db/planning.ts` | Queries saisons/slots/assignations ; `swapAssignments`, **`replaceAssignment`** (db.batch), `upsertMemberSetting`, `clearAssignmentsBySeason`, `activateSeasonInDb` |
-| `src/lib/server/services/planning.ts` | Métier : `generatePlanning`, `assignMember`/`removeMember`/`swapMembers`/**`setMember`**, `getSeasonGrid`, CRUD fermetures, `activateSeason`, `importGEVacations` |
-| `src/lib/utils/dates.ts` | `getSwissSaturdays`, `isGenevaHoliday`, `formatDateShort`/`formatDayMonth`/`formatMonthYear`, `toDateString` |
+| `src/lib/server/schema.ts` | Tables planning + `season_member_settings` + `seasons.isActive`/`requiredCount` + `closure_periods` ; `unique(slot_id, member_id)` sur `assignments` |
+| `src/lib/server/db/planning.ts` | Queries saisons/slots/assignations ; `swapAssignments`, `replaceAssignment` (db.batch), `getAssignment`, `upsertMemberSetting`, `clearAssignmentsBySeason`, `activateSeasonInDb` |
+| `src/lib/server/services/planning.ts` | Métier : `generatePlanning`, `assignMember`/`removeMember`/`setMember`, **`swapMembers` (garde anti-doublon)**/`requestSwap`, `getSeasonGrid`, CRUD fermetures, `activateSeason`, `importGEVacations` |
+| `src/lib/utils/dates.ts` | `getSwissSaturdays`, `isGenevaHoliday`, **`formatDayWeekday`** (« Samedi 22 août »), `formatMonthYear`, `daysBetween`, `toDateString` |
 | `src/styles/tokens.css` | **Palette surbrillance** `--hl-1..6` / `--hl-bar-1..6` |
-| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Load grille + **`today`** ; actions assign/remove/**setMember**/swap/cancel/reopen + config/génération/fermetures |
-| `src/routes/[ludo]/planning/saisons/[id]/+page.svelte` | Bascule wizard ↔ `PlanningTable` selon `existingAssignmentsCount` |
-| `src/lib/components/planning/PlanningTable.svelte` | **Nouveau** — vue post-génération : tableau éditable desktop + liste cartes mobile, mois repliables, surbrillance multi, échange in-table, lignes passées désactivées |
+| `src/routes/[ludo]/planning/+page.server.ts` | **Vue membre** : load grille saison active + actions `swap` (rôle-aware : `swapMembers`/`requestSwap`), `setMember`, assign/remove/cancel/reopen |
+| `src/routes/[ludo]/planning/+page.svelte` | Carte hero « Mon prochain samedi » + `PlanningTable` rôle-aware (`readOnly`/`canSwapOwn`) |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.server.ts` | Load grille + `today` ; actions assign/remove/setMember/swap/cancel/reopen + config/génération/fermetures |
+| `src/routes/[ludo]/planning/saisons/[id]/+page.svelte` | Bascule wizard ↔ `PlanningTable` (avec `showStats`) selon `existingAssignmentsCount` |
+| `src/lib/components/planning/PlanningTable.svelte` | **Composant unique des 2 vues** : tableau desktop + cartes mobile, mois passés repliés (1 toggle), surbrillance multi, **échange (disable amont + modal confirm)**, **panneau stats `showStats`**, props rôle `currentMemberId`/`canSwapOwn` |
 | `src/lib/components/planning/SeasonWizard.svelte` | Wizard 3 étapes (avant génération) |
 | `src/lib/components/planning/SeasonMemberConfig.svelte` | DataTable + DatePicker + toggle permanent + indispo inline |
 | `src/lib/components/planning/ClosurePeriodsPanel.svelte` | CRUD plages de fermeture + import ge.ch |
 | `src/lib/components/planning/SeasonDialog.svelte` | Création saison (DatePicker + activer immédiatement) |
-| `src/lib/components/planning/PlanningTimeline.svelte` | **Vue membre `/planning`** (timeline) — non touchée cette session, sert de référence design |
-| `src/lib/components/planning/{PlanningGrid,SlotCard,SwapDialog}.svelte` | **Orphelins** depuis `PlanningTable` (échange désormais in-table) — supprimables après validation |
+| `src/lib/components/planning/{PlanningTimeline,MemberSwapDialog,AssignMemberDialog,PlanningGrid,SlotCard,SwapDialog}.svelte` | **Orphelins** depuis l'unification sur `PlanningTable` — supprimables après validation (grep avant) |
 
 ### Décisions clés
 
-- **Vue post-génération = `PlanningTable`** (tableau éditable inline) en remplacement de la grille de cartes ; édition par `Select` par place, sans page intermédiaire.
+- **Une seule vue = `PlanningTable`** pour `/planning` (membre) ET l'éditeur de saison ; le rôle pilote les capacités via props (`readOnly`/`canSwapOwn`/`showStats`), pas deux composants.
+- **Échange sûr en 3 couches** : `swapDisabled` (UI, grise les cibles à doublon) + modal de confirmation (AlertDialog) + garde serveur `swapMembers` → plus de 500 sur doublon (`unique(slot_id, member_id)`).
+- **Action `swap` rôle-aware** : responsable → `swapMembers` (échange libre), membre → `requestSwap` (son samedi uniquement).
 - **Colonnes = simples places** : cellule `i` = `assignments[i]`, pas d'index de colonne en DB → l'échange n'a de sens qu'entre **2 samedis différents**.
-- **`setMember` atomique** (`replaceAssignment` en `db.batch()`) plutôt que remove+assign chaînés côté client (flicker, non atomique).
-- **Responsive sans JS** : tableau desktop ↔ liste de cartes mobile via `@media` 640px ; toolbar + état (highlight/swap) partagés.
-- **Surbrillance multi-membres** par palette de tokens `--hl-*` (inline style indexé), l'échange reste prioritaire sur la couleur de surbrillance.
+- **Mois passés** regroupés derrière un seul toggle « N samedis passés » ; rendu d'un mois factorisé en snippets `desktopGroup`/`mobileGroup`.
+- **Stats client** (`statRows`) : compte les assignations hors samedis annulés/fermés, clic → `highlightMemberIds` (réutilise la surbrillance).
 - **Permanent = par saison** ; indispos wizard → absences approuvées ; saison active explicite (`db.batch()`) ; import ge.ch via attribut `title=`.
 
 ---

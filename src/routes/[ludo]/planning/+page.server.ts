@@ -9,6 +9,8 @@ import {
   removeMember,
   reopenSlot,
   requestSwap,
+  setMember,
+  swapMembers,
 } from '$lib/server/services/planning.js'
 import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
 import { isResponsable } from '$lib/utils/permissions.js'
@@ -50,19 +52,20 @@ async function run(fn: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
-  // Échange initié par un membre : il échange SON samedi (slotA) contre un autre.
+  // Échange : un·e responsable échange deux membres tiers (`swapMembers`) ; un
+  // membre simple ne peut échanger que SON samedi (`requestSwap`, qui vérifie
+  // demandeur = partie A).
   swap: async (event) => {
     const { ludo, member } = await requireLudoContext(event)
     const data = await event.request.formData()
+    const slotAId = String(data.get('slotAId') ?? '')
+    const memberAId = String(data.get('memberAId') ?? '')
+    const slotBId = String(data.get('slotBId') ?? '')
+    const memberBId = String(data.get('memberBId') ?? '')
     return run(() =>
-      requestSwap(
-        member.id,
-        String(data.get('slotAId') ?? ''),
-        String(data.get('memberAId') ?? ''),
-        String(data.get('slotBId') ?? ''),
-        String(data.get('memberBId') ?? ''),
-        ludo.id,
-      ),
+      isResponsable(member)
+        ? swapMembers(slotAId, memberAId, slotBId, memberBId, ludo.id)
+        : requestSwap(member.id, slotAId, memberAId, slotBId, memberBId, ludo.id),
     )
   },
 
@@ -72,6 +75,19 @@ export const actions: Actions = {
     const data = await event.request.formData()
     return run(() =>
       assignMember(String(data.get('slotId') ?? ''), String(data.get('memberId') ?? ''), ludo.id),
+    )
+  },
+
+  setMember: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() =>
+      setMember(
+        String(data.get('slotId') ?? ''),
+        String(data.get('memberId') ?? ''),
+        String(data.get('newMemberId') ?? ''),
+        ludo.id,
+      ),
     )
   },
 
