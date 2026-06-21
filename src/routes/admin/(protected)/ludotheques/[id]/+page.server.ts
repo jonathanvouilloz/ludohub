@@ -1,4 +1,5 @@
 import { error, fail } from '@sveltejs/kit'
+import { requireAdminContext } from '$lib/server/admin-context.js'
 import {
   AdminServiceError,
   getLudotheque,
@@ -28,8 +29,11 @@ async function run(fn: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
-  update: async ({ params, request }) => {
-    const data = await request.formData()
+  update: async (event) => {
+    // Garde explicite : le `load` du layout (protected) ne tourne pas avant une action.
+    requireAdminContext(event)
+    const { params } = event
+    const data = await event.request.formData()
     return run(() =>
       updateLudotheque(params.id, {
         name: String(data.get('name') ?? ''),
@@ -39,8 +43,10 @@ export const actions: Actions = {
     )
   },
 
-  resetPassword: async ({ params, request }) => {
-    const data = await request.formData()
+  resetPassword: async (event) => {
+    requireAdminContext(event)
+    const { params } = event
+    const data = await event.request.formData()
     const password = String(data.get('password') ?? '')
     const confirm = String(data.get('confirm') ?? '')
     if (password !== confirm) {

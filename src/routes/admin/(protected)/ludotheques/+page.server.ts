@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit'
+import { requireAdminContext } from '$lib/server/admin-context.js'
 import { AdminServiceError, createLudotheque, listLudotheques } from '$lib/server/services/admin.js'
 import type { Actions, PageServerLoad } from './$types'
 
@@ -18,8 +19,11 @@ async function run(fn: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
-  create: async ({ request }) => {
-    const data = await request.formData()
+  create: async (event) => {
+    // Garde : les form actions ne déclenchent PAS le `load` du layout (protected),
+    // donc le contexte admin doit être re-vérifié ici, sinon l'action est ouverte.
+    requireAdminContext(event)
+    const data = await event.request.formData()
     return run(() =>
       createLudotheque({
         name: String(data.get('name') ?? ''),
