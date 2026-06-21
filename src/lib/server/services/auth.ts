@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type { Cookies } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
 import { hashPassword, verifyPassword, makeSignature, constantTimeEqual } from 'better-auth/crypto'
@@ -10,7 +11,24 @@ export const SESSION_COOKIE = 'ludohub_session'
 /** 30 jours, en secondes. */
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30
 
-export type LudoSession = { ludoId: string; memberId: string }
+/**
+ * Session ludo. `pv` (password version) = empreinte du hash de mot de passe au
+ * moment du login : si l'admin reset le mot de passe de la ludo, `pv` ne
+ * correspond plus et la session est invalidée (révocation sans table sessions).
+ * `iat` (issued-at, secondes Unix) permet d'expirer côté serveur indépendamment
+ * du `maxAge` du cookie (contrôlé par le client).
+ */
+export type LudoSession = { ludoId: string; memberId: string; iat: number; pv: string }
+
+/** Empreinte courte et stable du hash de mot de passe (révocation de session). */
+export function passwordVersion(passwordHash: string): string {
+  return createHash('sha256').update(passwordHash).digest('base64url').slice(0, 16)
+}
+
+/** True si la session a dépassé la durée de vie max (défense en profondeur). */
+export function isSessionExpired(session: LudoSession): boolean {
+  return Date.now() / 1000 - session.iat > SESSION_MAX_AGE
+}
 
 function secret(): string {
   const s = env.BETTER_AUTH_SECRET
@@ -67,8 +85,20 @@ export async function readLudoSession(cookies: Cookies): Promise<LudoSession | n
 
   try {
     const parsed = JSON.parse(Buffer.from(value, 'base64url').toString('utf-8'))
-    if (typeof parsed?.ludoId === 'string' && typeof parsed?.memberId === 'string') {
-      return { ludoId: parsed.ludoId, memberId: parsed.memberId }
+    // Cookies émis avant l'ajout de `iat`/`pv` sont traités comme invalides
+    // (l'utilisateur se reconnecte une fois) plutôt que tolérés sans révocation.
+    if (
+      typeof parsed?.ludoId === 'string' &&
+      typeof parsed?.memberId === 'string' &&
+      typeof parsed?.iat === 'number' &&
+      typeof parsed?.pv === 'string'
+    ) {
+      return {
+        ludoId: parsed.ludoId,
+        memberId: parsed.memberId,
+        iat: parsed.iat,
+        pv: parsed.pv,
+      }
     }
     return null
   } catch {
@@ -77,7 +107,16 @@ export async function readLudoSession(cookies: Cookies): Promise<LudoSession | n
 }
 
 /** Pose le cookie de session signé (httpOnly, 30 jours). */
-export async function setLudoSessionCookie(cookies: Cookies, payload: LudoSession): Promise<void> {
+export async function setLudoSessionCookie(
+  cookies: Cookies,
+  session: { ludoId: string; memberId: string },
+  passwordHash: string,
+): Promise<void> {
+  const payload: LudoSession = {
+    ...session,
+    iat: Math.floor(Date.now() / 1000),
+    pv: passwordVersion(passwordHash),
+  }
   // `secure` est laissé à SvelteKit : true en https, toléré sur http://localhost en dev.
   cookies.set(SESSION_COOKIE, await sign(payload), {
     path: '/',
