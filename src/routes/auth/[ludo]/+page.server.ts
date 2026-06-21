@@ -1,10 +1,12 @@
 import { error, fail, redirect } from '@sveltejs/kit'
 import { getLudoBySlug } from '$lib/server/db/ludotheques.js'
 import { verifyLudoPassword, setLudoSessionCookie } from '$lib/server/services/auth.js'
+import { checkRateLimit } from '$lib/server/services/rate-limit.js'
 import { isActiveMember } from '$lib/utils/permissions.js'
 import type { Actions, PageServerLoad } from './$types'
 
 const GENERIC_ERROR = 'Identifiants incorrects'
+const RATE_LIMITED = 'Trop de tentatives. Réessayez dans quelques minutes.'
 
 export const load: PageServerLoad = async ({ params, locals }) => {
   const ludo = await getLudoBySlug(params.ludo)
@@ -20,7 +22,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 export const actions: Actions = {
   // Étape 1 : vérifier le mot de passe partagé → renvoyer les membres actifs
-  checkPassword: async ({ request, params }) => {
+  checkPassword: async ({ request, params, getClientAddress }) => {
+    // 10 essais / 15 min par IP+ludo : freine le brute-force du mot de passe partagé.
+    const limit = checkRateLimit(
+      `ludo-login:${getClientAddress()}:${params.ludo}`,
+      10,
+      15 * 60 * 1000,
+    )
+    if (!limit.ok) return fail(429, { error: RATE_LIMITED })
+
     const data = await request.formData()
     const password = String(data.get('password') ?? '')
 
@@ -53,7 +63,11 @@ export const actions: Actions = {
       })
     }
 
-    await setLudoSessionCookie(cookies, { ludoId: result.ludo.id, memberId: member.id })
+    await setLudoSessionCookie(
+      cookies,
+      { ludoId: result.ludo.id, memberId: member.id },
+      result.ludo.passwordHash,
+    )
     throw redirect(303, `/${params.ludo}`)
   },
 }

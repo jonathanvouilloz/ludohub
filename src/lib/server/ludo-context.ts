@@ -1,8 +1,19 @@
 import { error, redirect, type RequestEvent } from '@sveltejs/kit'
 import { getLudoById, getLudoBySlug } from './db/ludotheques.js'
 import { getMemberById } from './db/members.js'
-import { clearLudoSession } from './services/auth.js'
+import { clearLudoSession, isSessionExpired, passwordVersion } from './services/auth.js'
+import type { LudoSession } from './services/auth.js'
+import type { LudothequeRow } from './schema.js'
 import { belongsToLudo, isActiveMember, isResponsable } from '$lib/utils/permissions.js'
+
+/**
+ * Session encore valable pour cette ludo ? Rejette si expirée (iat) ou si le mot
+ * de passe de la ludo a changé depuis le login (pv), ce qui révoque toutes les
+ * sessions ouvertes après un reset admin.
+ */
+function isSessionStillValid(session: LudoSession, ludo: LudothequeRow): boolean {
+  return !isSessionExpired(session) && session.pv === passwordVersion(ludo.passwordHash)
+}
 
 type Ctx = Pick<RequestEvent, 'params' | 'locals' | 'cookies'>
 
@@ -18,7 +29,8 @@ export async function requireLudoContext(event: Ctx) {
   if (!ludo) throw error(404, 'Ludothèque introuvable')
 
   const session = event.locals.ludoSession
-  if (!session || session.ludoId !== ludo.id) {
+  if (!session || session.ludoId !== ludo.id || !isSessionStillValid(session, ludo)) {
+    clearLudoSession(event.cookies)
     throw redirect(303, `/auth/${slug}`)
   }
 
@@ -49,9 +61,17 @@ export async function requireSessionContext(event: Pick<RequestEvent, 'locals' |
   const session = event.locals.ludoSession
   if (!session) throw redirect(303, '/')
 
-  const ludo = await getLudoById(session.ludoId)
-  const member = await getMemberById(session.memberId)
-  if (!ludo || !member || !isActiveMember(member) || !belongsToLudo(member, ludo.id)) {
+  const [ludo, member] = await Promise.all([
+    getLudoById(session.ludoId),
+    getMemberById(session.memberId),
+  ])
+  if (
+    !ludo ||
+    !member ||
+    !isSessionStillValid(session, ludo) ||
+    !isActiveMember(member) ||
+    !belongsToLudo(member, ludo.id)
+  ) {
     clearLudoSession(event.cookies)
     throw redirect(303, '/')
   }
