@@ -1,5 +1,5 @@
 import { fail } from '@sveltejs/kit'
-import { listContacts } from '$lib/server/db/newsletter.js'
+import { countSubscribedByTag, listContacts } from '$lib/server/db/newsletter.js'
 import {
   addContact,
   editContact,
@@ -11,8 +11,11 @@ import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ parent }) => {
   const { ludo } = await parent()
-  const contacts = await listContacts(ludo.id)
-  return { contacts }
+  const [contacts, subscribedByTag] = await Promise.all([
+    listContacts(ludo.id),
+    countSubscribedByTag(ludo.id),
+  ])
+  return { contacts, subscribedByTag }
 }
 
 async function run(fn: () => Promise<unknown>) {
@@ -35,6 +38,7 @@ export const actions: Actions = {
         firstName: String(data.get('firstName') ?? ''),
         lastName: String(data.get('lastName') ?? ''),
         notes: String(data.get('notes') ?? ''),
+        tag: String(data.get('tag') ?? ''),
       }),
     )
   },
@@ -49,6 +53,7 @@ export const actions: Actions = {
         lastName: String(data.get('lastName') ?? ''),
         notes: String(data.get('notes') ?? ''),
         status: String(data.get('status') ?? ''),
+        tag: String(data.get('tag') ?? ''),
       }),
     )
   },

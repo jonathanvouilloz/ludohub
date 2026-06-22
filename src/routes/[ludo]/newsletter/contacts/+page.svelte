@@ -13,6 +13,7 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import UploadIcon from '@lucide/svelte/icons/upload'
+  import { TAG_LABELS, TAG_VARIANTS } from '$lib/newsletter/tags'
   import type { NewsletterContactRow } from '$lib/server/schema'
 
   let { data } = $props()
@@ -45,6 +46,18 @@
   } as const
   const SOURCE_LABELS: Record<string, string> = { manual: 'Ajout manuel', import: 'Import' }
 
+  const byTag = $derived(data.subscribedByTag)
+  // Résumé des segments abonnés (ex. « Famille 90 · Institution 8 · Non classé 3 »).
+  const segmentSummary = $derived(
+    [
+      ...Object.entries(TAG_LABELS).map(([t, label]) => ({
+        label,
+        n: byTag[t as keyof typeof byTag] ?? 0,
+      })),
+      { label: 'Non classé', n: byTag.null },
+    ].filter((s) => s.n > 0),
+  )
+
   function fullName(c: NewsletterContactRow): string {
     return [c.firstName, c.lastName].filter(Boolean).join(' ') || '—'
   }
@@ -64,6 +77,12 @@
           ? 's'
           : ''}.
       </p>
+      {#if segmentSummary.length > 0}
+        <p class="segments">
+          {#each segmentSummary as s, i (s.label)}{i > 0 ? ' · ' : ''}{s.label}
+            <strong>{s.n}</strong>{/each}
+        </p>
+      {/if}
     </div>
     <div class="head-actions">
       <Button href={`/${slug}/newsletter/contacts/import`} variant="outline">
@@ -127,6 +146,7 @@
         <Table.Row>
           <Table.Head>Email</Table.Head>
           <Table.Head>Nom</Table.Head>
+          <Table.Head>Segment</Table.Head>
           <Table.Head>Statut</Table.Head>
           <Table.Head>Source</Table.Head>
           <Table.Head class="actions-col">Actions</Table.Head>
@@ -137,6 +157,13 @@
           <Table.Row>
             <Table.Cell>{c.email}</Table.Cell>
             <Table.Cell>{fullName(c)}</Table.Cell>
+            <Table.Cell>
+              {#if c.tag}
+                <StatusBadge status={c.tag} labels={TAG_LABELS} variantMap={TAG_VARIANTS} />
+              {:else}
+                <span class="muted-cell">—</span>
+              {/if}
+            </Table.Cell>
             <Table.Cell>
               <StatusBadge status={c.status} labels={STATUS_LABELS} variantMap={STATUS_VARIANTS} />
             </Table.Cell>
@@ -153,7 +180,9 @@
             {#snippet badge()}
               <StatusBadge status={c.status} labels={STATUS_LABELS} variantMap={STATUS_VARIANTS} />
             {/snippet}
-            {#snippet byline()}{fullName(c)} · {SOURCE_LABELS[c.source] ?? c.source}{/snippet}
+            {#snippet byline()}{fullName(c)} · {SOURCE_LABELS[c.source] ?? c.source}{c.tag
+                ? ` · ${TAG_LABELS[c.tag]}`
+                : ''}{/snippet}
             {#snippet actions()}{@render rowActions(c)}{/snippet}
           </DataCard>
         {/each}
@@ -189,6 +218,14 @@
   .muted {
     color: var(--text-muted);
     margin: 0;
+  }
+  .segments {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    margin: var(--space-1) 0 0;
+  }
+  .segments strong {
+    color: var(--text-main);
   }
   .actions {
     display: flex;

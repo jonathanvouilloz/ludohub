@@ -718,6 +718,14 @@ export const newsletterContactStatus = pgEnum('newsletter_contact_status', [
 
 export const newsletterContactSource = pgEnum('newsletter_contact_source', ['manual', 'import'])
 
+// Segment d'un contact (un seul par contact). `null` = non classé (reçoit les envois « Tous »).
+export const newsletterContactTag = pgEnum('newsletter_contact_tag', [
+  'famille',
+  'institution',
+  'partenaire',
+  'autre',
+])
+
 export const newsletterContacts = pgTable(
   'newsletter_contacts',
   {
@@ -732,6 +740,8 @@ export const newsletterContacts = pgTable(
     // Token public pour le désabonnement (page hors auth).
     unsubscribeToken: text('unsubscribe_token').notNull().unique(),
     source: newsletterContactSource('source').notNull().default('manual'),
+    // Segment du contact (un seul). `null` = non classé.
+    tag: newsletterContactTag('tag'),
     notes: text('notes'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
@@ -761,6 +771,8 @@ export const campaigns = pgTable('campaigns', {
   previewText: text('preview_text'),
   content: jsonb('content').$type<CampaignContent>(),
   status: campaignStatus('status').notNull().default('draft'),
+  // Segment ciblé par la campagne. `null` = tous les abonnés.
+  targetTag: newsletterContactTag('target_tag'),
   recipientCount: integer('recipient_count').notNull().default(0),
   sentAt: timestamp('sent_at'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
@@ -862,6 +874,7 @@ export type NewsletterContactRow = typeof newsletterContacts.$inferSelect
 export type NewsletterContactInsert = typeof newsletterContacts.$inferInsert
 export type NewsletterContactStatus = (typeof newsletterContactStatus.enumValues)[number]
 export type NewsletterContactSource = (typeof newsletterContactSource.enumValues)[number]
+export type NewsletterContactTag = (typeof newsletterContactTag.enumValues)[number]
 export type CampaignRow = typeof campaigns.$inferSelect
 export type CampaignInsert = typeof campaigns.$inferInsert
 export type CampaignStatus = (typeof campaignStatus.enumValues)[number]

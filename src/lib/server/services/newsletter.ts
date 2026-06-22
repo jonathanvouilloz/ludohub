@@ -18,6 +18,7 @@ import {
 import { getResend, newsletterFrom } from '../resend.js'
 import { emitEvent } from './events.js'
 import { renderCampaignEmail, type EmailBrand, type EmailContent } from '$lib/email/template.js'
+import { newsletterContactTag } from '../schema.js'
 import type {
   CampaignContent,
   CampaignRow,
@@ -26,10 +27,19 @@ import type {
   NewsletterContactInsert,
   NewsletterContactRow,
   NewsletterContactSource,
+  NewsletterContactTag,
 } from '../schema.js'
 
 /** Erreur métier (message FR destiné à l'UI responsable). */
 export class NewsletterServiceError extends Error {}
+
+/** Normalise une valeur de segment (validée contre l'enum DB) : '' / invalide → null. */
+export function parseTag(value: string | undefined | null): NewsletterContactTag | null {
+  const v = (value ?? '').trim()
+  return (newsletterContactTag.enumValues as readonly string[]).includes(v)
+    ? (v as NewsletterContactTag)
+    : null
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -63,6 +73,7 @@ export interface ContactInput {
   firstName?: string
   lastName?: string
   notes?: string
+  tag?: string
 }
 
 /** Ajout manuel d'un contact (dédup insensible à la casse par ludo). */
@@ -82,6 +93,7 @@ export async function addContact(
     firstName: parseOptional(input.firstName),
     lastName: parseOptional(input.lastName),
     notes: parseOptional(input.notes),
+    tag: parseTag(input.tag),
     source,
     unsubscribeToken: generateUnsubscribeToken(),
   })
@@ -93,6 +105,7 @@ export interface ContactEditInput {
   lastName?: string
   notes?: string
   status?: string
+  tag?: string
 }
 
 const EDITABLE_STATUSES = new Set(['subscribed', 'unsubscribed', 'bounced'])
@@ -125,6 +138,7 @@ export async function editContact(
     firstName: parseOptional(input.firstName),
     lastName: parseOptional(input.lastName),
     notes: parseOptional(input.notes),
+    tag: parseTag(input.tag),
     ...(status ? { status: status as NewsletterContactRow['status'] } : {}),
   })
   if (!row) throw new NewsletterServiceError('Contact introuvable.')
@@ -266,6 +280,7 @@ export async function importContacts(
   ludoId: string,
   mapping: ImportMapping,
   rows: string[][],
+  tag?: string,
 ): Promise<ImportResult> {
   if (mapping?.email == null || mapping.email < 0) {
     throw new NewsletterServiceError('Veuillez indiquer la colonne contenant les emails.')
@@ -274,6 +289,7 @@ export async function importContacts(
     throw new NewsletterServiceError('Aucune ligne à importer.')
   }
 
+  const importTag = parseTag(tag)
   const existing = await getContactEmails(ludoId)
   const seen = new Set<string>()
   let invalid = 0
@@ -296,6 +312,7 @@ export async function importContacts(
       email,
       firstName: pick(row, mapping.firstName),
       lastName: pick(row, mapping.lastName),
+      tag: importTag,
       source: 'import',
       unsubscribeToken: generateUnsubscribeToken(),
     })
@@ -319,6 +336,7 @@ export interface DraftSaveInput {
   subject: string
   previewText?: string | null
   content: CampaignContent
+  targetTag?: string | null
 }
 
 export async function saveDraft(
@@ -335,6 +353,7 @@ export async function saveDraft(
     subject: input.subject.trim() || 'Sans objet',
     previewText: input.previewText?.trim() || null,
     content: input.content,
+    targetTag: parseTag(input.targetTag),
   })
   if (!row) throw new NewsletterServiceError('Campagne introuvable.')
   return row
@@ -375,6 +394,7 @@ export interface CampaignDraft {
   subject: string
   previewText?: string | null
   content: CampaignContent
+  targetTag?: string | null
 }
 
 function brandFromLudo(ludo: LudothequeRow): EmailBrand {
@@ -466,7 +486,7 @@ export async function sendCampaign(
     throw new NewsletterServiceError("L'objet de la campagne est requis.")
   }
 
-  const contacts = await listSubscribedContacts(ludo.id)
+  const contacts = await listSubscribedContacts(ludo.id, campaign.targetTag ?? undefined)
   const alreadySent = await getSentContactIds(campaignId)
   const recipients = contacts.filter((c) => !alreadySent.has(c.id))
   if (recipients.length === 0) {
@@ -526,13 +546,14 @@ export async function sendCampaign(
     recipientCount: sent,
   })
 
+  const segmentSuffix = campaign.targetTag ? ` (segment : ${campaign.targetTag})` : ''
   await emitEvent({
     type: 'campaign_sent',
     actorLudoId: ludo.id,
     entityType: 'campaign',
     entityId: campaignId,
     title: 'Newsletter envoyée',
-    body: `« ${campaign.subject} » envoyée à ${sent} contact${sent > 1 ? 's' : ''}.`,
+    body: `« ${campaign.subject} » envoyée à ${sent} contact${sent > 1 ? 's' : ''}${segmentSuffix}.`,
     recipientResponsablesOf: ludo.id,
   })
 

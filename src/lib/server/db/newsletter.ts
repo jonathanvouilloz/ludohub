@@ -9,6 +9,7 @@ import {
   type CampaignSendInsert,
   type NewsletterContactInsert,
   type NewsletterContactRow,
+  type NewsletterContactTag,
 } from '../schema.js'
 
 // ─── Contacts ──────────────────────────────────────────────────────────────────
@@ -94,20 +95,65 @@ export async function deleteContact(id: string, ludoId: string): Promise<boolean
   return deleted.length > 0
 }
 
-/** Contacts destinataires d'un envoi : abonnés uniquement (exclut unsub/bounced). */
-export async function listSubscribedContacts(ludoId: string): Promise<NewsletterContactRow[]> {
+/**
+ * Contacts destinataires d'un envoi : abonnés uniquement (exclut unsub/bounced).
+ * `tag` optionnel : restreint à un segment précis (sinon tous les abonnés).
+ */
+export async function listSubscribedContacts(
+  ludoId: string,
+  tag?: NewsletterContactTag,
+): Promise<NewsletterContactRow[]> {
   return db.query.newsletterContacts.findMany({
-    where: and(eq(newsletterContacts.ludoId, ludoId), eq(newsletterContacts.status, 'subscribed')),
+    where: and(
+      eq(newsletterContacts.ludoId, ludoId),
+      eq(newsletterContacts.status, 'subscribed'),
+      tag ? eq(newsletterContacts.tag, tag) : undefined,
+    ),
     orderBy: (c, { asc }) => asc(c.createdAt),
   })
 }
 
-export async function countSubscribed(ludoId: string): Promise<number> {
+export async function countSubscribed(ludoId: string, tag?: NewsletterContactTag): Promise<number> {
   const [row] = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(newsletterContacts)
-    .where(and(eq(newsletterContacts.ludoId, ludoId), eq(newsletterContacts.status, 'subscribed')))
+    .where(
+      and(
+        eq(newsletterContacts.ludoId, ludoId),
+        eq(newsletterContacts.status, 'subscribed'),
+        tag ? eq(newsletterContacts.tag, tag) : undefined,
+      ),
+    )
   return row?.n ?? 0
+}
+
+/** Compteur d'abonnés par segment (tag), `total`, et `null` = non classés. */
+export type SubscribedByTag = Record<NewsletterContactTag, number> & {
+  null: number
+  total: number
+}
+
+export async function countSubscribedByTag(ludoId: string): Promise<SubscribedByTag> {
+  const rows = await db
+    .select({ tag: newsletterContacts.tag, n: sql<number>`count(*)::int` })
+    .from(newsletterContacts)
+    .where(and(eq(newsletterContacts.ludoId, ludoId), eq(newsletterContacts.status, 'subscribed')))
+    .groupBy(newsletterContacts.tag)
+
+  const result: SubscribedByTag = {
+    famille: 0,
+    institution: 0,
+    partenaire: 0,
+    autre: 0,
+    null: 0,
+    total: 0,
+  }
+  for (const r of rows) {
+    const key = (r.tag ?? 'null') as keyof SubscribedByTag
+    result[key] = r.n
+    result.total += r.n
+  }
+  return result
 }
 
 export async function setContactStatusByToken(

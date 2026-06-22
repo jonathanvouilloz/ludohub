@@ -12,6 +12,7 @@
   import FileTextIcon from '@lucide/svelte/icons/file-text'
   import { renderCampaignEmail } from '$lib/email/template.js'
   import InboxPreview from '$lib/components/newsletter/InboxPreview.svelte'
+  import { CONTACT_TAGS, TAG_LABELS } from '$lib/newsletter/tags'
   import type { CampaignRow } from '$lib/server/schema'
 
   let { data } = $props()
@@ -37,6 +38,7 @@
   let pdfUrl = $state('')
   let pdfAsAttachment = $state(false)
   let testEmail = $state('')
+  let targetTag = $state('')
 
   // (Ré)initialise après chaque chargement (save, send → reload des données).
   $effect(() => {
@@ -49,7 +51,15 @@
     ctaUrl = c.ctaUrl ?? ''
     pdfUrl = c.pdfUrl ?? ''
     pdfAsAttachment = c.pdfAsAttachment ?? false
+    targetTag = campaign.targetTag ?? ''
   })
+
+  // Nombre de destinataires du segment sélectionné (`''` = tous les abonnés).
+  const recipientCount = $derived(
+    targetTag
+      ? (data.subscribedByTag[targetTag as keyof typeof data.subscribedByTag] ?? 0)
+      : data.subscribedByTag.total,
+  )
 
   let saving = $state(false)
   let sending = $state(false)
@@ -158,6 +168,7 @@
   <input type="hidden" name="subject" value={subject} />
   <input type="hidden" name="previewText" value={previewText} />
   <input type="hidden" name="content" value={contentJson} />
+  <input type="hidden" name="targetTag" value={targetTag} />
 {/snippet}
 
 <main class="editor">
@@ -178,6 +189,8 @@
       Cette campagne a été envoyée à {campaign.recipientCount} destinataire{campaign.recipientCount >
       1
         ? 's'
+        : ''}{campaign.targetTag
+        ? ` (segment « ${TAG_LABELS[campaign.targetTag as keyof typeof TAG_LABELS]} »)`
         : ''}. Elle n'est plus modifiable.
     </p>
   {/if}
@@ -328,6 +341,24 @@
 
       {#if !sent}
         <div class="card">
+          <h2>Destinataires</h2>
+          <div class="field">
+            <Label for="target-tag">Segment ciblé</Label>
+            <select id="target-tag" bind:value={targetTag}>
+              <option value="">Tous les abonnés ({data.subscribedByTag.total})</option>
+              {#each CONTACT_TAGS as t (t)}
+                <option value={t}>{TAG_LABELS[t]} ({data.subscribedByTag[t] ?? 0})</option>
+              {/each}
+            </select>
+            <p class="hint">
+              {recipientCount} destinataire{recipientCount > 1 ? 's' : ''} abonné{recipientCount > 1
+                ? 's'
+                : ''} recevront cette campagne.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
           <h2>Tester</h2>
           <form
             method="POST"
@@ -376,11 +407,12 @@
             <AlertDialog.Content>
               <AlertDialog.Header>
                 <AlertDialog.Title
-                  >Envoyer à {data.subscriberCount} abonné{data.subscriberCount > 1 ? 's' : ''} ?</AlertDialog.Title
+                  >Envoyer à {recipientCount} abonné{recipientCount > 1 ? 's' : ''} ?</AlertDialog.Title
                 >
                 <AlertDialog.Description>
-                  L'email sera envoyé immédiatement à tous les contacts abonnés. Cette action est
-                  irréversible.
+                  L'email sera envoyé immédiatement {targetTag
+                    ? `aux abonnés du segment « ${TAG_LABELS[targetTag as keyof typeof TAG_LABELS]} »`
+                    : 'à tous les contacts abonnés'}. Cette action est irréversible.
                 </AlertDialog.Description>
               </AlertDialog.Header>
               <form
@@ -405,7 +437,7 @@
                   <button
                     type="submit"
                     class={buttonVariants({ variant: 'default' })}
-                    disabled={data.subscriberCount === 0}
+                    disabled={recipientCount === 0}
                   >
                     Envoyer maintenant
                   </button>

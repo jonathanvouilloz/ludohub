@@ -25,8 +25,9 @@ export const POST: RequestHandler = async (event) => {
       const body = (await event.request.json()) as {
         mapping: ImportMapping
         rows: string[][]
+        tag?: string
       }
-      const result = await importContacts(ludo.id, body.mapping, body.rows)
+      const result = await importContacts(ludo.id, body.mapping, body.rows, body.tag)
       return json(result)
     }
 

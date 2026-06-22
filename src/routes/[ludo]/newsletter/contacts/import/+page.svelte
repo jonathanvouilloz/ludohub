@@ -5,6 +5,7 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import UploadIcon from '@lucide/svelte/icons/upload'
   import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2'
+  import { CONTACT_TAGS, TAG_LABELS } from '$lib/newsletter/tags'
 
   let { data } = $props()
   const slug = $derived(data.ludo.slug)
@@ -21,6 +22,9 @@
   let emailCol = $state('-1')
   let firstCol = $state('-1')
   let lastCol = $state('-1')
+
+  // Segment appliqué à tout le lot importé ('' = non classé).
+  let importTag = $state('')
 
   let result = $state<{ added: number; invalid: number; duplicates: number } | null>(null)
 
@@ -112,7 +116,7 @@
       const res = await fetch('/api/newsletter/contacts/import?step=commit', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mapping, rows }),
+        body: JSON.stringify({ mapping, rows, tag: importTag }),
       })
       if (!res.ok) {
         toast.error(await errorMessage(res))
@@ -195,6 +199,17 @@
             {/each}
           </select>
         </div>
+      </div>
+
+      <div class="field">
+        <Label for="map-tag">Segment à appliquer à ces contacts</Label>
+        <select id="map-tag" bind:value={importTag}>
+          <option value="">Non classé</option>
+          {#each CONTACT_TAGS as t (t)}
+            <option value={t}>{TAG_LABELS[t]}</option>
+          {/each}
+        </select>
+        <p class="hint">Tous les contacts importés recevront ce segment.</p>
       </div>
 
       <div class="stats">

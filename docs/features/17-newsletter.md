@@ -2,6 +2,28 @@
 
 **Epic :** 17 | **Taille :** L | **Statut :** EN COURS (codé, non commité)
 
+## Etat session 2026-06-22 — Segments (tags)
+
+**Fait :** Ajout d'un **segment par contact** (un seul tag, liste fixe `famille` /
+`institution` / `partenaire` / `autre`, `null` = non classé) + ciblage des campagnes.
+
+- Schéma : enum `newsletterContactTag`, colonne `newsletterContacts.tag` (nullable),
+  `campaigns.targetTag` (nullable, `null` = tous). **`pnpm db:push` à faire** (non encore poussé).
+- DB : `listSubscribedContacts(ludoId, tag?)`, `countSubscribed(ludoId, tag?)`,
+  nouvelle `countSubscribedByTag(ludoId)` (map par segment + total + non classés).
+- Service : `parseTag` (validé contre l'enum DB), tag sur `addContact`/`editContact`/
+  `importContacts` (batch), `sendCampaign` filtre sur `campaign.targetTag`, `emitEvent` enrichi.
+- UI : colonne **Segment** + compteurs page contacts ; select dans `ContactDialog` ;
+  select « segment à appliquer » dans l'import ; carte **Destinataires** dans l'éditeur
+  de campagne (compteur réactif, dialog d'envoi ciblé). Module client-safe `src/lib/newsletter/tags.ts`.
+- Import Pâquis : `scripts/import-newsletter-paquis.ts` (non commité) tague 105 familles
+  + 8 institutions ; exclut 4 test + 6 staff FASE. Dry-run OK (0 email malformé).
+
+**Prochain :** (1) `pnpm db:push` (autorisation DB prod). (2) import `--commit`.
+(3) `pnpm check` + `pnpm lint` : ✅. (4) Hors scope : multi-tag, tags libres, CRUD des valeurs.
+
+---
+
 ## Etat session 2026-06-19
 
 **Fait :** Module **entièrement codé — Phases 0→7** : schéma + enums, client Resend, CRM contacts, import CSV/xlsx (mapping + preview), template email inline-styles, éditeur campagne (image/PDF Blob), envoi batch + `emitEvent`, désabo public (token) + webhook Resend bounces. Tout est en **working tree, non commité ni testé en envoi réel**. Plan Resend tranché : **Pro 20 $/mo** (voir Décisions / env).

@@ -1,5 +1,5 @@
 import { error, fail } from '@sveltejs/kit'
-import { countSubscribed, getCampaignById } from '$lib/server/db/newsletter.js'
+import { countSubscribedByTag, getCampaignById } from '$lib/server/db/newsletter.js'
 import {
   NewsletterServiceError,
   parseContentField,
@@ -15,8 +15,8 @@ export const load: PageServerLoad = async ({ params, parent }) => {
   const { ludo } = await parent()
   const campaign = await getCampaignById(params.id, ludo.id)
   if (!campaign) throw error(404, 'Campagne introuvable')
-  const subscriberCount = await countSubscribed(ludo.id)
-  return { campaign, subscriberCount }
+  const subscribedByTag = await countSubscribedByTag(ludo.id)
+  return { campaign, subscribedByTag }
 }
 
 function draftFrom(data: FormData): CampaignDraft {
@@ -24,6 +24,7 @@ function draftFrom(data: FormData): CampaignDraft {
     subject: String(data.get('subject') ?? ''),
     previewText: String(data.get('previewText') ?? ''),
     content: parseContentField(String(data.get('content') ?? '')),
+    targetTag: String(data.get('targetTag') ?? ''),
   }
 }
 

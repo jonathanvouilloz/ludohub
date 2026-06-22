@@ -5,6 +5,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import { CONTACT_TAGS, TAG_LABELS } from '$lib/newsletter/tags'
   import type { NewsletterContactRow } from '$lib/server/schema'
 
   let {
@@ -19,6 +20,7 @@
   let lastName = $state('')
   let notes = $state('')
   let status = $state<string>('subscribed')
+  let tag = $state<string>('')
   let submitting = $state(false)
 
   // (Ré)initialise les champs à chaque ouverture, selon le mode.
@@ -29,6 +31,7 @@
       lastName = contact?.lastName ?? ''
       notes = contact?.notes ?? ''
       status = contact?.status ?? 'subscribed'
+      tag = contact?.tag ?? ''
     }
   })
 </script>
@@ -78,6 +81,16 @@
           <Label for="contact-last">Nom</Label>
           <Input id="contact-last" name="lastName" bind:value={lastName} placeholder="Nom" />
         </div>
+      </div>
+
+      <div class="field">
+        <Label for="contact-tag">Segment</Label>
+        <select id="contact-tag" name="tag" bind:value={tag}>
+          <option value="">Non classé</option>
+          {#each CONTACT_TAGS as t (t)}
+            <option value={t}>{TAG_LABELS[t]}</option>
+          {/each}
+        </select>
       </div>
 
       {#if isEdit}
