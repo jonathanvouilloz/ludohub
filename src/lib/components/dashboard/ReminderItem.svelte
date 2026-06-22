@@ -17,15 +17,25 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-3) var(--space-4);
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--ludo-color) 6%, transparent);
+    border: 1px solid transparent;
     border-radius: var(--radius-md);
     color: var(--text-main);
     text-decoration: none;
-    transition: background var(--dur-fast) var(--ease-out-strong);
+    transition:
+      background var(--dur-fast) var(--ease-out-strong),
+      border-color var(--dur-fast) var(--ease-out-strong);
   }
   .reminder:hover {
-    background: var(--bg-hover);
+    background: color-mix(in srgb, var(--ludo-color) 10%, transparent);
+    border-color: color-mix(in srgb, var(--ludo-color) 20%, transparent);
+  }
+  /* Teinte d'alerte pour les rappels urgents/warn (fond léger assorti au dot). */
+  .reminder[data-tone='urgent'] {
+    background: var(--danger-light);
+  }
+  .reminder[data-tone='warn'] {
+    background: var(--warning-light);
   }
   .reminder:focus-visible {
     outline: none;

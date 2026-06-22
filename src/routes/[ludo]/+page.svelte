@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Component } from 'svelte'
-  import { Button } from '$lib/components/ui/button/index.js'
   import ModuleTile from '$lib/components/dashboard/ModuleTile.svelte'
+  import QuickActionCard from '$lib/components/dashboard/QuickActionCard.svelte'
   import ReminderItem from '$lib/components/dashboard/ReminderItem.svelte'
   import { formatDayWeekday } from '$lib/utils/dates.js'
   import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
@@ -12,7 +12,6 @@
   import BoxesIcon from '@lucide/svelte/icons/boxes'
   import Share2Icon from '@lucide/svelte/icons/share-2'
   import BellIcon from '@lucide/svelte/icons/bell'
-  import UsersIcon from '@lucide/svelte/icons/users'
   import ClipboardCheckIcon from '@lucide/svelte/icons/clipboard-check'
   import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2'
 
@@ -104,16 +103,6 @@
         badge: m.notifs.unread,
       },
     ]
-    if (data.canManage) {
-      list.push({
-        href: `${base}/settings/membres`,
-        icon: UsersIcon,
-        label: 'Équipe',
-        value: m.team.activeMembers,
-        unit: 'membres actifs',
-        hint: `${m.team.responsables} responsables`,
-      })
-    }
     return list
   })
 </script>
@@ -130,22 +119,23 @@
   </header>
 
   <section class="quick-actions" aria-label="Actions rapides">
-    <Button href={`${base}/frequentation?new=1`}>
-      <ClipboardListIcon size={18} aria-hidden="true" />
-      Clôturer une ouverture
-    </Button>
-    <Button href={`${base}/supplies?new=1`} variant="outline">
-      <PackageIcon size={18} aria-hidden="true" />
-      Demande de matériel
-    </Button>
-    <Button href={`${base}/games?new=1`} variant="outline">
-      <DicesIcon size={18} aria-hidden="true" />
-      Nouveau souhait de jeu
-    </Button>
-    <Button href={`${base}/themes`} variant="outline">
-      <ClipboardCheckIcon size={18} aria-hidden="true" />
-      Check-up de thème
-    </Button>
+    <a href={`${base}/frequentation?new=1`} class="hero-action">
+      <span class="hero-icon" aria-hidden="true"><ClipboardListIcon size={24} /></span>
+      <span class="hero-label">Clôturer une ouverture</span>
+    </a>
+    <div class="action-pair">
+      <QuickActionCard
+        href={`${base}/supplies?new=1`}
+        icon={PackageIcon}
+        label="Demande de matériel"
+      />
+      <QuickActionCard
+        href={`${base}/games?new=1`}
+        icon={DicesIcon}
+        label="Nouveau souhait de jeu"
+      />
+    </div>
+    <QuickActionCard href={`${base}/themes`} icon={ClipboardCheckIcon} label="Check-up de thème" full />
   </section>
 
   <section class="block" aria-label="Rappels">
@@ -210,8 +200,49 @@
 
   .quick-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: var(--space-3);
+  }
+  .action-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+
+  /* Action dominante du quotidien : grand bouton plein, icône en pastille. */
+  .hero-action {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4) var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--ludo-color);
+    color: var(--text-inverse);
+    text-decoration: none;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--dur-fast) var(--ease-out-strong);
+  }
+  .hero-action:hover {
+    transform: translateY(-2px);
+  }
+  .hero-action:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+  .hero-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .hero-label {
+    font-size: var(--text-h2);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
   }
 
   .block h2 {
