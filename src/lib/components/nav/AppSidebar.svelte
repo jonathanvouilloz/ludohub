@@ -58,6 +58,11 @@
     flex-direction: column;
     gap: var(--space-1);
   }
+  /* Survol des liens non-actifs : fond un cran plus gris que la sidebar
+     (le --bg-hover global est plus clair que --bg-sidebar → invisible ici). */
+  .app-sidebar__nav :global(.nav-item:not(.nav-item--active):hover) {
+    background: var(--bg-sidebar-hover);
+  }
 
   .app-sidebar__footer {
     display: flex;

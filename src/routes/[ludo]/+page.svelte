@@ -269,7 +269,13 @@
 
   .tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--space-3);
+  }
+  /* Desktop : 4 colonnes → les 8 tuiles s'alignent en 4×2. */
+  @media (min-width: 768px) {
+    .tiles {
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
 </style>

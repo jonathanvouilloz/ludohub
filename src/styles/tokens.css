@@ -21,6 +21,7 @@
     --bg-base: #fafbfd;
     --bg-card: #ffffff;
     --bg-sidebar: #f1f5fa;
+    --bg-sidebar-hover: #e4ebf4; /* survol sidebar : un cran plus gris que --bg-sidebar */
     --bg-hover: #f5f8fc;
     --border: #dde3ee;
     --border-strong: #c4cdd9;

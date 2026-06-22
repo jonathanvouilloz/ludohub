@@ -50,12 +50,12 @@
     color: var(--text-main);
     text-decoration: none;
     transition:
-      border-color var(--dur-fast) var(--ease-out-strong),
+      box-shadow var(--dur-fast) var(--ease-out-strong),
       transform var(--dur-fast) var(--ease-out-strong);
   }
   .tile:hover {
-    border-color: var(--ludo-color);
     transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
   }
   .tile:focus-visible {
     outline: none;

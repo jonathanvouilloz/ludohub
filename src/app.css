@@ -122,10 +122,6 @@ a:not([data-slot='button']) {
   text-decoration: none;
 }
 
-a:not([data-slot='button']):hover {
-  text-decoration: underline;
-}
-
 :focus-visible {
   outline: none;
   box-shadow: var(--shadow-focus);
