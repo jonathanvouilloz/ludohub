@@ -113,7 +113,7 @@
     --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 
     /* ─── Layout ─────────────────────────────────────────── */
-    --sidebar-width: 104px;
+    --sidebar-width: 210px;
     --max-content: 1200px;
 
     /* ─── Couleur ludo (injectée dynamiquement par layout) ── */

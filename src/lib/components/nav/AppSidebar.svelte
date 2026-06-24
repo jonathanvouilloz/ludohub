@@ -22,7 +22,7 @@
 <aside class="app-sidebar">
   <nav class="app-sidebar__nav" aria-label="Navigation principale">
     {#each items as dest (dest.href)}
-      <NavItem {dest} badge={dest.badgeKey === 'notifications' ? notifCount : 0} />
+      <NavItem {dest} layout="row" badge={dest.badgeKey === 'notifications' ? notifCount : 0} />
     {/each}
   </nav>
 
@@ -74,18 +74,18 @@
 
   .logout {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: var(--space-1);
+    justify-content: flex-start;
+    gap: var(--space-3);
     width: 100%;
     min-height: 44px;
-    padding: var(--space-2) var(--space-1);
+    padding: var(--space-3);
     border: none;
     border-radius: var(--radius-sm);
     background: transparent;
     color: var(--text-muted);
-    font-size: var(--text-label);
+    font-size: var(--text-body);
     font-weight: var(--weight-medium);
     font-family: inherit;
     cursor: pointer;
