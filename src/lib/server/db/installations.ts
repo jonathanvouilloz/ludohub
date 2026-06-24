@@ -32,7 +32,10 @@ export async function getInstallationDetail(id: string) {
       installedBy: true,
       items: { with: { themeItem: true } },
       checkups: {
-        with: { checkedBy: true, items: true },
+        with: {
+          checkedBy: true,
+          items: { with: { installationItem: { with: { themeItem: true } } } },
+        },
         orderBy: (c, { desc }) => desc(c.checkedAt),
       },
     },

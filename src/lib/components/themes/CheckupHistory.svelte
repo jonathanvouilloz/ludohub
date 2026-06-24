@@ -3,9 +3,16 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { DataTable } from '$lib/components/ui/data-table/index.js'
   import { DataCard } from '$lib/components/ui/data-card/index.js'
+  import ChevronDownIcon from '@lucide/svelte/icons/chevron-down'
   import { formatDateShort } from '$lib/utils/dates.js'
 
-  type CheckupItem = { status: 'present' | 'a_reparer' | 'manquant' }
+  type CheckupItemStatus = 'present' | 'a_reparer' | 'manquant'
+  type CheckupItem = {
+    id: string
+    status: CheckupItemStatus
+    note: string | null
+    installationItem: { themeItem: { name: string } | null } | null
+  }
   type Checkup = {
     id: string
     checkedAt: Date | string
@@ -15,6 +22,24 @@
   }
 
   let { checkups = [] }: { checkups?: Checkup[] } = $props()
+
+  // Détail dépliable : un seul check-up ouvert à la fois.
+  let selectedId = $state<string | null>(null)
+  function toggle(id: string) {
+    selectedId = selectedId === id ? null : id
+  }
+
+  const ITEM_STATUS: Record<
+    CheckupItemStatus,
+    { label: string; variant: 'success' | 'warning' | 'destructive' }
+  > = {
+    present: { label: 'Présent', variant: 'success' },
+    a_reparer: { label: 'À réparer', variant: 'warning' },
+    manquant: { label: 'Manquant', variant: 'destructive' },
+  }
+  function itemName(i: CheckupItem): string {
+    return i.installationItem?.themeItem?.name ?? 'Élément supprimé'
+  }
 
   function toRepair(c: Checkup): number {
     return c.items.filter((i) => i.status === 'a_reparer').length
@@ -26,6 +51,23 @@
     return c.items.filter((i) => i.status === 'present').length
   }
 </script>
+
+{#snippet detail(c: Checkup)}
+  <ul class="detail-items">
+    {#each c.items as item (item.id)}
+      <li class="detail-item">
+        <span class="detail-name">{itemName(item)}</span>
+        <span class="detail-meta">
+          {#if item.note}<span class="detail-item-note">{item.note}</span>{/if}
+          <Badge variant={ITEM_STATUS[item.status].variant}>{ITEM_STATUS[item.status].label}</Badge>
+        </span>
+      </li>
+    {/each}
+  </ul>
+  {#if c.notes}
+    <p class="detail-note">{c.notes}</p>
+  {/if}
+{/snippet}
 
 {#if checkups.length === 0}
   <p class="muted">Aucun check-up enregistré.</p>
@@ -42,8 +84,29 @@
     {/snippet}
     {#snippet body()}
       {#each checkups as c (c.id)}
-        <Table.Row>
-          <Table.Cell>{formatDateShort(c.checkedAt)}</Table.Cell>
+        <Table.Row
+          class="checkup-row"
+          role="button"
+          tabindex={0}
+          aria-expanded={selectedId === c.id}
+          onclick={() => toggle(c.id)}
+          onkeydown={(e: KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              toggle(c.id)
+            }
+          }}
+        >
+          <Table.Cell>
+            <span class="date-cell">
+              <ChevronDownIcon
+                class="row-chevron {selectedId === c.id ? '' : 'is-collapsed'}"
+                size={16}
+                aria-hidden="true"
+              />
+              {formatDateShort(c.checkedAt)}
+            </span>
+          </Table.Cell>
           <Table.Cell>{c.checkedBy?.name ?? '—'}</Table.Cell>
           <Table.Cell>{present(c)}</Table.Cell>
           <Table.Cell>
@@ -61,10 +124,10 @@
             {/if}
           </Table.Cell>
         </Table.Row>
-        {#if c.notes}
+        {#if selectedId === c.id}
           <Table.Row>
             <Table.Cell colspan={5}>
-              <span class="note">{c.notes}</span>
+              <div class="checkup-detail">{@render detail(c)}</div>
             </Table.Cell>
           </Table.Row>
         {/if}
@@ -96,15 +159,71 @@
     color: var(--text-muted);
     font-size: var(--text-small);
   }
-  .note {
-    color: var(--text-muted);
-    font-size: var(--text-small);
-    font-style: italic;
-    overflow-wrap: anywhere;
-  }
   /* Rendu « simple basique » : en-tête blanc uniforme.
      Surcharge le fond teinté du DataTable (spécificité ≥ via les 3 classes de surface). */
   :global(.dt-surface.dt-table.checkup-table thead) {
     background: var(--bg-card);
+  }
+  :global(.checkup-row) {
+    cursor: pointer;
+  }
+  :global(.checkup-row:focus-visible) {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+  .date-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  :global(.row-chevron) {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform var(--dur-fast) var(--ease-out-strong);
+  }
+  :global(.row-chevron.is-collapsed) {
+    transform: rotate(-90deg);
+  }
+  .checkup-detail {
+    padding: var(--space-2) 0;
+  }
+  .detail-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .detail-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+  }
+  .detail-item + .detail-item {
+    border-top: 1px solid var(--border);
+  }
+  .detail-name {
+    color: var(--text-main);
+    font-size: var(--text-small);
+  }
+  .detail-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  .detail-item-note {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    font-style: italic;
+  }
+  .detail-note {
+    margin: var(--space-3) 0 0;
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    font-style: italic;
+    overflow-wrap: anywhere;
   }
 </style>
