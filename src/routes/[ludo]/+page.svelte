@@ -14,11 +14,29 @@
   import BellIcon from '@lucide/svelte/icons/bell'
   import ClipboardCheckIcon from '@lucide/svelte/icons/clipboard-check'
   import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2'
+  import WrenchIcon from '@lucide/svelte/icons/wrench'
+  import { Badge } from '$lib/components/ui/badge/index.js'
 
   let { data } = $props()
 
   const d = $derived(data.dashboard)
   const base = $derived(`/${data.ludo.slug}`)
+
+  // Objets à traiter regroupés par thème (depuis les check-ups des installations
+  // en cours). Préserve l'ordre d'arrivée des thèmes.
+  const problemGroups = $derived.by(() => {
+    const map = new Map<
+      string,
+      { themeId: string; themeName: string; items: typeof data.problematicItems }
+    >()
+    for (const item of data.problematicItems) {
+      const group = map.get(item.themeId)
+      if (group) group.items.push(item)
+      else
+        map.set(item.themeId, { themeId: item.themeId, themeName: item.themeName, items: [item] })
+    }
+    return [...map.values()]
+  })
 
   type Tile = {
     href: string
@@ -135,7 +153,12 @@
         label="Nouveau souhait de jeu"
       />
     </div>
-    <QuickActionCard href={`${base}/themes`} icon={ClipboardCheckIcon} label="Check-up de thème" full />
+    <QuickActionCard
+      href={`${base}/themes`}
+      icon={ClipboardCheckIcon}
+      label="Check-up de thème"
+      full
+    />
   </section>
 
   <section class="block" aria-label="Rappels">
@@ -153,6 +176,34 @@
       </div>
     {/if}
   </section>
+
+  {#if problemGroups.length > 0}
+    <section class="block" aria-label="Objets à traiter">
+      <h2>Objets à traiter</h2>
+      <div class="problems">
+        {#each problemGroups as group (group.themeId)}
+          <a class="problem-group" href="{base}/themes/{group.themeId}">
+            <span class="problem-head">
+              <WrenchIcon size={16} aria-hidden="true" />
+              <strong>{group.themeName}</strong>
+            </span>
+            <ul>
+              {#each group.items as item (item.installationId + item.itemName)}
+                <li>
+                  <span class="item-name">{item.itemName}</span>
+                  {#if item.condition === 'a_reparer'}
+                    <Badge variant="warning">À réparer</Badge>
+                  {:else}
+                    <Badge variant="destructive">Manquant</Badge>
+                  {/if}
+                </li>
+              {/each}
+            </ul>
+          </a>
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   <section class="block" aria-label="Aperçu des modules">
     <h2>Aperçu</h2>
@@ -265,6 +316,54 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+
+  .problems {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .problem-group {
+    display: block;
+    padding: var(--space-4);
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color var(--dur-fast) var(--ease-out-strong);
+  }
+  .problem-group:hover {
+    border-color: var(--border-strong);
+  }
+  .problem-group:focus-visible {
+    outline: none;
+    box-shadow: var(--shadow-focus);
+  }
+  .problem-head {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text-main);
+    margin-bottom: var(--space-2);
+  }
+  .problem-group ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .problem-group li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) 0;
+    border-top: 1px solid var(--border);
+  }
+  .item-name {
+    color: var(--text-main);
+    margin-right: auto;
   }
 
   .tiles {

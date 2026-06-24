@@ -7,6 +7,7 @@ import {
   listByMonth,
   updateRecord,
 } from '../db/attendance.js'
+import { getEventTypeById } from '../db/eventTypes.js'
 import type { AttendancePeriod, AttendanceRow, WeatherCondition } from '../schema.js'
 
 /**
@@ -31,6 +32,7 @@ export type SessionInput = {
   date: string
   period: string
   eventLabel?: string | null
+  eventTypeId?: string | null
   adultsCount: number
   childrenCount: number
   loansCount: number
@@ -77,18 +79,22 @@ function parseTemperature(value: number | null | undefined): number | null {
   return value
 }
 
-/** Normalise + valide un input de séance (création ou édition). */
+/** Normalise + valide un input de séance (création ou édition). Pur/synchrone :
+ * la résolution du type d'événement (snapshot + tenant) se fait à part, en async. */
 function normalize(input: SessionInput) {
   const period = parsePeriod(input.period)
   const date = parseDate(input.date)
+  const isEvent = period === 'evenement'
   const eventLabel = input.eventLabel?.trim() || null
-  if (period === 'evenement' && !eventLabel) {
-    throw new AttendanceServiceError('Un libellé est requis pour une séance événement.')
+  const eventTypeId = input.eventTypeId?.trim() || null
+  if (isEvent && !eventTypeId && !eventLabel) {
+    throw new AttendanceServiceError('Choisissez un type d’événement ou saisissez un libellé.')
   }
   return {
     date,
     period,
-    eventLabel: period === 'evenement' ? eventLabel : null,
+    eventLabel: isEvent ? eventLabel : null,
+    eventTypeId: isEvent ? eventTypeId : null,
     adultsCount: parseCount(input.adultsCount, 'adultsCount'),
     childrenCount: parseCount(input.childrenCount, 'childrenCount'),
     loansCount: parseCount(input.loansCount, 'loansCount'),
@@ -96,6 +102,26 @@ function normalize(input: SessionInput) {
     weather: parseWeather(input.weather),
     temperature: parseTemperature(input.temperature),
   }
+}
+
+/**
+ * Résout le type d'événement choisi : vérifie qu'il appartient à la ludo et
+ * **snapshote son nom dans `eventLabel`** pour que l'historique reste lisible si
+ * le type est plus tard renommé ou supprimé. Si « Autre » (pas de type), on
+ * conserve la saisie libre.
+ */
+async function resolveEventType(
+  ludoId: string,
+  fields: ReturnType<typeof normalize>,
+): Promise<{ eventTypeId: string | null; eventLabel: string | null }> {
+  if (fields.period !== 'evenement' || !fields.eventTypeId) {
+    return { eventTypeId: fields.eventTypeId, eventLabel: fields.eventLabel }
+  }
+  const type = await getEventTypeById(fields.eventTypeId)
+  if (!type || type.ludoId !== ludoId) {
+    throw new AttendanceServiceError('Type d’événement invalide.')
+  }
+  return { eventTypeId: type.id, eventLabel: type.name }
 }
 
 /** Charge une séance et vérifie qu'elle appartient bien à la ludo. */
@@ -119,7 +145,8 @@ export async function recordSession(
       'Une séance est déjà clôturée pour cette date et cette période.',
     )
   }
-  return insertRecord({ ludoId, closedByMemberId: memberId, ...fields })
+  const resolved = await resolveEventType(ludoId, fields)
+  return insertRecord({ ludoId, closedByMemberId: memberId, ...fields, ...resolved })
 }
 
 /** Corrige une séance existante (compteurs, météo, date, période…). */
@@ -138,7 +165,8 @@ export async function updateSession(
       'Une séance est déjà clôturée pour cette date et cette période.',
     )
   }
-  return updateRecord(recordId, fields)
+  const resolved = await resolveEventType(ludoId, fields)
+  return updateRecord(recordId, { ...fields, ...resolved })
 }
 
 /** Supprime une séance (correction d'une saisie erronée). */

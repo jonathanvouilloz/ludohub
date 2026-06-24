@@ -10,6 +10,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
+  import PrinterIcon from '@lucide/svelte/icons/printer'
   import ThemeItemList from '$lib/components/themes/ThemeItemList.svelte'
   import ThemeImageGallery from '$lib/components/themes/ThemeImageGallery.svelte'
   import LoanDialog from '$lib/components/themes/LoanDialog.svelte'
@@ -51,6 +52,15 @@
       </h1>
     </div>
     <div class="head-actions">
+      <Button
+        href="/{data.ludo.slug}/themes/{theme.id}/print"
+        variant="ghost"
+        size="icon"
+        title="Imprimer la liste du matériel"
+      >
+        <PrinterIcon aria-hidden="true" />
+        <span class="sr-only">Imprimer la liste du matériel</span>
+      </Button>
       {#if editable && !activeInstallation}
         <Button onclick={() => (installOpen = true)}>Installer</Button>
       {/if}

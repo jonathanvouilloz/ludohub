@@ -8,6 +8,7 @@ vi.mock('../db/installations.js', () => ({
   closeInstallation: vi.fn(),
   createCheckup: vi.fn(),
   listInstallations: vi.fn(),
+  getActiveInstallationsByLudo: vi.fn(),
   applyConditions: vi.fn(),
   applyThemeItemConditions: vi.fn(),
   setInstallationItemCondition: vi.fn(),
@@ -22,6 +23,7 @@ import {
   createCheckup,
   createInstallation,
   getActiveInstallation,
+  getActiveInstallationsByLudo,
   getInstallationById,
   getInstallationDetail,
 } from '../db/installations.js'
@@ -32,6 +34,7 @@ import {
   closeInstallationForLudo,
   closeInstallationWithCheckup,
   installTheme,
+  listProblematicItems,
   recordCheckup,
   InstallationServiceError,
 } from './installations.js'
@@ -203,6 +206,57 @@ describe('recordCheckup', () => {
     await expect(
       recordCheckup('inst-1', OTHER, MEMBER, [{ installationItemId: 'ii-1', status: 'present' }]),
     ).rejects.toThrow(InstallationServiceError)
+  })
+})
+
+describe('listProblematicItems', () => {
+  it('ne remonte que les objets à réparer / manquants, groupables par thème', async () => {
+    vi.mocked(getActiveInstallationsByLudo).mockResolvedValue([
+      {
+        id: 'inst-1',
+        theme: { id: THEME, name: 'Pirates' },
+        items: [
+          { condition: 'present', themeItem: { name: 'Longue-vue' } },
+          { condition: 'a_reparer', themeItem: { name: 'Coffre' } },
+          { condition: 'manquant', themeItem: { name: 'Drapeau' } },
+        ],
+        checkups: [{ checkedAt: new Date('2026-06-20T10:00:00Z') }],
+      },
+    ] as never)
+
+    const result = await listProblematicItems(OWNER)
+
+    expect(result).toEqual([
+      {
+        themeId: THEME,
+        themeName: 'Pirates',
+        installationId: 'inst-1',
+        itemName: 'Coffre',
+        condition: 'a_reparer',
+        lastCheckupAt: new Date('2026-06-20T10:00:00Z'),
+      },
+      {
+        themeId: THEME,
+        themeName: 'Pirates',
+        installationId: 'inst-1',
+        itemName: 'Drapeau',
+        condition: 'manquant',
+        lastCheckupAt: new Date('2026-06-20T10:00:00Z'),
+      },
+    ])
+  })
+
+  it('renvoie une liste vide quand tout est présent (et gère l’absence de check-up)', async () => {
+    vi.mocked(getActiveInstallationsByLudo).mockResolvedValue([
+      {
+        id: 'inst-1',
+        theme: { id: THEME, name: 'Pirates' },
+        items: [{ condition: 'present', themeItem: { name: 'Longue-vue' } }],
+        checkups: [],
+      },
+    ] as never)
+
+    expect(await listProblematicItems(OWNER)).toEqual([])
   })
 })
 

@@ -9,6 +9,7 @@ vi.mock('../db/loans.js', () => ({
 }))
 vi.mock('../db/ludotheques.js', () => ({ getLudoById: vi.fn() }))
 vi.mock('../db/themes.js', () => ({ getThemeById: vi.fn() }))
+vi.mock('../db/installations.js', () => ({ getActiveInstallation: vi.fn() }))
 vi.mock('./events.js', () => ({ emitEvent: vi.fn() }))
 
 import {
@@ -20,6 +21,7 @@ import {
 } from '../db/loans.js'
 import { getLudoById } from '../db/ludotheques.js'
 import { getThemeById } from '../db/themes.js'
+import { getActiveInstallation } from '../db/installations.js'
 import {
   cancelLoanRequest,
   confirmLoanRequest,
@@ -44,6 +46,7 @@ beforeEach(() => {
   } as never)
   vi.mocked(getLudoById).mockResolvedValue({ id: TARGET, name: 'Ludo B' } as never)
   vi.mocked(getOpenLoanForTheme).mockResolvedValue(undefined as never)
+  vi.mocked(getActiveInstallation).mockResolvedValue(undefined as never)
   vi.mocked(createLoan).mockResolvedValue({ id: 'loan-1' } as never)
 })
 

@@ -8,12 +8,13 @@ import {
   type SessionInput,
 } from '$lib/server/services/attendance.js'
 import { getActiveSeasonByLudo, getSeasonsByLudo } from '$lib/server/db/planning.js'
+import { listTypes } from '$lib/server/services/eventTypes.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ parent, url }) => {
   const { ludo } = await parent()
-  const seasons = await getSeasonsByLudo(ludo.id)
+  const [seasons, eventTypes] = await Promise.all([getSeasonsByLudo(ludo.id), listTypes(ludo.id)])
 
   // Saison sélectionnée : param `?season=<id>` sinon saison active.
   const paramId = url.searchParams.get('season')
@@ -36,6 +37,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   const records = await listSessionsInRange(ludo.id, start, end)
   return {
     records,
+    eventTypes: eventTypes.map((t) => ({ id: t.id, name: t.name })),
     seasons: seasons.map((s) => ({ id: s.id, name: s.name })),
     season: season
       ? { id: season.id, name: season.name, startDate: season.startDate, endDate: season.endDate }
@@ -66,6 +68,7 @@ function parseSessionInput(data: FormData): SessionInput {
     date: String(data.get('date') ?? ''),
     period: String(data.get('period') ?? ''),
     eventLabel: String(data.get('eventLabel') ?? ''),
+    eventTypeId: String(data.get('eventTypeId') ?? '') || null,
     adultsCount: num('adultsCount'),
     childrenCount: num('childrenCount'),
     loansCount: num('loansCount'),

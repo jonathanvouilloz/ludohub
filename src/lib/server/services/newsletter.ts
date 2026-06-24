@@ -6,6 +6,7 @@ import {
   deleteContact,
   findContactByEmail,
   getCampaignById,
+  getCampaignSendStats,
   getContactById,
   getContactEmails,
   getSentContactIds,
@@ -148,6 +149,47 @@ export async function editContact(
 export async function removeContact(id: string, ludoId: string): Promise<void> {
   const ok = await deleteContact(id, ludoId)
   if (!ok) throw new NewsletterServiceError('Contact introuvable.')
+}
+
+/** (Dés)abonnement rapide d'un contact depuis la liste (responsable). */
+export async function setContactSubscription(
+  id: string,
+  ludoId: string,
+  subscribed: boolean,
+): Promise<void> {
+  const row = await updateContact(id, ludoId, {
+    status: subscribed ? 'subscribed' : 'unsubscribed',
+  })
+  if (!row) throw new NewsletterServiceError('Contact introuvable.')
+}
+
+/**
+ * Anonymisation RGPD (droit à l'effacement) : on neutralise les données
+ * personnelles tout en **gardant la ligne** (l'id reste référencé par
+ * `campaign_sends`, ce qui préserve les statistiques d'envoi). L'email — `notNull`
+ * et unique par ludo — est remplacé par un placeholder unique, pas par `null`.
+ */
+export async function anonymizeContact(id: string, ludoId: string): Promise<void> {
+  const current = await getContactById(id, ludoId)
+  if (!current) throw new NewsletterServiceError('Contact introuvable.')
+  const row = await updateContact(id, ludoId, {
+    email: `anonyme-${id}@anonyme.invalid`,
+    firstName: null,
+    lastName: null,
+    notes: null,
+    status: 'unsubscribed',
+  })
+  if (!row) throw new NewsletterServiceError('Contact introuvable.')
+}
+
+/** Statistiques d'envoi d'une campagne (garde tenant via getCampaignById). */
+export async function getCampaignStats(
+  campaignId: string,
+  ludoId: string,
+): Promise<{ sent: number; failed: number; bounced: number }> {
+  const campaign = await getCampaignById(campaignId, ludoId)
+  if (!campaign) throw new NewsletterServiceError('Campagne introuvable.')
+  return getCampaignSendStats(campaignId)
 }
 
 // ─── Import CSV / Excel ──────────────────────────────────────────────────────

@@ -27,6 +27,7 @@ export async function updateRecord(
       | 'date'
       | 'period'
       | 'eventLabel'
+      | 'eventTypeId'
       | 'adultsCount'
       | 'childrenCount'
       | 'loansCount'

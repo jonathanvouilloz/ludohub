@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-24 | Batch 2 backlog : types d'événement par ludo + pilote TanStack + modals bornés
+
+**Contexte :** Revue produit (`docs/BACKLOG.md`), 3 clusters (accueil/thèmes, fréquentation, newsletter) + retouche UX modal.
+
+**Décision :** (1) **Types d'événement par ludo** : nouvelle table `event_types(ludoId, name, isArchived)` + `attendance_records.eventTypeId` nullable (`set null`). On **garde `eventLabel`** et on y **snapshote le nom du type** à l'enregistrement → l'historique reste lisible si le type est renommé/supprimé ; option « Autre » = saisie libre. Validation tenant dans `recordSession`/`updateSession` (pas dans `normalize`, qui reste pur). (2) **Bloc « objets à traiter » accueil** : source = `themeInstallationItems.condition` (état courant, capte `a_reparer`+`manquant`), scopé sur `themeInstallations.ludoId` (ludo où c'est installé, inclut les empruntés) ; le compteur dashboard est aligné sur cette même source. (3) **Impression** : `@media print` + mode `bare` dans `AppShell` (shell masqué sur les routes `/print`), pas de lib PDF serveur. (4) **Newsletter** : pagination + tri **serveur** (50/page) ; **pilote TanStack** `@tanstack/table-core` isolé dans `ContactsTable.svelte` en mode `manual*` ; RGPD via **anonymisation** (placeholder email unique, ligne conservée pour les stats `campaign_sends`), suppression dure réservée au retrait total ; bounce relié à l'envoi via `email_id` Resend. (5) **Modals** : primitive `dialog-content` bornée `max-h-[calc(100dvh-2rem)]` + `overflow-y-auto` (correctif global, footer toujours atteignable) ; compteurs du modal fréquentation en grille 2×2 à toutes les tailles.
+
+**Alternatives :** `eventTypeId` strict en remplacement de `eventLabel` (rejeté : migration + perte de la saisie libre) ; TanStack en tri/pagination **client** tout-en-mémoire (rejeté : imports jusqu'à 10 000 contacts) ; lib PDF serveur type pdfkit/puppeteer (reporté batch 3 : `@media print` suffit pour les checklists) ; footer épinglé via restructuration de chaque dialog (rejeté : scroll global suffit, moins invasif).
+
+---
+
 ## 2026-06-24 | Batch 1 backlog : sidebar horizontale + couleurs sémantiques compteurs
 
 **Contexte :** Revue produit (voir `docs/BACKLOG.md`) ; premier lot de quick wins UX transverses (nav, thèmes, fréquentation).

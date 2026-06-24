@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 import { json } from '@sveltejs/kit'
 import { env } from '$env/dynamic/private'
-import { markBouncedByEmail } from '$lib/server/db/newsletter.js'
+import { markBouncedByEmail, markCampaignSendBouncedByResendId } from '$lib/server/db/newsletter.js'
 import type { RequestHandler } from './$types'
 
 /**
@@ -35,6 +35,12 @@ function extractEmails(data: unknown): string[] {
   if (typeof d.to === 'string') return [d.to]
   if (typeof d.email === 'string') return [d.email]
   return []
+}
+
+/** Id Resend de l'email concerné (`email_id`), pour relier le bounce à un envoi. */
+function extractResendId(data: unknown): string | null {
+  const d = (data ?? {}) as { email_id?: unknown }
+  return typeof d.email_id === 'string' ? d.email_id : null
 }
 
 /** Webhook Resend : bounces & plaintes → passe le contact à `bounced`. */
@@ -76,6 +82,10 @@ export const POST: RequestHandler = async (event) => {
     for (const email of extractEmails(payload.data)) {
       await markBouncedByEmail(email)
     }
+    // Relie aussi le rejet à l'envoi précis (si l'id Resend est présent) pour les
+    // statistiques par campagne.
+    const resendId = extractResendId(payload.data)
+    if (resendId) await markCampaignSendBouncedByResendId(resendId)
   }
 
   return json({ ok: true })

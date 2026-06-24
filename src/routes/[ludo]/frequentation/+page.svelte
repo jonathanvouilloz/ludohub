@@ -254,7 +254,12 @@
     </div>
   {/if}
 
-  <CloseSessionDialog bind:open={dialogOpen} slug={data.ludo.slug} record={editing} />
+  <CloseSessionDialog
+    bind:open={dialogOpen}
+    slug={data.ludo.slug}
+    record={editing}
+    eventTypes={data.eventTypes}
+  />
 </main>
 
 <style>

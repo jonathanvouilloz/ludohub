@@ -6,6 +6,7 @@
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import MailIcon from '@lucide/svelte/icons/mail'
+  import ChartColumnIcon from '@lucide/svelte/icons/chart-column'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import type { CampaignRow } from '$lib/server/schema'
 
@@ -97,6 +98,16 @@
             </div>
           </a>
           <div class="row-actions">
+            {#if c.status === 'sent'}
+              <a
+                class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+                href={`/${slug}/newsletter/${c.id}/stats`}
+                title="Statistiques d'envoi"
+              >
+                <ChartColumnIcon aria-hidden="true" />
+                <span class="sr-only">Statistiques d'envoi</span>
+              </a>
+            {/if}
             <AlertDialog.Root>
               <AlertDialog.Trigger
                 class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}

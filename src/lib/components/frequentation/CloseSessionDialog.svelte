@@ -16,13 +16,22 @@
     open = $bindable(false),
     slug,
     record = null,
-  }: { open?: boolean; slug: string; record?: AttendanceRow | null } = $props()
+    eventTypes = [],
+  }: {
+    open?: boolean
+    slug: string
+    record?: AttendanceRow | null
+    eventTypes?: { id: string; name: string }[]
+  } = $props()
 
   const periodLabels: Record<string, string> = {
     matin: 'Matin',
     apres_midi: 'Après-midi',
     evenement: 'Événement',
   }
+
+  // Valeur sentinelle du Select pour « Autre » (saisie libre).
+  const TYPE_OTHER = '__autre__'
 
   // Date locale du jour au format `YYYY-MM-DD` (défaut en création).
   function todayLocal(): string {
@@ -39,6 +48,8 @@
   let date = $state('')
   let period = $state<string>('matin')
   let eventLabel = $state('')
+  // Choix dans le Select : id d'un type, `TYPE_OTHER`, ou '' (rien choisi).
+  let eventTypeChoice = $state('')
   let adultsCount = $state<number>(0)
   let childrenCount = $state<number>(0)
   let loansCount = $state<number>(0)
@@ -50,6 +61,13 @@
   let weatherLoading = $state(false)
 
   const isEdit = $derived(record != null)
+  const isOther = $derived(eventTypeChoice === TYPE_OTHER)
+  // Libellé affiché dans le déclencheur du Select.
+  const typeTriggerLabel = $derived(
+    eventTypeChoice === TYPE_OTHER
+      ? 'Autre (préciser)'
+      : (eventTypes.find((t) => t.id === eventTypeChoice)?.name ?? 'Choisir un type'),
+  )
 
   // Pré-remplissage météo via l'endpoint serveur (jamais bloquant), pour un créneau.
   function loadWeather(d: string, p: string) {
@@ -88,6 +106,14 @@
       date = record.date
       period = record.period
       eventLabel = record.eventLabel ?? ''
+      // Type connu et toujours actif → on le présélectionne ; sinon « Autre »
+      // (le libellé snapshot reste affiché via la saisie libre).
+      eventTypeChoice =
+        record.eventTypeId && eventTypes.some((t) => t.id === record.eventTypeId)
+          ? record.eventTypeId
+          : record.eventLabel
+            ? TYPE_OTHER
+            : ''
       adultsCount = record.adultsCount
       childrenCount = record.childrenCount
       loansCount = record.loansCount
@@ -99,6 +125,8 @@
       date = todayLocal()
       period = defaultPeriodForNow()
       eventLabel = ''
+      // Sans aucun type défini, on bascule directement sur la saisie libre.
+      eventTypeChoice = eventTypes.length > 0 ? '' : TYPE_OTHER
       adultsCount = 0
       childrenCount = 0
       loansCount = 0
@@ -170,14 +198,34 @@
 
       {#if period === 'evenement'}
         <div class="field">
-          <Label for="freq-label">Libellé de l'événement</Label>
-          <Input
-            id="freq-label"
-            name="eventLabel"
-            bind:value={eventLabel}
-            placeholder="ex. Soirée jeux, Accueil parascolaire…"
-          />
+          <Label for="freq-type">Type d'événement</Label>
+          <Select.Root type="single" bind:value={eventTypeChoice}>
+            <Select.Trigger id="freq-type">{typeTriggerLabel}</Select.Trigger>
+            <Select.Content>
+              {#each eventTypes as type (type.id)}
+                <Select.Item value={type.id} label={type.name} />
+              {/each}
+              <Select.Item value={TYPE_OTHER} label="Autre (préciser)" />
+            </Select.Content>
+          </Select.Root>
+          <!-- Le type connu est résolu côté serveur (snapshot du nom) ; pour
+               « Autre » on transmet la saisie libre. -->
+          <input type="hidden" name="eventTypeId" value={isOther ? '' : eventTypeChoice} />
         </div>
+
+        {#if isOther}
+          <div class="field">
+            <Label for="freq-label">Libellé de l'événement</Label>
+            <Input
+              id="freq-label"
+              name="eventLabel"
+              bind:value={eventLabel}
+              placeholder="ex. Soirée jeux, Accueil parascolaire…"
+            />
+          </div>
+        {:else}
+          <input type="hidden" name="eventLabel" value="" />
+        {/if}
       {/if}
 
       <div class="counters">
@@ -231,16 +279,12 @@
     flex-direction: column;
     gap: var(--space-2);
   }
+  /* Compteurs en grille 2×2 à toutes les tailles (minmax 0 = colonnes
+     rétrécissables) pour limiter la hauteur du modal sur petit écran / zoom. */
   .counters {
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: var(--space-4);
-  }
-  /* Deux colonnes (rétrécissables via minmax 0) seulement à partir du palier. */
-  @media (min-width: 30rem) {
-    .counters {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
   }
   .weather-loading {
     margin: 0;

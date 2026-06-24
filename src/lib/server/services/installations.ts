@@ -5,6 +5,7 @@ import {
   createCheckup,
   createInstallation,
   getActiveInstallation,
+  getActiveInstallationsByLudo,
   getInstallationById,
   getInstallationDetail,
   listInstallations,
@@ -327,4 +328,35 @@ export async function getInstallationForLudo(installationId: string, ludoId: str
 
 export async function listInstallationsForTheme(themeId: string) {
   return listInstallations(themeId)
+}
+
+export type ProblematicItem = {
+  themeId: string
+  themeName: string
+  installationId: string
+  itemName: string
+  condition: 'a_reparer' | 'manquant'
+  lastCheckupAt: Date | null
+}
+
+/**
+ * Objets à traiter (à réparer / manquants) des installations en cours de la
+ * ludo — pour le bloc « objets à traiter » de l'accueil. Ne remonte que les
+ * objets dont l'état courant `condition` n'est pas « présent » (les objets
+ * réparés/retrouvés depuis disparaissent).
+ */
+export async function listProblematicItems(ludoId: string): Promise<ProblematicItem[]> {
+  const installations = await getActiveInstallationsByLudo(ludoId)
+  return installations.flatMap((inst) =>
+    inst.items
+      .filter((i) => i.condition !== 'present')
+      .map((i) => ({
+        themeId: inst.theme.id,
+        themeName: inst.theme.name,
+        installationId: inst.id,
+        itemName: i.themeItem.name,
+        condition: i.condition as 'a_reparer' | 'manquant',
+        lastCheckupAt: inst.checkups[0]?.checkedAt ?? null,
+      })),
+  )
 }

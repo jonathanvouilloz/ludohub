@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { navigating } from '$app/state'
+  import { navigating, page } from '$app/state'
   import type { LudothequeRow, MemberRow } from '$lib/server/schema.js'
   import { PageSkeleton } from '$lib/components/ui/skeleton/index.js'
   import AppSidebar from './AppSidebar.svelte'
@@ -38,21 +38,29 @@
   const loadingHeavy = $derived(
     !!navigating.to?.route.id && HEAVY_ROUTES.has(navigating.to.route.id),
   )
+
+  // Routes d'impression : on retire toute la chrome (sidebar + tab bar) pour un
+  // rendu plein cadre propre, à l'écran comme au print.
+  const bare = $derived(page.url.pathname.endsWith('/print'))
 </script>
 
-<div class="app-shell">
-  <AppSidebar {ludo} {member} {notifCount} />
-  <main class="app-shell__content">
-    {#if loadingHeavy}
-      <PageSkeleton />
-    {:else}
-      {@render children()}
-    {/if}
-  </main>
-</div>
+{#if bare}
+  {@render children()}
+{:else}
+  <div class="app-shell">
+    <AppSidebar {ludo} {member} {notifCount} />
+    <main class="app-shell__content">
+      {#if loadingHeavy}
+        <PageSkeleton />
+      {:else}
+        {@render children()}
+      {/if}
+    </main>
+  </div>
 
-<BottomTabBar {ludo} {notifCount} onMore={() => (sheetOpen = true)} />
-<MoreSheet {ludo} {member} {notifCount} bind:open={sheetOpen} />
+  <BottomTabBar {ludo} {notifCount} onMore={() => (sheetOpen = true)} />
+  <MoreSheet {ludo} {member} {notifCount} bind:open={sheetOpen} />
+{/if}
 
 <style>
   .app-shell {

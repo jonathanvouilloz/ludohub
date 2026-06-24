@@ -283,8 +283,12 @@ export const attendanceRecords = pgTable(
       .references(() => ludotheques.id, { onDelete: 'cascade' }),
     date: date('date').notNull(),
     period: attendancePeriod('period').notNull(),
-    // Libellé libre, requis uniquement pour la période `evenement`, sinon null.
+    // Libellé de l'événement : snapshot du nom du type choisi, ou saisie libre
+    // (« Autre »). Requis uniquement pour la période `evenement`, sinon null.
     eventLabel: text('event_label'),
+    // Type d'événement choisi parmi le référentiel de la ludo (null si « Autre »
+    // ou hors `evenement`). Set null si le type est supprimé : `eventLabel` reste.
+    eventTypeId: uuid('event_type_id').references(() => eventTypes.id, { onDelete: 'set null' }),
     adultsCount: integer('adults_count').notNull().default(0),
     childrenCount: integer('children_count').notNull().default(0),
     loansCount: integer('loans_count').notNull().default(0),
@@ -307,11 +311,40 @@ export const attendanceRecords = pgTable(
   ],
 )
 
+// Référentiel de types d'événement propre à chaque ludo (« soirée jeu »,
+// « anniversaire »…). Référencé par `attendance_records.eventTypeId`.
+export const eventTypes = pgTable(
+  'event_types',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    isArchived: boolean('is_archived').notNull().default(false),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  // Unicité du nom par ludo, insensible à la casse.
+  (t) => [uniqueIndex('event_types_ludo_name_idx').on(t.ludoId, sql`lower(${t.name})`)],
+)
+
 export const attendanceRecordsRelations = relations(attendanceRecords, ({ one }) => ({
   closedBy: one(members, {
     fields: [attendanceRecords.closedByMemberId],
     references: [members.id],
   }),
+  eventType: one(eventTypes, {
+    fields: [attendanceRecords.eventTypeId],
+    references: [eventTypes.id],
+  }),
+}))
+
+export const eventTypesRelations = relations(eventTypes, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [eventTypes.ludoId],
+    references: [ludotheques.id],
+  }),
+  records: many(attendanceRecords),
 }))
 
 // ─── Thèmes ──────────────────────────────────────────────────────────────────
@@ -842,6 +875,8 @@ export type AttendanceRow = typeof attendanceRecords.$inferSelect
 export type AttendanceInsert = typeof attendanceRecords.$inferInsert
 export type AttendancePeriod = (typeof attendancePeriod.enumValues)[number]
 export type WeatherCondition = (typeof weatherCondition.enumValues)[number]
+export type EventTypeRow = typeof eventTypes.$inferSelect
+export type EventTypeInsert = typeof eventTypes.$inferInsert
 export type ThemeRow = typeof themes.$inferSelect
 export type ThemeInsert = typeof themes.$inferInsert
 export type ThemeItemRow = typeof themeItems.$inferSelect

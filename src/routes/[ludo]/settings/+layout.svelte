@@ -9,6 +9,7 @@
   type NavItem = { label: string; href: string; disabled?: boolean }
   const items = $derived<NavItem[]>([
     { label: 'Membres', href: `/${slug}/settings/membres` },
+    { label: "Types d'événement", href: `/${slug}/settings/evenements` },
     { label: 'Infos ludothèque', href: `/${slug}/settings/infos` },
   ])
 </script>

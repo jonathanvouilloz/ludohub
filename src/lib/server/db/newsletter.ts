@@ -14,11 +14,49 @@ import {
 
 // ─── Contacts ──────────────────────────────────────────────────────────────────
 
-export async function listContacts(ludoId: string): Promise<NewsletterContactRow[]> {
+export type ContactSortColumn = 'email' | 'createdAt' | 'status' | 'tag'
+
+export type ListContactsOptions = {
+  limit?: number
+  offset?: number
+  sort?: { col: ContactSortColumn; dir: 'asc' | 'desc' }
+}
+
+/**
+ * Liste paginée/triée des contacts d'une ludo. Sans `opts`, conserve le
+ * comportement historique (tous les contacts, du plus récent au plus ancien).
+ */
+export async function listContacts(
+  ludoId: string,
+  opts: ListContactsOptions = {},
+): Promise<NewsletterContactRow[]> {
+  const { sort, limit, offset } = opts
   return db.query.newsletterContacts.findMany({
     where: eq(newsletterContacts.ludoId, ludoId),
-    orderBy: (c, { desc }) => desc(c.createdAt),
+    orderBy: (c, { asc, desc }) => {
+      const dir = sort?.dir === 'asc' ? asc : desc
+      switch (sort?.col) {
+        case 'email':
+          return dir(c.email)
+        case 'status':
+          return dir(c.status)
+        case 'tag':
+          return dir(c.tag)
+        default:
+          return dir(c.createdAt)
+      }
+    },
+    limit,
+    offset,
   })
+}
+
+export async function countContacts(ludoId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(newsletterContacts)
+    .where(eq(newsletterContacts.ludoId, ludoId))
+  return row?.n ?? 0
 }
 
 export async function getContactById(
@@ -223,6 +261,29 @@ export async function deleteCampaign(id: string, ludoId: string): Promise<boolea
 export async function insertCampaignSends(rows: CampaignSendInsert[]): Promise<void> {
   if (rows.length === 0) return
   await db.insert(campaignSends).values(rows)
+}
+
+/** Compteurs d'envoi d'une campagne (succès / échecs / rejets) depuis campaign_sends. */
+export async function getCampaignSendStats(
+  campaignId: string,
+): Promise<{ sent: number; failed: number; bounced: number }> {
+  const rows = await db
+    .select({ status: campaignSends.status, n: sql<number>`count(*)::int` })
+    .from(campaignSends)
+    .where(eq(campaignSends.campaignId, campaignId))
+    .groupBy(campaignSends.status)
+
+  const stats = { sent: 0, failed: 0, bounced: 0 }
+  for (const r of rows) stats[r.status] = r.n
+  return stats
+}
+
+/** Marque comme `bounced` l'envoi correspondant à un id Resend (webhook). */
+export async function markCampaignSendBouncedByResendId(resendId: string): Promise<void> {
+  await db
+    .update(campaignSends)
+    .set({ status: 'bounced' })
+    .where(eq(campaignSends.resendId, resendId))
 }
 
 /** Ids des contacts déjà destinataires d'une campagne (garde-fou anti-doublon). */

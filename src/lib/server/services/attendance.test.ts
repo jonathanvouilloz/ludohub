@@ -8,6 +8,7 @@ vi.mock('../db/attendance.js', () => ({
   listByMonth: vi.fn(),
   existsForSlot: vi.fn(),
 }))
+vi.mock('../db/eventTypes.js', () => ({ getEventTypeById: vi.fn() }))
 
 import {
   deleteRecord,
@@ -17,6 +18,7 @@ import {
   listByMonth,
   updateRecord,
 } from '../db/attendance.js'
+import { getEventTypeById } from '../db/eventTypes.js'
 import {
   AttendanceServiceError,
   deleteSession,
@@ -84,10 +86,50 @@ describe('recordSession', () => {
     expect(insertRecord).toHaveBeenCalledTimes(2)
   })
 
-  it('exige un libellé pour un événement', async () => {
+  it('exige un type ou un libellé pour un événement', async () => {
     await expect(
       recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: '  ' })),
     ).rejects.toThrow(/libellé/i)
+  })
+
+  it('snapshote le nom du type choisi dans eventLabel', async () => {
+    vi.mocked(getEventTypeById).mockResolvedValue({
+      id: 'type-1',
+      ludoId: LUDO,
+      name: 'Soirée jeux',
+    } as never)
+    await recordSession(
+      LUDO,
+      MEMBER,
+      input({ period: 'evenement', eventLabel: '', eventTypeId: 'type-1' }),
+    )
+    expect(insertRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ eventTypeId: 'type-1', eventLabel: 'Soirée jeux' }),
+    )
+  })
+
+  it('garde la saisie libre (« Autre ») sans eventTypeId', async () => {
+    await recordSession(
+      LUDO,
+      MEMBER,
+      input({ period: 'evenement', eventLabel: 'Truc spécial', eventTypeId: null }),
+    )
+    expect(getEventTypeById).not.toHaveBeenCalled()
+    expect(insertRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ eventTypeId: null, eventLabel: 'Truc spécial' }),
+    )
+  })
+
+  it('refuse un type d’événement d’une autre ludo', async () => {
+    vi.mocked(getEventTypeById).mockResolvedValue({
+      id: 'type-x',
+      ludoId: 'ludo-b',
+      name: 'Externe',
+    } as never)
+    await expect(
+      recordSession(LUDO, MEMBER, input({ period: 'evenement', eventTypeId: 'type-x' })),
+    ).rejects.toThrow(AttendanceServiceError)
+    expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('force eventLabel à null pour matin/apres_midi', async () => {

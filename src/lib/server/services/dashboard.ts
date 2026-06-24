@@ -80,6 +80,7 @@ export async function getDashboardData(
   ludo: LudothequeRow,
   member: MemberRow,
   notifCount: number,
+  problematicCount: number,
 ): Promise<DashboardData> {
   const now = new Date()
   const today = toDateString(now)
@@ -137,17 +138,12 @@ export async function getDashboardData(
   // myUpcoming est déjà trié par date ascendante (getUpcomingAssignmentsForMember).
   const myNextSaturday = myUpcoming[0] ?? null
 
-  // ─── Thèmes : installations en cours + items manquants au dernier check-up ──
+  // ─── Thèmes : installations en cours + objets à traiter (à réparer / manquants) ─
+  // `checkupMissingItems` vient de `listProblematicItems` (passé par le load) :
+  // même source que le bloc « objets à traiter » de l'accueil, scopé sur la ludo
+  // où c'est installé (inclut les thèmes empruntés).
   const activeInstallations = themes.filter((t) => t.installations.length > 0).length
-  const checkupMissingItems = themes.reduce((acc, t) => {
-    for (const inst of t.installations) {
-      const lastCheckup = inst.checkups[0]
-      if (lastCheckup) {
-        acc += lastCheckup.items.filter((i) => i.status === 'manquant').length
-      }
-    }
-    return acc
-  }, 0)
+  const checkupMissingItems = problematicCount
 
   // ─── Réseau ───────────────────────────────────────────────────────────────
   const mineOpen = feed.filter((f) => f.isMine).length
@@ -191,7 +187,7 @@ export async function getDashboardData(
       id: 'themes',
       module: 'themes',
       tone: 'warn',
-      label: `${checkupMissingItems} objet${checkupMissingItems > 1 ? 's' : ''} manquant${checkupMissingItems > 1 ? 's' : ''} en installation`,
+      label: `${checkupMissingItems} objet${checkupMissingItems > 1 ? 's' : ''} à traiter en installation`,
       href: `${base}/themes`,
       count: checkupMissingItems,
     })

@@ -1,26 +1,26 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { toastEnhance } from '$lib/utils/enhance'
-  import * as Table from '$lib/components/ui/table/index.js'
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
-  import { StatusBadge } from '$lib/components/ui/badge/index.js'
   import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
-  import { DataTable } from '$lib/components/ui/data-table/index.js'
-  import { DataCard } from '$lib/components/ui/data-card/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import ContactDialog from '$lib/components/newsletter/ContactDialog.svelte'
+  import ContactsTable from '$lib/components/newsletter/ContactsTable.svelte'
   import UsersRoundIcon from '@lucide/svelte/icons/users-round'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import UploadIcon from '@lucide/svelte/icons/upload'
-  import { TAG_LABELS, TAG_VARIANTS } from '$lib/newsletter/tags'
+  import UserMinusIcon from '@lucide/svelte/icons/user-minus'
+  import UserCheckIcon from '@lucide/svelte/icons/user-check'
+  import UserXIcon from '@lucide/svelte/icons/user-x'
+  import { TAG_LABELS } from '$lib/newsletter/tags'
   import type { NewsletterContactRow } from '$lib/server/schema'
 
   let { data } = $props()
 
   const slug = $derived(data.ludo.slug)
   const contacts = $derived(data.contacts as NewsletterContactRow[])
-  const subscribedCount = $derived(contacts.filter((c) => c.status === 'subscribed').length)
+  const subscribedCount = $derived(data.subscribedByTag.total)
 
   let dialogOpen = $state(false)
   let editing = $state<NewsletterContactRow | null>(null)
@@ -34,18 +34,6 @@
     dialogOpen = true
   }
 
-  const STATUS_LABELS: Record<string, string> = {
-    subscribed: 'Abonné',
-    unsubscribed: 'Désabonné',
-    bounced: 'Rejeté',
-  }
-  const STATUS_VARIANTS = {
-    subscribed: 'success',
-    unsubscribed: 'secondary',
-    bounced: 'destructive',
-  } as const
-  const SOURCE_LABELS: Record<string, string> = { manual: 'Ajout manuel', import: 'Import' }
-
   const byTag = $derived(data.subscribedByTag)
   // Résumé des segments abonnés (ex. « Famille 90 · Institution 8 · Non classé 3 »).
   const segmentSummary = $derived(
@@ -57,10 +45,6 @@
       { label: 'Non classé', n: byTag.null },
     ].filter((s) => s.n > 0),
   )
-
-  function fullName(c: NewsletterContactRow): string {
-    return [c.firstName, c.lastName].filter(Boolean).join(' ') || '—'
-  }
 </script>
 
 <svelte:head>
@@ -72,8 +56,8 @@
     <div>
       <h1>Contacts</h1>
       <p class="muted">
-        Le public de votre ludothèque — {contacts.length}
-        {contacts.length > 1 ? 'contacts' : 'contact'}, {subscribedCount} abonné{subscribedCount > 1
+        Le public de votre ludothèque — {data.total}
+        {data.total > 1 ? 'contacts' : 'contact'}, {subscribedCount} abonné{subscribedCount > 1
           ? 's'
           : ''}.
       </p>
@@ -98,6 +82,70 @@
       <PencilIcon aria-hidden="true" />
       <span class="sr-only">Modifier</span>
     </Button>
+
+    {#if c.status !== 'bounced'}
+      <form
+        method="POST"
+        action="?/toggleSubscription"
+        use:enhance={toastEnhance({
+          success: c.status === 'subscribed' ? 'Contact désabonné.' : 'Contact réabonné.',
+        })}
+      >
+        <input type="hidden" name="id" value={c.id} />
+        <input
+          type="hidden"
+          name="subscribed"
+          value={c.status === 'subscribed' ? 'false' : 'true'}
+        />
+        <Button
+          type="submit"
+          variant="ghost"
+          size="icon-sm"
+          title={c.status === 'subscribed' ? 'Désabonner' : 'Réabonner'}
+        >
+          {#if c.status === 'subscribed'}
+            <UserMinusIcon aria-hidden="true" />
+          {:else}
+            <UserCheckIcon aria-hidden="true" />
+          {/if}
+          <span class="sr-only">{c.status === 'subscribed' ? 'Désabonner' : 'Réabonner'}</span>
+        </Button>
+      </form>
+    {/if}
+
+    <AlertDialog.Root>
+      <AlertDialog.Trigger
+        class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
+        title="Anonymiser (RGPD)"
+      >
+        <UserXIcon aria-hidden="true" />
+        <span class="sr-only">Anonymiser</span>
+      </AlertDialog.Trigger>
+      <AlertDialog.Content>
+        <AlertDialog.Header>
+          <AlertDialog.Title>Anonymiser ce contact ?</AlertDialog.Title>
+          <AlertDialog.Description>
+            Les données personnelles de {c.email} (email, nom, notes) seront effacées et le contact désabonné.
+            La ligne est conservée pour préserver les statistiques d'envoi. Action définitive — pour un
+            retrait total, utilisez « Supprimer ».
+          </AlertDialog.Description>
+        </AlertDialog.Header>
+        <form
+          method="POST"
+          action="?/anonymize"
+          use:enhance={toastEnhance({ success: 'Contact anonymisé.' })}
+        >
+          <input type="hidden" name="id" value={c.id} />
+          <AlertDialog.Footer>
+            <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>
+            <button type="submit" class={buttonVariants({ variant: 'destructive' })}>
+              Anonymiser
+            </button>
+          </AlertDialog.Footer>
+        </form>
+      </AlertDialog.Content>
+    </AlertDialog.Root>
+
     <AlertDialog.Root>
       <AlertDialog.Trigger
         class={buttonVariants({ variant: 'ghost', size: 'icon-sm' })}
@@ -110,7 +158,7 @@
         <AlertDialog.Header>
           <AlertDialog.Title>Supprimer ce contact ?</AlertDialog.Title>
           <AlertDialog.Description>
-            {c.email} sera définitivement retiré de votre liste.
+            {c.email} sera définitivement retiré de votre liste, ainsi que son historique d'envois.
           </AlertDialog.Description>
         </AlertDialog.Header>
         <form
@@ -141,53 +189,13 @@
       {/snippet}
     </EmptyState>
   {:else}
-    <DataTable>
-      {#snippet head()}
-        <Table.Row>
-          <Table.Head>Email</Table.Head>
-          <Table.Head>Nom</Table.Head>
-          <Table.Head>Segment</Table.Head>
-          <Table.Head>Statut</Table.Head>
-          <Table.Head>Source</Table.Head>
-          <Table.Head class="actions-col">Actions</Table.Head>
-        </Table.Row>
-      {/snippet}
-      {#snippet body()}
-        {#each contacts as c (c.id)}
-          <Table.Row>
-            <Table.Cell>{c.email}</Table.Cell>
-            <Table.Cell>{fullName(c)}</Table.Cell>
-            <Table.Cell>
-              {#if c.tag}
-                <StatusBadge status={c.tag} labels={TAG_LABELS} variantMap={TAG_VARIANTS} />
-              {:else}
-                <span class="muted-cell">—</span>
-              {/if}
-            </Table.Cell>
-            <Table.Cell>
-              <StatusBadge status={c.status} labels={STATUS_LABELS} variantMap={STATUS_VARIANTS} />
-            </Table.Cell>
-            <Table.Cell class="muted-cell">{SOURCE_LABELS[c.source] ?? c.source}</Table.Cell>
-            <Table.Cell>
-              <div class="actions">{@render rowActions(c)}</div>
-            </Table.Cell>
-          </Table.Row>
-        {/each}
-      {/snippet}
-      {#snippet cards()}
-        {#each contacts as c (c.id)}
-          <DataCard title={c.email}>
-            {#snippet badge()}
-              <StatusBadge status={c.status} labels={STATUS_LABELS} variantMap={STATUS_VARIANTS} />
-            {/snippet}
-            {#snippet byline()}{fullName(c)} · {SOURCE_LABELS[c.source] ?? c.source}{c.tag
-                ? ` · ${TAG_LABELS[c.tag]}`
-                : ''}{/snippet}
-            {#snippet actions()}{@render rowActions(c)}{/snippet}
-          </DataCard>
-        {/each}
-      {/snippet}
-    </DataTable>
+    <ContactsTable
+      {contacts}
+      sort={data.sort}
+      page={data.page}
+      pageCount={data.pageCount}
+      {rowActions}
+    />
   {/if}
 
   <ContactDialog bind:open={dialogOpen} contact={editing} />
@@ -226,20 +234,5 @@
   }
   .segments strong {
     color: var(--text-main);
-  }
-  .actions {
-    display: flex;
-    gap: var(--space-1);
-    justify-content: flex-end;
-  }
-  .actions :global(form) {
-    display: inline;
-  }
-  :global(.actions-col) {
-    text-align: right;
-  }
-  :global(.muted-cell) {
-    color: var(--text-muted);
-    font-size: var(--text-small);
   }
 </style>

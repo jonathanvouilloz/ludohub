@@ -42,6 +42,27 @@ export async function getInstallationDetail(id: string) {
   })
 }
 
+/**
+ * Installations *en cours* d'une ludo, avec leur sous-ensemble d'objets (+ état
+ * courant `condition`), le thème et la date du dernier check-up. Filtré sur
+ * `themeInstallations.ludoId` (ludo où c'est physiquement installé), pas le
+ * propriétaire du thème — un thème emprunté est installé chez l'emprunteuse.
+ */
+export async function getActiveInstallationsByLudo(ludoId: string) {
+  return db.query.themeInstallations.findMany({
+    where: and(eq(themeInstallations.ludoId, ludoId), eq(themeInstallations.status, 'en_cours')),
+    with: {
+      theme: { columns: { id: true, name: true } },
+      items: { with: { themeItem: { columns: { name: true } } } },
+      checkups: {
+        columns: { checkedAt: true },
+        orderBy: (c, { desc }) => desc(c.checkedAt),
+        limit: 1,
+      },
+    },
+  })
+}
+
 export async function listInstallations(themeId: string) {
   return db.query.themeInstallations.findMany({
     where: eq(themeInstallations.themeId, themeId),
