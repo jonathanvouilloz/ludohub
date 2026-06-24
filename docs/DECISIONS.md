@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-24 | Batch 1 backlog : sidebar horizontale + couleurs sémantiques compteurs
+
+**Contexte :** Revue produit (voir `docs/BACKLOG.md`) ; premier lot de quick wins UX transverses (nav, thèmes, fréquentation).
+
+**Décision :** (1) **Sidebar desktop en « icône + label horizontal »** : `--sidebar-width` 104→210px, réutilisation du variant `layout="row"` existant de `NavItem` (pas de nouveau composant). (2) **Compteurs de fréquentation** : bouton − en `--danger` (rouge), + en `--success` (vert) — couleurs sémantiques pour la lisibilité, tokens uniquement. (3) **Prêt d'un thème en installation `en_cours` bloqué** au niveau UI **et** service (`loanTheme`). (4) **Détail check-up** : expand inline (données déjà chargées) plutôt qu'une route dédiée.
+
+**Alternatives :** Sidebar en grille 2 colonnes ou rail repliable (rejeté : moins lisible / plus de dev) ; couleurs +/- via `--ludo-color` ou `--primary` (rejeté : moins distinctif que rouge/vert) ; route dédiée `checkup/[cid]` (rejeté pour le batch : expand inline suffit, URL partageable reportée si besoin).
+
+---
+
 ## 2026-06-19 | Newsletter : Resend + domaine partagé + DB source de vérité
 
 **Contexte :** Nouveau module (epic 17) pour que les ludothèques envoient des newsletters/campagnes à leur public. Staff non-technique, pas de domaine ni d'accès DNS côté ludos, besoin de CRM léger (import CSV, édition, notes).

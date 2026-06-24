@@ -5,6 +5,8 @@ Liste de suivi des points relevés par Jonathan. Chaque item a un statut :
 
 Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation · Planning · Newsletter/Emailing · Admin/Export · Technique.
 
+> **Batch 1 livré (2026-06-24)** — 6 quick wins ✅ committés : Absences en bas, sidebar horizontale, prêt bloqué si thème installé, chevron mois, boutons +/− colorés, détail check-up dépliable. Reste tous les autres items ci-dessous (batch 2+).
+
 ---
 
 ## 1. Navigation & Design (sidebar)
