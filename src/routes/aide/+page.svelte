@@ -2,10 +2,19 @@
   import GuideSection from '$lib/aide/GuideSection.svelte'
   import { sections, docsVersion } from '$lib/aide/content'
   import type { GuideSection as Section } from '$lib/aide/types'
+  import { slide } from 'svelte/transition'
+  import { quintOut } from 'svelte/easing'
+  import { MediaQuery } from 'svelte/reactivity'
   import SearchIcon from '@lucide/svelte/icons/search'
   import XIcon from '@lucide/svelte/icons/x'
   import RocketIcon from '@lucide/svelte/icons/rocket'
   import BookOpenIcon from '@lucide/svelte/icons/book-open'
+
+  // Repli/dépli du sommaire : slide court (ease-out fort, miroir JS de
+  // --ease-out-strong) ; durée neutralisée si l'utilisateur réduit les mouvements.
+  const reduceMotion = new MediaQuery('(prefers-reduced-motion: reduce)')
+  const subTransition = (node: HTMLElement) =>
+    slide(node, { duration: reduceMotion.current ? 0 : 200, easing: quintOut })
 
   let query = $state('')
   let activeId = $state(sections[0]?.id ?? '')
@@ -93,11 +102,15 @@
             <a href="#{section.id}" class="chapter" class:active={activeId === section.id}>
               {section.title}
             </a>
-            <ul class="sub">
-              {#each section.steps as step, i (step.title)}
-                <li><a href="#{section.id}-{i}">{step.title}</a></li>
-              {/each}
-            </ul>
+            <!-- Accordéon : on n'ouvre que le chapitre actif (scroll-spy) ;
+                 en recherche, tout reste ouvert pour montrer les étapes filtrées. -->
+            {#if section.id === activeId || q}
+              <ul class="sub" transition:subTransition>
+                {#each section.steps as step, i (step.title)}
+                  <li><a href="#{section.id}-{i}">{step.title}</a></li>
+                {/each}
+              </ul>
+            {/if}
           </li>
         {/each}
       </ol>
@@ -159,9 +172,12 @@
     display: grid;
     grid-template-columns: 240px minmax(0, 1fr);
     gap: var(--space-8);
-    max-width: var(--max-content);
+    /* Conteneur élargi + padding réduit (spécifique /aide) pour resserrer le
+       gap entre la sidebar et le sommaire sur desktop large. Ne pas toucher
+       --max-content (token global → impacterait toute l'app). */
+    max-width: 1340px;
     margin: 0 auto;
-    padding: var(--space-8) var(--space-6);
+    padding: var(--space-8) var(--space-5);
   }
   @media (max-width: 1023px) {
     .doc {

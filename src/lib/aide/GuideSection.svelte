@@ -142,12 +142,26 @@
     color: var(--text-main);
     line-height: var(--leading-base);
   }
+  /* Le Preflight Tailwind force list-style:none sur tout ol/ul → on rétablit un
+     marqueur explicite sous forme de puce colorée (même langage que .tips). */
   .actions {
     margin: 0;
     padding-inline-start: var(--space-5);
+    list-style: none;
   }
   .actions li {
+    position: relative;
     margin-block: var(--space-2);
+  }
+  .actions li::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: calc(-1 * var(--space-4));
+    inset-block-start: 0.55em;
+    inline-size: 6px;
+    block-size: 6px;
+    border-radius: var(--radius-pill);
+    background: var(--ludo-color);
   }
   .actions :global(strong) {
     color: var(--text-main);

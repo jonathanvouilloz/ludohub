@@ -14,7 +14,7 @@
  * Autonome (tsx, hors runtime SvelteKit). Lancer : pnpm tsx scripts/seed-demo.ts
  */
 import 'dotenv/config'
-import { eq } from 'drizzle-orm'
+import { inArray, or } from 'drizzle-orm'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { hashPassword } from 'better-auth/crypto'
@@ -27,12 +27,18 @@ import {
   themeInstallationItems,
   themeCheckups,
   themeCheckupItems,
+  themeLoans,
   seasons,
   saturdaySlots,
   assignments,
   closurePeriods,
   seasonMemberSettings,
   absences,
+  helpRequests,
+  helpResponses,
+  gameWishes,
+  supplyRequests,
+  notifications,
 } from '../src/lib/server/schema.js'
 
 // ─── UUID fixes (routes stables) ─────────────────────────────────────────────
@@ -72,6 +78,21 @@ const ABS = [
   '0d000000-0000-4000-8000-000000000522',
 ]
 
+// ─── Batch 2 : Réseau + Jeux + Matériel ──────────────────────────────────────
+// Seconde ludo de démo (« voisine ») : rend les écrans RÉSEAU réalistes côté
+// `demo` (catalogue partagé = thèmes des AUTRES ludos ; feed d'aide = demandes
+// ouvertes de tout le réseau). N'impacte aucune des 12 vraies ludos genevoises.
+const VOISINE = '0d000000-0000-4000-8000-000000000600'
+const MV_RESP = '0d000000-0000-4000-8000-000000000610'
+const TV_CHATEAU = '0d000000-0000-4000-8000-000000000700' // partagé, disponible
+const TV_FERME = '0d000000-0000-4000-8000-000000000710' // partagé, prêté à demo
+const LOAN = '0d000000-0000-4000-8000-000000000720'
+// Demandes d'aide : 1 ouverte (voisine) + 1 ouverte (demo, avec volontaire) + 1 passée (demo)
+const HR_VOISINE = '0d000000-0000-4000-8000-000000000800'
+const HR_DEMO = '0d000000-0000-4000-8000-000000000810'
+const HR_PAST = '0d000000-0000-4000-8000-000000000820'
+const HRESP = '0d000000-0000-4000-8000-000000000830'
+
 // Samedis de la saison démo (dates figées pour des captures stables).
 // `assigned` = Camille + Sacha sont de service ce samedi-là. Le premier samedi
 // futur assigné alimente le bandeau « Mon prochain samedi » du planning.
@@ -95,12 +116,21 @@ async function main() {
   const sql = neon(process.env.DATABASE_URL)
   const db = drizzle(sql)
 
-  // 1. Reset du tenant demo. La FK `theme_installations.ludo_id → ludotheques`
-  //    n'a PAS de cascade (une installation peut appartenir à une ludo emprunteuse),
-  //    donc on supprime d'abord les installations du demo (cascade → items/check-ups
-  //    via leurs FK installationId). Le reste part en cascade avec la ludo (slug).
-  await db.delete(themeInstallations).where(eq(themeInstallations.ludoId, LUDO))
-  await db.delete(ludotheques).where(eq(ludotheques.slug, 'demo'))
+  // 1. Reset des deux tenants de démo (`demo` + `demo-voisine`). Plusieurs FK
+  //    n'ont PAS de cascade et bloqueraient la suppression des ludos — on purge
+  //    donc explicitement, dans l'ordre, ce qui les référence :
+  //    - help_requests (FK ludoId cascade) → cascade help_responses, ce qui retire
+  //      aussi les réponses inter-ludos (helpResponses.ludoId/memberId sans cascade) ;
+  //    - theme_loans (from/to ludoId sans cascade) ;
+  //    - theme_installations (ludoId sans cascade — une install peut être à une emprunteuse).
+  //    Le reste part en cascade avec la ludo (slug).
+  const DEMO_LUDOS = [LUDO, VOISINE]
+  await db.delete(helpRequests).where(inArray(helpRequests.ludoId, DEMO_LUDOS))
+  await db
+    .delete(themeLoans)
+    .where(or(inArray(themeLoans.fromLudoId, DEMO_LUDOS), inArray(themeLoans.toLudoId, DEMO_LUDOS)))
+  await db.delete(themeInstallations).where(inArray(themeInstallations.ludoId, DEMO_LUDOS))
+  await db.delete(ludotheques).where(inArray(ludotheques.slug, ['demo', 'demo-voisine']))
 
   // 2. Ludothèque démo
   await db.insert(ludotheques).values({
@@ -280,9 +310,229 @@ async function main() {
     },
   ])
 
+  // ─── Réseau : ludo voisine + catalogue partagé + prêt ──────────────────────
+  await db.insert(ludotheques).values({
+    id: VOISINE,
+    name: 'Ludothèque Voisine',
+    slug: 'demo-voisine',
+    passwordHash: await hashPassword('demo2026'),
+    color: '#7C3AED',
+    address: 'Avenue des Jeux 7, 1205 Genève',
+    phone: '+41 22 111 11 11',
+    email: 'voisine@ludohub.ch',
+    responsible: 'Alex Voisin',
+  })
+
+  await db.insert(members).values({
+    id: MV_RESP,
+    ludoId: VOISINE,
+    name: 'Alex Voisin',
+    role: 'responsable',
+    isActive: true,
+  })
+
+  // Deux thèmes partagés par la voisine → visibles dans le catalogue réseau de `demo`.
+  await db.insert(themes).values([
+    {
+      id: TV_CHATEAU,
+      ownerLudoId: VOISINE,
+      name: 'Château fort',
+      description: 'Donjon, chevaliers, catapulte et boucliers pour un tournoi médiéval.',
+      isShareable: true,
+    },
+    {
+      id: TV_FERME,
+      ownerLudoId: VOISINE,
+      name: 'La ferme',
+      description: 'Animaux en peluche, tracteur et bottes de foin pour les plus petits.',
+      isShareable: true,
+    },
+  ])
+
+  await db.insert(themeItems).values([
+    { themeId: TV_CHATEAU, name: 'Donjon en carton', quantity: 1 },
+    { themeId: TV_CHATEAU, name: 'Bouclier de chevalier', quantity: 6 },
+    { themeId: TV_CHATEAU, name: 'Catapulte', quantity: 1 },
+    { themeId: TV_FERME, name: 'Tracteur à enfourcher', quantity: 1 },
+    { themeId: TV_FERME, name: 'Animaux en peluche', quantity: 8 },
+  ])
+
+  // Prêt actif de « La ferme » à `demo` → s'affiche « Emprunté par vous » côté demo.
+  await db.insert(themeLoans).values({
+    id: LOAN,
+    themeId: TV_FERME,
+    fromLudoId: VOISINE,
+    toLudoId: LUDO,
+    status: 'actif',
+    createdAt: new Date('2026-06-15T09:00:00Z'),
+  })
+
+  // ─── Réseau : demandes d'aide ──────────────────────────────────────────────
+  await db.insert(helpRequests).values([
+    {
+      id: HR_VOISINE,
+      ludoId: VOISINE,
+      date: '2026-07-04',
+      slotInfo: 'Samedi matin, 9h-12h',
+      notes: 'Il nous manque une personne pour l’ouverture.',
+      status: 'ouverte',
+      createdAt: new Date('2026-06-18T08:00:00Z'),
+    },
+    {
+      id: HR_DEMO,
+      ludoId: LUDO,
+      date: '2026-07-11',
+      slotInfo: 'Samedi après-midi, 14h-17h',
+      notes: 'Renfort bienvenu pour l’animation Pirates.',
+      status: 'ouverte',
+      createdAt: new Date('2026-06-20T08:00:00Z'),
+    },
+    {
+      id: HR_PAST,
+      ludoId: LUDO,
+      date: '2026-05-30',
+      slotInfo: 'Samedi matin',
+      status: 'pourvue',
+      createdAt: new Date('2026-05-10T08:00:00Z'),
+    },
+  ])
+
+  // Un·e volontaire de la voisine se propose sur la demande de `demo`
+  // → la carte « à moi » de demo affiche la section Volontaires.
+  await db.insert(helpResponses).values({
+    id: HRESP,
+    helpRequestId: HR_DEMO,
+    memberId: MV_RESP,
+    ludoId: VOISINE,
+    status: 'propose',
+    createdAt: new Date('2026-06-21T10:00:00Z'),
+  })
+
+  // ─── Jeux à acheter (game_wishes) ──────────────────────────────────────────
+  await db.insert(gameWishes).values([
+    {
+      ludoId: LUDO,
+      title: 'Les Aventuriers du Rail',
+      link: 'https://www.daysofwonder.com/aventuriers-du-rail/',
+      priceChf: 4990,
+      status: 'souhaite',
+      addedById: M_RESP,
+      createdAt: new Date('2026-06-12T10:00:00Z'),
+    },
+    {
+      ludoId: LUDO,
+      title: 'Dixit',
+      priceChf: 3500,
+      status: 'souhaite',
+      addedById: M_BENE,
+      createdAt: new Date('2026-06-14T10:00:00Z'),
+    },
+    {
+      ludoId: LUDO,
+      title: 'Catan',
+      priceChf: 5500,
+      status: 'achete',
+      addedById: M_RESP,
+      buyerId: M_RESP,
+      createdAt: new Date('2026-06-05T10:00:00Z'),
+    },
+  ])
+
+  // ─── Matériel (supply_requests) ────────────────────────────────────────────
+  // Le service trie par urgence décroissante : la « critique » apparaît en tête.
+  await db.insert(supplyRequests).values([
+    {
+      ludoId: LUDO,
+      memberId: M_RESP,
+      name: 'Cartouches d’encre',
+      urgency: 'critique',
+      status: 'en_attente',
+      notes: 'L’imprimante est à sec, plus moyen d’imprimer les plannings.',
+      createdAt: new Date('2026-06-19T10:00:00Z'),
+    },
+    {
+      ludoId: LUDO,
+      memberId: M_BENE,
+      name: 'Gobelets en carton',
+      urgency: 'haute',
+      status: 'commande',
+      createdAt: new Date('2026-06-17T10:00:00Z'),
+    },
+    {
+      ludoId: LUDO,
+      memberId: M_RESP,
+      name: 'Feutres pour tableau blanc',
+      urgency: 'normale',
+      status: 'en_attente',
+      createdAt: new Date('2026-06-16T10:00:00Z'),
+    },
+    {
+      ludoId: LUDO,
+      memberId: M_BENE,
+      name: 'Bâche de pique-nique',
+      urgency: 'normale',
+      status: 'recu',
+      createdAt: new Date('2026-06-02T10:00:00Z'),
+    },
+  ])
+
+  // ─── Notifications in-app ──────────────────────────────────────────────────
+  // Couvre plusieurs domaines (→ plusieurs filtres) et au moins une « à traiter »
+  // non lue (→ badge dans le shell + chip rouge sur la page).
+  await db.insert(notifications).values([
+    {
+      recipientLudoId: LUDO,
+      recipientMemberId: M_RESP,
+      type: 'theme_request',
+      severity: 'action_required',
+      entityType: 'theme',
+      entityId: T_PIRATES,
+      title: 'Demande de prêt reçue',
+      body: 'Ludothèque Voisine souhaite emprunter « Pirates des Caraïbes ».',
+      isRead: false,
+      createdAt: new Date('2026-06-22T11:00:00Z'),
+    },
+    {
+      recipientLudoId: LUDO,
+      recipientMemberId: null,
+      type: 'help_response',
+      severity: 'info',
+      entityType: 'help_request',
+      entityId: HR_DEMO,
+      title: 'Une ludo se propose',
+      body: 'Ludothèque Voisine se propose pour votre demande d’aide du 11 juillet.',
+      isRead: false,
+      createdAt: new Date('2026-06-21T10:05:00Z'),
+    },
+    {
+      recipientLudoId: LUDO,
+      recipientMemberId: M_RESP,
+      type: 'supply_request',
+      severity: 'action_required',
+      entityType: 'supply',
+      title: 'Nouvelle demande de matériel',
+      body: '« Cartouches d’encre » a été demandé (urgence critique).',
+      isRead: true,
+      createdAt: new Date('2026-06-19T10:05:00Z'),
+    },
+    {
+      recipientLudoId: LUDO,
+      recipientMemberId: null,
+      type: 'absence_approved',
+      severity: 'info',
+      entityType: 'absence',
+      title: 'Absence approuvée',
+      body: 'Votre demande de formation du 12 septembre a été approuvée.',
+      isRead: true,
+      createdAt: new Date('2026-06-15T10:00:00Z'),
+    },
+  ])
+
   console.log('✓ Tenant démo seedé : /demo (mdp demo2026)')
   console.log(`  Thème Pirates : /demo/themes/${T_PIRATES}`)
   console.log(`  Installation  : /demo/themes/${T_PIRATES}/installations/${INSTALL}`)
+  console.log('✓ Ludo voisine seedée : /demo-voisine (catalogue + aide réseau)')
+  console.log('  + jeux, matériel et notifications côté /demo')
 }
 
 main()

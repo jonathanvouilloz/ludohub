@@ -158,6 +158,86 @@
           "highlights": [{ "selector": ".problem", "label": "!" }]
         }
       ]
+    },
+    {
+      "id": "jeux",
+      "title": "Jeux à acheter",
+      "shots": [
+        {
+          "id": "liste",
+          "route": "/demo/games",
+          "waitFor": "h1",
+          "label": "La liste des jeux à acheter",
+          "caption": "Les jeux souhaités, et le bouton pour en proposer un nouveau.",
+          "highlights": [{ "selector": ".head button", "label": "1" }]
+        },
+        {
+          "id": "carte",
+          "route": "/demo/games",
+          "waitFor": ".list",
+          "label": "Un jeu de la liste",
+          "caption": "Chaque carte montre le prix indicatif et qui l’a ajouté ; les icônes marquent le jeu acheté ou le retirent.",
+          "clip": { "selector": "article.card", "padding": 16 }
+        }
+      ]
+    },
+    {
+      "id": "materiel",
+      "title": "Matériel",
+      "shots": [
+        {
+          "id": "liste",
+          "route": "/demo/supplies",
+          "waitFor": "h1",
+          "label": "Les demandes de matériel",
+          "caption": "Les demandes en cours : ① filtrez par urgence, ② créez une nouvelle demande.",
+          "highlights": [
+            { "selector": ".tabs", "label": "1" },
+            { "selector": ".head button", "label": "2" }
+          ]
+        },
+        {
+          "id": "urgence",
+          "route": "/demo/supplies",
+          "waitFor": ".tabs",
+          "label": "Filtrer par urgence",
+          "caption": "Les onglets colorés regroupent les demandes par niveau d’urgence (critique, haute, normale).",
+          "clip": { "selector": ".tabs", "padding": 14 }
+        }
+      ]
+    },
+    {
+      "id": "reseau",
+      "title": "Réseau",
+      "shots": [
+        {
+          "id": "aide",
+          "route": "/reseau/aide",
+          "waitFor": "h1",
+          "label": "Les demandes d’aide du réseau",
+          "caption": "Chaque carte est une demande de renfort d’une ludothèque ; vous pouvez vous proposer.",
+          "highlights": [{ "selector": "article.card", "label": "1" }]
+        },
+        {
+          "id": "catalogue",
+          "route": "/reseau/themes",
+          "waitFor": "h1",
+          "label": "Le catalogue partagé",
+          "caption": "Les thèmes partagés par les autres ludothèques ; le bouton « Demander ce thème » lance un emprunt.",
+          "highlights": [{ "selector": "article.card", "label": "1" }]
+        },
+        {
+          "id": "notifications",
+          "route": "/reseau/notifications",
+          "waitFor": "h1",
+          "label": "Vos notifications",
+          "caption": "① Filtrez par domaine. ② Les notifications non lues sont surlignées ; « À traiter » signale une action attendue.",
+          "highlights": [
+            { "selector": ".filters", "label": "1" },
+            { "selector": ".notif--unread", "label": "2" }
+          ]
+        }
+      ]
     }
   ]
 }
