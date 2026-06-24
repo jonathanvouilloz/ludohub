@@ -54,7 +54,7 @@
       {#if editable && !activeInstallation}
         <Button onclick={() => (installOpen = true)}>Installer</Button>
       {/if}
-      {#if editable && !activeLoan}
+      {#if editable && !activeLoan && !activeInstallation}
         <Button variant="outline" onclick={() => (loanOpen = true)}>Prêter</Button>
       {/if}
       {#if data.responsable}

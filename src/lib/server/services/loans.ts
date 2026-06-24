@@ -5,6 +5,7 @@ import {
   setLoanReturned,
   setLoanStatus,
 } from '../db/loans.js'
+import { getActiveInstallation } from '../db/installations.js'
 import { getLudoById } from '../db/ludotheques.js'
 import { getThemeById } from '../db/themes.js'
 import type { ThemeLoanRow } from '../schema.js'
@@ -32,6 +33,12 @@ export async function loanTheme(
   }
   if (theme.isArchived) {
     throw new LoanServiceError('Un thème archivé ne peut pas être prêté.')
+  }
+  const activeInstallation = await getActiveInstallation(themeId)
+  if (activeInstallation) {
+    throw new LoanServiceError(
+      'Ce thème est actuellement installé : clôturez son installation avant de le prêter.',
+    )
   }
   if (!toLudoId || toLudoId === fromLudoId) {
     throw new LoanServiceError('Choisissez une autre ludothèque comme destinataire.')
