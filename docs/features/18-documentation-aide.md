@@ -2,6 +2,24 @@
 
 Système de documentation utilisateur grand public (non-tech) avec captures d'écran auto-régénérées, servi comme guide dans l'app (`/aide`, URL globale). Produit par le skill réutilisable `user-docs` (`~/.claude/skills/user-docs/`, hors repo). Objectif : un manuel illustré consultable à tout moment par le staff des ludothèques.
 
+## Etat session 2026-06-24 — Batch 2 partiel (Réseau/Jeux/Matériel) + polish sommaire
+
+**Fait :**
+- Modules **Jeux**, **Matériel** et **Réseau** livrés (config + contenu + captures) → total **20 captures, 0 échec**. Réseau = 1 section, 3 étapes (aide / catalogue partagé / notifications).
+- Seed démo étendu : **2e ludo figée `demo-voisine`** (rend les écrans cross-tenant réalistes côté `demo`), 2 thèmes partagés + 1 prêt actif (→ « Emprunté par vous »), demandes d'aide (ouverte voisine + ouverte demo avec volontaire + passée), `game_wishes`, `supply_requests`, `notifications` multi-domaines. **Reset rendu robuste multi-ludo** (purge `help_requests` → `theme_loans` → `theme_installations` avant les ludos : FK sans cascade).
+- Polish `/aide` : sommaire en **accordéon** (n'ouvre que la section active, animé `transition:slide` + `prefers-reduced-motion`), **puces colorées** sur le corps des étapes (le Preflight Tailwind retirait les marqueurs `<ol>`), **gap gauche desktop** resserré (conteneur élargi + padding réduit, scopé à la page).
+- `pnpm check` vert, ESLint 0. Captures vérifiées visuellement (annotations OK, données cross-tenant correctes).
+
+**Prochain :** **Newsletter** (profondeur « essentiel » : Campagnes / éditeur / Contacts) — nécessite de seeder `campaigns` + `newsletter_contacts` dans `demo`, ajouter une section config + `content/newsletter.ts`, recapturer. Puis **Batch 3** = Fréquentation, Paramètres.
+
+**Pièges :**
+- Une **vraie** ludo (Pâquis-Sécheron) partage déjà un thème en prod → apparaît dans le catalogue réseau de `demo`. Sans incidence : « Château fort » (seed) sort premier (tri `asc(name)`), l'annotation reste juste.
+- Reseed = `pnpm tsx scripts/seed-demo.ts` (écrit la DB Neon prod, tenants `demo` + `demo-voisine` seulement). Capture = `node scripts/capture-docs.mjs docs/user-docs.config.json` sur le serveur dev déjà lancé (souvent **5174** → `$env:DOCS_BASE_URL='http://localhost:5174'`).
+
+**Commit :** [753b8fa] feat(aide): batch 2 partiel doc /aide — réseau, jeux, matériel + polish sommaire
+
+---
+
 ## Etat session 2026-06-24 — Batch 1 + refonte GitBook + URL globale
 
 **Fait :**
@@ -46,23 +64,23 @@ Système de documentation utilisateur grand public (non-tech) avec captures d'é
 
 | Fichier | Role |
 |---------|------|
-| `scripts/seed-demo.ts` | Seed tenant démo `demo` (mdp `demo2026`) à UUID/dates figés : thèmes+installations, planning (saison/samedis/assignations/fermeture/réglages), absences. Reset = delete installations PUIS ludo (FK `ludo_id` sans cascade). |
+| `scripts/seed-demo.ts` | Seed tenants démo `demo` (+ `demo-voisine`) à UUID/dates figés : thèmes+installations, planning, absences, **jeux, matériel, notifications**, et côté voisine **thèmes partagés + prêt + demandes d'aide** (écrans réseau). Reset robuste multi-ludo : `help_requests` → `theme_loans` → `theme_installations` → ludos (FK sans cascade). |
 | `scripts/capture-docs.mjs` | Harness Playwright : shots `preAuth` (avant login) + normaux, annotations highlights/spotlight/clip, override `DOCS_BASE_URL`, sortie `static/aide/captures/`. |
-| `docs/user-docs.config.json` | Adaptateur : scénario d'auth + sections `demarrer`/`planning`/`absences`/`themes` (shots + annotations). baseUrl 5173 par défaut. |
+| `docs/user-docs.config.json` | Adaptateur : scénario d'auth + sections `demarrer`/`planning`/`absences`/`themes`/`jeux`/`materiel`/`reseau` (shots + annotations). baseUrl 5173 par défaut. |
 | `src/lib/aide/types.ts` | Types `GuideSection`/`GuideStep` (`body` numéroté, `tips` puces, `note`). |
 | `src/lib/aide/Rich.svelte` | Rendu du gras `**mot**` sans `@html` (découpage en segments). |
-| `src/lib/aide/GuideSection.svelte` | Rendu d'un chapitre : étapes numérotées + puces + note (card), image cliquable avec zoom au survol (callback `onZoom`). |
-| `src/lib/aide/content/index.ts` | Agrège les sections (ordre sommaire) + `docsVersion` (cache-busting). |
-| `src/lib/aide/content/{demarrer,planning,absences,themes}.ts` | Contenu rédigé par module (gras + tips). |
+| `src/lib/aide/GuideSection.svelte` | Rendu d'un chapitre : étapes (corps à **puces colorées**) + tips + note (card), image cliquable avec zoom au survol (callback `onZoom`). |
+| `src/lib/aide/content/index.ts` | Agrège les sections (ordre sommaire : `demarrer,planning,absences,themes,jeux,materiel,reseau`) + `docsVersion` (cache-busting). |
+| `src/lib/aide/content/{demarrer,planning,absences,themes,jeux,materiel,reseau}.ts` | Contenu rédigé par module (gras + tips). |
 | `src/routes/aide/+layout.server.ts` | `requireSessionContext` — aide globale, identité via session. |
 | `src/routes/aide/+layout.svelte` | Monte `AppShell` + `--ludo-color`. |
-| `src/routes/aide/+page.svelte` | Page type GitBook : sommaire latéral + recherche + scroll-spy + démarrage rapide + lightbox. |
+| `src/routes/aide/+page.svelte` | Page type GitBook : sommaire latéral **en accordéon** (scroll-spy, `transition:slide`) + recherche + démarrage rapide + lightbox ; conteneur élargi (gap gauche resserré). |
 | `src/lib/components/nav/nav-config.ts` | Lien « Aide » → `/aide` (global, hors slug). |
-| `static/aide/captures/{demarrer,planning,absences,themes}/*.png` | Captures versionnées (diffs visuels). |
+| `static/aide/captures/{demarrer,planning,absences,themes,jeux,materiel,reseau}/*.png` | Captures versionnées (diffs visuels). |
 
 ### Decisions cles
 - Aide = **route globale `/aide`** (pas par tenant) : une URL canonique, contenu + captures uniques, identité résolue via la session comme `/reseau/*`.
-- Présentation **type guide GitBook** (sommaire + recherche + scroll-spy + lightbox), **tokens design uniquement**.
-- Captures déterministes via tenant démo figé (UUID + dates). Shots `preAuth` pour les écrans hors session (connexion).
+- Présentation **type guide GitBook** (sommaire accordéon + recherche + scroll-spy + lightbox), **tokens design uniquement**. Accordéon animé en natif Svelte (`transition:slide`, `MediaQuery` reduced-motion).
+- Captures déterministes via tenants démo figés (UUID + dates). Les **écrans réseau** (cross-tenant) exigent une **2e ludo** `demo-voisine` car une ludo ne se voit pas elle-même dans le catalogue/feed. Shots `preAuth` pour les écrans hors session.
 - Le skill `user-docs` vit hors repo ; seul l'adaptateur + le rendu vivent dans le projet.
 - Distinct de `generate-docs` (docs techniques/API/livraison, sans captures).
