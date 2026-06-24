@@ -1,0 +1,72 @@
+{
+  "_comment": "Adaptateur LudoHub pour le skill user-docs. Spike = module Thèmes. baseUrl = serveur dev déjà lancé.",
+  "baseUrl": "http://localhost:5173",
+  "viewport": { "width": 1366, "height": 900 },
+  "outDir": "static/aide/captures",
+  "contentDir": "src/lib/aide/content",
+  "demo": {
+    "seedCommand": "pnpm tsx scripts/seed-demo.ts",
+    "note": "Tenant figé `demo` (UUID fixes, dates figées). Reseed avant capture."
+  },
+  "auth": {
+    "steps": [
+      { "goto": "/auth/demo" },
+      { "fill": { "selector": "input[name=\"password\"]", "value": "demo2026" } },
+      { "click": "button[type=\"submit\"]" },
+      { "waitFor": "text=Qui êtes-vous ?" },
+      { "click": "button.member:has-text(\"Camille Démo\")" },
+      { "waitFor": "nav" }
+    ]
+  },
+  "mask": [],
+  "sections": [
+    {
+      "id": "themes",
+      "title": "Thèmes",
+      "shots": [
+        {
+          "id": "catalogue",
+          "route": "/demo/themes",
+          "waitFor": "h1",
+          "label": "Le catalogue de thèmes",
+          "caption": "Vos thèmes : ceux en cours d’animation apparaissent en haut.",
+          "highlights": [
+            { "selector": ".active .status", "label": "1" },
+            { "selector": ".active .actions", "label": "2" }
+          ]
+        },
+        {
+          "id": "fiche",
+          "route": "/demo/themes/0d000000-0000-4000-8000-000000000100",
+          "waitFor": "h1",
+          "label": "La fiche d’un thème",
+          "caption": "Le détail d’un thème : ses objets, ses photos et son installation en cours."
+        },
+        {
+          "id": "fiche-action",
+          "route": "/demo/themes/0d000000-0000-4000-8000-000000000100",
+          "waitFor": "h1",
+          "label": "Reprendre l’installation depuis la fiche",
+          "caption": "Le bandeau bleu : cliquez sur « Voir / check-up » pour suivre l’installation.",
+          "clip": { "selector": ".install-banner", "padding": 18 }
+        },
+        {
+          "id": "installation",
+          "route": "/demo/themes/0d000000-0000-4000-8000-000000000100/installations/0d000000-0000-4000-8000-000000000300",
+          "waitFor": "h1",
+          "label": "Une installation et ses check-ups",
+          "caption": "Le suivi d’une installation : objets sortis et contrôles datés."
+        },
+        {
+          "id": "installation-kit",
+          "route": "/demo/themes/0d000000-0000-4000-8000-000000000100/installations/0d000000-0000-4000-8000-000000000300",
+          "waitFor": "h1",
+          "label": "Traiter un objet manquant",
+          "caption": "Zoom sur l’état du kit : l’objet manquant et les actions pour le résoudre.",
+          "clip": { "selector": ".col", "padding": 16 },
+          "highlights": [{ "selector": ".problem", "label": "!" }]
+        }
+      ]
+    }
+  ]
+}
