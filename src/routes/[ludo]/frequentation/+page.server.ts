@@ -10,6 +10,7 @@ import {
 import { getActiveSeasonByLudo, getSeasonsByLudo } from '$lib/server/db/planning.js'
 import { listTypes } from '$lib/server/services/eventTypes.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
+import { getSitesForSlug } from '$lib/server/sites.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ parent, url }) => {
@@ -37,6 +38,8 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   const records = await listSessionsInRange(ludo.id, start, end)
   return {
     records,
+    // `null` pour les ludos mono-site : l'UI n'affiche ni sélecteur ni filtre site.
+    sites: getSitesForSlug(ludo.slug),
     eventTypes: eventTypes.map((t) => ({ id: t.id, name: t.name })),
     seasons: seasons.map((s) => ({ id: s.id, name: s.name })),
     season: season
@@ -75,6 +78,7 @@ function parseSessionInput(data: FormData): SessionInput {
     returnsCount: num('returnsCount'),
     weather: weather === '' ? null : weather,
     temperature: temp === '' ? null : Number(temp),
+    site: String(data.get('site') ?? '') || null,
   }
 }
 
@@ -82,13 +86,15 @@ export const actions: Actions = {
   record: async (event) => {
     const { ludo, member } = await requireLudoContext(event)
     const data = await event.request.formData()
-    return run(() => recordSession(ludo.id, member.id, parseSessionInput(data)))
+    return run(() => recordSession(ludo.id, member.id, ludo.slug, parseSessionInput(data)))
   },
 
   update: async (event) => {
     const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
-    return run(() => updateSession(String(data.get('id') ?? ''), ludo.id, parseSessionInput(data)))
+    return run(() =>
+      updateSession(String(data.get('id') ?? ''), ludo.id, ludo.slug, parseSessionInput(data)),
+    )
   },
 
   delete: async (event) => {

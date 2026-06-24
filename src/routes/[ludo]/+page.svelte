@@ -139,7 +139,7 @@
   <section class="quick-actions" aria-label="Actions rapides">
     <a href={`${base}/frequentation?new=1`} class="hero-action">
       <span class="hero-icon" aria-hidden="true"><ClipboardListIcon size={24} /></span>
-      <span class="hero-label">Clôturer une ouverture</span>
+      <span class="hero-label">Ajouter une fréquentation</span>
     </a>
     <div class="action-pair">
       <QuickActionCard

@@ -19,7 +19,19 @@
   let editing = $state<AttendanceRow | null>(null)
   let granularity = $state<'mois' | 'semaine'>('mois')
 
-  const records = $derived(data.records as AttendanceRow[])
+  // Filtre par site (ludos multi-sites only). 'all' = tous, SITE_NONE = non réparti.
+  const SITE_NONE = '__none__'
+  let siteFilter = $state<string>('all')
+
+  const allRecords = $derived(data.records as AttendanceRow[])
+  // Au moins une séance non répartie (site null) → propose le filtre « Non réparti ».
+  const hasUnassigned = $derived(allRecords.some((r) => r.site == null))
+  // Séances après application du filtre site (mono-site : pas de filtrage).
+  const records = $derived.by<AttendanceRow[]>(() => {
+    if (!data.sites || siteFilter === 'all') return allRecords
+    if (siteFilter === SITE_NONE) return allRecords.filter((r) => r.site == null)
+    return allRecords.filter((r) => r.site === siteFilter)
+  })
   const todayStr = toDateString(new Date())
 
   const PERIODS = [
@@ -158,7 +170,7 @@
       <h1>Fréquentation</h1>
       <p class="muted">Relevé des ouvertures.</p>
     </div>
-    <Button onclick={openNew}>Clôturer une ouverture</Button>
+    <Button onclick={openNew}>Ajouter une fréquentation</Button>
   </header>
 
   <div class="toolbar">
@@ -196,6 +208,39 @@
       </button>
     </div>
   </div>
+
+  {#if data.sites}
+    <div class="segmented site-filter" role="group" aria-label="Filtrer par site">
+      <button
+        type="button"
+        class:active={siteFilter === 'all'}
+        aria-pressed={siteFilter === 'all'}
+        onclick={() => (siteFilter = 'all')}
+      >
+        Tous
+      </button>
+      {#each data.sites as s (s.value)}
+        <button
+          type="button"
+          class:active={siteFilter === s.value}
+          aria-pressed={siteFilter === s.value}
+          onclick={() => (siteFilter = s.value)}
+        >
+          {s.label}
+        </button>
+      {/each}
+      {#if hasUnassigned}
+        <button
+          type="button"
+          class:active={siteFilter === SITE_NONE}
+          aria-pressed={siteFilter === SITE_NONE}
+          onclick={() => (siteFilter = SITE_NONE)}
+        >
+          Non réparti
+        </button>
+      {/if}
+    </div>
+  {/if}
 
   {#if records.length === 0}
     <EmptyState
@@ -247,7 +292,7 @@
           </summary>
           <div class="group-body">
             <div class="period-card">{@render breakdown(g.byPeriod, g.totals)}</div>
-            <SessionList records={g.records} onEdit={openEdit} />
+            <SessionList records={g.records} onEdit={openEdit} sites={data.sites} />
           </div>
         </details>
       {/each}
@@ -259,6 +304,7 @@
     slug={data.ludo.slug}
     record={editing}
     eventTypes={data.eventTypes}
+    sites={data.sites}
   />
 </main>
 
@@ -299,6 +345,13 @@
   }
   .season-select {
     min-width: 14rem;
+  }
+  /* Filtre par site (ludos multi-sites) : ligne dédiée sous la toolbar, défile
+     horizontalement si l'écran est trop étroit pour tous les sites. */
+  .site-filter {
+    margin-bottom: var(--space-6);
+    max-width: 100%;
+    overflow-x: auto;
   }
   .segmented {
     display: inline-flex;

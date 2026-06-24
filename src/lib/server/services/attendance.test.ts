@@ -31,6 +31,10 @@ import {
 const LUDO = 'ludo-a'
 const MEMBER = 'member-1'
 const RECORD = 'rec-1'
+// Slug mono-site (absent de la config multi-site) → le site est ignoré (null).
+const SLUG = 'ludo-a'
+// Slug multi-site codé en dur (Pâquis-Sécheron) → le site devient obligatoire.
+const MS_SLUG = 'paquis-secheron'
 
 function input(overrides: Partial<SessionInput> = {}): SessionInput {
   return {
@@ -57,7 +61,7 @@ beforeEach(() => {
 
 describe('recordSession', () => {
   it('clôture une séance valide', async () => {
-    await recordSession(LUDO, MEMBER, input())
+    await recordSession(LUDO, MEMBER, SLUG, input())
     expect(insertRecord).toHaveBeenCalledWith(
       expect.objectContaining({
         ludoId: LUDO,
@@ -73,22 +77,22 @@ describe('recordSession', () => {
 
   it('refuse un doublon (date, matin)', async () => {
     vi.mocked(existsForSlot).mockResolvedValue(true)
-    await expect(recordSession(LUDO, MEMBER, input({ period: 'matin' }))).rejects.toThrow(
+    await expect(recordSession(LUDO, MEMBER, SLUG, input({ period: 'matin' }))).rejects.toThrow(
       AttendanceServiceError,
     )
     expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('autorise deux événements le même jour (pas de contrôle de doublon)', async () => {
-    await recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: 'Soirée jeux' }))
-    await recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: 'Parascolaire' }))
+    await recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventLabel: 'Soirée jeux' }))
+    await recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventLabel: 'Parascolaire' }))
     expect(existsForSlot).not.toHaveBeenCalled()
     expect(insertRecord).toHaveBeenCalledTimes(2)
   })
 
   it('exige un type ou un libellé pour un événement', async () => {
     await expect(
-      recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: '  ' })),
+      recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventLabel: '  ' })),
     ).rejects.toThrow(/libellé/i)
   })
 
@@ -101,6 +105,7 @@ describe('recordSession', () => {
     await recordSession(
       LUDO,
       MEMBER,
+      SLUG,
       input({ period: 'evenement', eventLabel: '', eventTypeId: 'type-1' }),
     )
     expect(insertRecord).toHaveBeenCalledWith(
@@ -112,6 +117,7 @@ describe('recordSession', () => {
     await recordSession(
       LUDO,
       MEMBER,
+      SLUG,
       input({ period: 'evenement', eventLabel: 'Truc spécial', eventTypeId: null }),
     )
     expect(getEventTypeById).not.toHaveBeenCalled()
@@ -127,31 +133,31 @@ describe('recordSession', () => {
       name: 'Externe',
     } as never)
     await expect(
-      recordSession(LUDO, MEMBER, input({ period: 'evenement', eventTypeId: 'type-x' })),
+      recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventTypeId: 'type-x' })),
     ).rejects.toThrow(AttendanceServiceError)
     expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('force eventLabel à null pour matin/apres_midi', async () => {
-    await recordSession(LUDO, MEMBER, input({ period: 'apres_midi', eventLabel: 'ignoré' }))
+    await recordSession(LUDO, MEMBER, SLUG, input({ period: 'apres_midi', eventLabel: 'ignoré' }))
     expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ eventLabel: null }))
   })
 
   it('refuse un compteur négatif', async () => {
-    await expect(recordSession(LUDO, MEMBER, input({ adultsCount: -1 }))).rejects.toThrow(
+    await expect(recordSession(LUDO, MEMBER, SLUG, input({ adultsCount: -1 }))).rejects.toThrow(
       AttendanceServiceError,
     )
   })
 
   it('accepte une météo/température vides (null)', async () => {
-    await recordSession(LUDO, MEMBER, input({ weather: null, temperature: null }))
+    await recordSession(LUDO, MEMBER, SLUG, input({ weather: null, temperature: null }))
     expect(insertRecord).toHaveBeenCalledWith(
       expect.objectContaining({ weather: null, temperature: null }),
     )
   })
 
   it('accepte une température négative', async () => {
-    await recordSession(LUDO, MEMBER, input({ temperature: -4 }))
+    await recordSession(LUDO, MEMBER, SLUG, input({ temperature: -4 }))
     expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ temperature: -4 }))
   })
 })
@@ -159,13 +165,42 @@ describe('recordSession', () => {
 describe('updateSession', () => {
   it('refuse une séance d’un autre ludo', async () => {
     vi.mocked(getRecordById).mockResolvedValue({ id: RECORD, ludoId: 'ludo-b' } as never)
-    await expect(updateSession(RECORD, LUDO, input())).rejects.toThrow(AttendanceServiceError)
+    await expect(updateSession(RECORD, LUDO, SLUG, input())).rejects.toThrow(
+      AttendanceServiceError,
+    )
     expect(updateRecord).not.toHaveBeenCalled()
   })
 
   it('ignore la séance courante dans le contrôle de doublon', async () => {
-    await updateSession(RECORD, LUDO, input())
-    expect(existsForSlot).toHaveBeenCalledWith(LUDO, '2026-06-18', 'matin', RECORD)
+    await updateSession(RECORD, LUDO, SLUG, input())
+    expect(existsForSlot).toHaveBeenCalledWith(LUDO, '2026-06-18', 'matin', null, RECORD)
+  })
+})
+
+describe('site (ludo multi-sites)', () => {
+  it('exige un site sur une ludo multi-sites', async () => {
+    await expect(recordSession(LUDO, MEMBER, MS_SLUG, input({ site: null }))).rejects.toThrow(
+      /site/i,
+    )
+    expect(insertRecord).not.toHaveBeenCalled()
+  })
+
+  it('refuse un site hors de la liste configurée', async () => {
+    await expect(
+      recordSession(LUDO, MEMBER, MS_SLUG, input({ site: 'lausanne' })),
+    ).rejects.toThrow(AttendanceServiceError)
+    expect(insertRecord).not.toHaveBeenCalled()
+  })
+
+  it('enregistre le site et le passe au contrôle de doublon', async () => {
+    await recordSession(LUDO, MEMBER, MS_SLUG, input({ site: 'secheron' }))
+    expect(existsForSlot).toHaveBeenCalledWith(LUDO, '2026-06-18', 'matin', 'secheron')
+    expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ site: 'secheron' }))
+  })
+
+  it('force le site à null sur une ludo mono-site', async () => {
+    await recordSession(LUDO, MEMBER, SLUG, input({ site: 'secheron' }))
+    expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ site: null }))
   })
 })
 

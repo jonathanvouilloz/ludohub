@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from 'drizzle-orm'
+import { and, eq, gte, isNull, lte } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   attendanceRecords,
@@ -34,6 +34,7 @@ export async function updateRecord(
       | 'returnsCount'
       | 'weather'
       | 'temperature'
+      | 'site'
     >
   >,
 ): Promise<AttendanceRow> {
@@ -81,14 +82,17 @@ export async function listByDateRange(ludoId: string, start: string, end: string
 }
 
 /**
- * Vrai si une séance existe déjà pour ce créneau (ludo, date, période).
+ * Vrai si une séance existe déjà pour ce créneau (ludo, date, période, site).
  * À n'appeler que pour `matin`/`apres_midi` : la période `evenement` n'est pas
- * contrainte (plusieurs événements possibles le même jour).
+ * contrainte (plusieurs événements possibles le même jour). Le `site` discrimine
+ * les ludos multi-sites (un créneau par site) ; `null` cible les séances non
+ * réparties / les ludos mono-site.
  */
 export async function existsForSlot(
   ludoId: string,
   date: string,
   period: AttendancePeriod,
+  site: string | null,
   excludeId?: string,
 ): Promise<boolean> {
   const existing = await db.query.attendanceRecords.findFirst({
@@ -96,6 +100,7 @@ export async function existsForSlot(
       eq(attendanceRecords.ludoId, ludoId),
       eq(attendanceRecords.date, date),
       eq(attendanceRecords.period, period),
+      site == null ? isNull(attendanceRecords.site) : eq(attendanceRecords.site, site),
     ),
   })
   return existing != null && existing.id !== excludeId

@@ -24,7 +24,7 @@
     <NavItem {dest} />
   {/each}
 
-  <a href={fabHref} class="tab-fab" aria-label="Clôturer une ouverture">
+  <a href={fabHref} class="tab-fab" aria-label="Ajouter une fréquentation">
     <PlusIcon size={26} aria-hidden="true" />
   </a>
 

@@ -11,13 +11,26 @@
   import { formatDateShort, formatDayWeekday } from '$lib/utils/dates.js'
   import type { AttendanceRow } from '$lib/server/schema'
 
-  let { records, onEdit }: { records: AttendanceRow[]; onEdit: (record: AttendanceRow) => void } =
-    $props()
+  let {
+    records,
+    onEdit,
+    sites = null,
+  }: {
+    records: AttendanceRow[]
+    onEdit: (record: AttendanceRow) => void
+    // Sites de la ludo (multi-sites) ; `null` → pas de colonne site.
+    sites?: { value: string; label: string }[] | null
+  } = $props()
 
   const periodLabels: Record<string, string> = {
     matin: 'Matin',
     apres_midi: 'Après-midi',
     evenement: 'Événement',
+  }
+
+  function siteText(r: AttendanceRow): string {
+    if (!sites) return ''
+    return sites.find((s) => s.value === r.site)?.label ?? 'Non réparti'
   }
   const weatherLabels: Record<string, string> = {
     beau: 'Beau',
@@ -80,6 +93,9 @@
     <Table.Row>
       <Table.Head>Date</Table.Head>
       <Table.Head>Période</Table.Head>
+      {#if sites}
+        <Table.Head>Site</Table.Head>
+      {/if}
       <Table.Head class="num">Adultes</Table.Head>
       <Table.Head class="num">Enfants</Table.Head>
       <Table.Head class="num">Prêts</Table.Head>
@@ -93,6 +109,9 @@
       <Table.Row>
         <Table.Cell>{formatDateShort(r.date)}</Table.Cell>
         <Table.Cell>{periodText(r)}</Table.Cell>
+        {#if sites}
+          <Table.Cell class={r.site ? '' : 'muted'}>{siteText(r)}</Table.Cell>
+        {/if}
         <Table.Cell class="num">{r.adultsCount}</Table.Cell>
         <Table.Cell class="num">{r.childrenCount}</Table.Cell>
         <Table.Cell class="num">{r.loansCount}</Table.Cell>
@@ -115,7 +134,7 @@
         </ul>
       {/snippet}
       <DataCard title={formatDayWeekday(r.date)} spacedFooter notes={counts}>
-        {#snippet byline()}{periodText(r)} · {weatherText(r)}{/snippet}
+        {#snippet byline()}{#if sites}{siteText(r)} · {/if}{periodText(r)} · {weatherText(r)}{/snippet}
         {#snippet actions()}{@render rowActions(r)}{/snippet}
       </DataCard>
     {/each}

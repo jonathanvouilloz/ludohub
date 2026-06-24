@@ -8,6 +8,7 @@ import {
   updateRecord,
 } from '../db/attendance.js'
 import { getEventTypeById } from '../db/eventTypes.js'
+import { getSitesForSlug } from '../sites.js'
 import type { AttendancePeriod, AttendanceRow, WeatherCondition } from '../schema.js'
 
 /**
@@ -39,6 +40,7 @@ export type SessionInput = {
   returnsCount: number
   weather?: string | null
   temperature?: number | null
+  site?: string | null
 }
 
 function parsePeriod(value: string): AttendancePeriod {
@@ -124,6 +126,23 @@ async function resolveEventType(
   return { eventTypeId: type.id, eventLabel: type.name }
 }
 
+/**
+ * Résout et valide le site d'une séance selon la config multi-site de la ludo.
+ * - Ludo mono-site (cas général) : on ignore toute valeur et on force `null`.
+ * - Ludo multi-site (ex. Pâquis-Sécheron) : le site est **obligatoire** et doit
+ *   appartenir à la liste configurée.
+ */
+function resolveSite(slug: string, value: string | null | undefined): string | null {
+  const sites = getSitesForSlug(slug)
+  if (!sites) return null
+  const site = value?.trim() || null
+  if (!site || !sites.some((s) => s.value === site)) {
+    const labels = sites.map((s) => s.label).join(' ou ')
+    throw new AttendanceServiceError(`Choisissez le site (${labels}).`)
+  }
+  return site
+}
+
 /** Charge une séance et vérifie qu'elle appartient bien à la ludo. */
 async function requireRecordInLudo(id: string, ludoId: string): Promise<AttendanceRow> {
   const record = await getRecordById(id)
@@ -137,36 +156,43 @@ async function requireRecordInLudo(id: string, ludoId: string): Promise<Attendan
 export async function recordSession(
   ludoId: string,
   memberId: string,
+  slug: string,
   input: SessionInput,
 ): Promise<AttendanceRow> {
   const fields = normalize(input)
-  if (fields.period !== 'evenement' && (await existsForSlot(ludoId, fields.date, fields.period))) {
-    throw new AttendanceServiceError(
-      'Une séance est déjà clôturée pour cette date et cette période.',
-    )
-  }
-  const resolved = await resolveEventType(ludoId, fields)
-  return insertRecord({ ludoId, closedByMemberId: memberId, ...fields, ...resolved })
-}
-
-/** Corrige une séance existante (compteurs, météo, date, période…). */
-export async function updateSession(
-  recordId: string,
-  ludoId: string,
-  input: SessionInput,
-): Promise<AttendanceRow> {
-  await requireRecordInLudo(recordId, ludoId)
-  const fields = normalize(input)
+  const site = resolveSite(slug, input.site)
   if (
     fields.period !== 'evenement' &&
-    (await existsForSlot(ludoId, fields.date, fields.period, recordId))
+    (await existsForSlot(ludoId, fields.date, fields.period, site))
   ) {
     throw new AttendanceServiceError(
       'Une séance est déjà clôturée pour cette date et cette période.',
     )
   }
   const resolved = await resolveEventType(ludoId, fields)
-  return updateRecord(recordId, { ...fields, ...resolved })
+  return insertRecord({ ludoId, closedByMemberId: memberId, site, ...fields, ...resolved })
+}
+
+/** Corrige une séance existante (compteurs, météo, date, période…). */
+export async function updateSession(
+  recordId: string,
+  ludoId: string,
+  slug: string,
+  input: SessionInput,
+): Promise<AttendanceRow> {
+  await requireRecordInLudo(recordId, ludoId)
+  const fields = normalize(input)
+  const site = resolveSite(slug, input.site)
+  if (
+    fields.period !== 'evenement' &&
+    (await existsForSlot(ludoId, fields.date, fields.period, site, recordId))
+  ) {
+    throw new AttendanceServiceError(
+      'Une séance est déjà clôturée pour cette date et cette période.',
+    )
+  }
+  const resolved = await resolveEventType(ludoId, fields)
+  return updateRecord(recordId, { ...fields, ...resolved, site })
 }
 
 /** Supprime une séance (correction d'une saisie erronée). */

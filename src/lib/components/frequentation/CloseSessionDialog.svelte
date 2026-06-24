@@ -17,11 +17,15 @@
     slug,
     record = null,
     eventTypes = [],
+    sites = null,
   }: {
     open?: boolean
     slug: string
     record?: AttendanceRow | null
     eventTypes?: { id: string; name: string }[]
+    // Sites physiques pour les ludos multi-sites (ex. Pâquis-Sécheron) ; `null`
+    // pour les ludos mono-site → aucun champ site n'est affiché.
+    sites?: { value: string; label: string }[] | null
   } = $props()
 
   const periodLabels: Record<string, string> = {
@@ -45,8 +49,22 @@
     return now.getHours() * 60 + now.getMinutes() >= 870 ? 'apres_midi' : 'matin'
   }
 
+  // Clé localStorage du dernier site choisi sur cette ludo (défaut en création).
+  const lastSiteKey = $derived(`freq-site:${slug}`)
+  function defaultSite(): string {
+    if (!sites || sites.length === 0) return ''
+    try {
+      const saved = localStorage.getItem(lastSiteKey)
+      if (saved && sites.some((s) => s.value === saved)) return saved
+    } catch {
+      /* localStorage indisponible (mode privé) : on retombe sur le premier site */
+    }
+    return sites[0].value
+  }
+
   let date = $state('')
   let period = $state<string>('matin')
+  let site = $state<string>('')
   let eventLabel = $state('')
   // Choix dans le Select : id d'un type, `TYPE_OTHER`, ou '' (rien choisi).
   let eventTypeChoice = $state('')
@@ -62,6 +80,10 @@
 
   const isEdit = $derived(record != null)
   const isOther = $derived(eventTypeChoice === TYPE_OTHER)
+  // Libellé affiché dans le déclencheur du Select de site.
+  const siteTriggerLabel = $derived(
+    sites?.find((s) => s.value === site)?.label ?? 'Choisir un site',
+  )
   // Libellé affiché dans le déclencheur du Select.
   const typeTriggerLabel = $derived(
     eventTypeChoice === TYPE_OTHER
@@ -105,6 +127,8 @@
     if (record) {
       date = record.date
       period = record.period
+      // Site existant ; `null` (séance non répartie) → vide → force un choix.
+      site = record.site ?? ''
       eventLabel = record.eventLabel ?? ''
       // Type connu et toujours actif → on le présélectionne ; sinon « Autre »
       // (le libellé snapshot reste affiché via la saisie libre).
@@ -124,6 +148,7 @@
     } else {
       date = todayLocal()
       period = defaultPeriodForNow()
+      site = defaultSite()
       eventLabel = ''
       // Sans aucun type défini, on bascule directement sur la saisie libre.
       eventTypeChoice = eventTypes.length > 0 ? '' : TYPE_OTHER
@@ -153,21 +178,28 @@
 <Dialog.Root bind:open>
   <Dialog.Content>
     <Dialog.Header>
-      <Dialog.Title>{isEdit ? "Corriger l'ouverture" : 'Clôturer une ouverture'}</Dialog.Title>
-      <Dialog.Description>
-        Date, période, compteurs et météo. La météo est pré-remplie et reste corrigible.
-      </Dialog.Description>
+      <Dialog.Title>{isEdit ? 'Corriger la fréquentation' : 'Fréquentations'}</Dialog.Title>
     </Dialog.Header>
 
     <form
       method="POST"
       action={isEdit ? '?/update' : '?/record'}
       use:enhance={toastEnhance({
-        success: isEdit ? 'Fréquentation mise à jour.' : 'Ouverture clôturée.',
+        success: isEdit ? 'Fréquentation mise à jour.' : 'Fréquentation ajoutée.',
         errorMode: 'inline',
         onPending: (p) => (submitting = p),
         onError: (m) => (error = m),
-        onSuccess: () => (open = false),
+        onSuccess: () => {
+          // Mémorise le site choisi comme défaut de la prochaine saisie.
+          if (sites && site) {
+            try {
+              localStorage.setItem(lastSiteKey, site)
+            } catch {
+              /* localStorage indisponible : sans effet */
+            }
+          }
+          open = false
+        },
       })}
     >
       {#if isEdit && record}
@@ -184,16 +216,32 @@
         <input type="hidden" name="date" value={date} />
       {/if}
 
-      <div class="field">
-        <Label for="freq-period">Période</Label>
-        <Select.Root type="single" name="period" bind:value={period}>
-          <Select.Trigger id="freq-period">{periodLabels[period]}</Select.Trigger>
-          <Select.Content>
-            <Select.Item value="matin" label="Matin" />
-            <Select.Item value="apres_midi" label="Après-midi" />
-            <Select.Item value="evenement" label="Événement" />
-          </Select.Content>
-        </Select.Root>
+      <div class="field-row" class:one-col={!sites}>
+        {#if sites}
+          <div class="field">
+            <Label for="freq-site">Site</Label>
+            <Select.Root type="single" name="site" bind:value={site}>
+              <Select.Trigger id="freq-site">{siteTriggerLabel}</Select.Trigger>
+              <Select.Content>
+                {#each sites as s (s.value)}
+                  <Select.Item value={s.value} label={s.label} />
+                {/each}
+              </Select.Content>
+            </Select.Root>
+          </div>
+        {/if}
+
+        <div class="field">
+          <Label for="freq-period">Période</Label>
+          <Select.Root type="single" name="period" bind:value={period}>
+            <Select.Trigger id="freq-period">{periodLabels[period]}</Select.Trigger>
+            <Select.Content>
+              <Select.Item value="matin" label="Matin" />
+              <Select.Item value="apres_midi" label="Après-midi" />
+              <Select.Item value="evenement" label="Événement" />
+            </Select.Content>
+          </Select.Root>
+        </div>
       </div>
 
       {#if period === 'evenement'}
@@ -255,7 +303,7 @@
           {#if submitting}
             Enregistrement…
           {:else}
-            {isEdit ? 'Enregistrer' : "Clôturer l'ouverture"}
+            {isEdit ? 'Enregistrer' : 'Ajouter'}
           {/if}
         </Button>
       </Dialog.Footer>
@@ -271,6 +319,7 @@
   }
   .today-label {
     margin: 0;
+    font-size: var(--text-h3, var(--text-body));
     font-weight: var(--weight-semibold);
     color: var(--text-main);
   }
@@ -278,6 +327,15 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+  /* Site + Période côte à côte ; pleine largeur si la ludo est mono-site. */
+  .field-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+  .field-row.one-col {
+    grid-template-columns: minmax(0, 1fr);
   }
   /* Compteurs en grille 2×2 à toutes les tailles (minmax 0 = colonnes
      rétrécissables) pour limiter la hauteur du modal sur petit écran / zoom. */

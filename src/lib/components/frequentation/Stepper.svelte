@@ -83,21 +83,24 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
-  /* Couleurs sémantiques pour la lisibilité : − retrait (rouge), + ajout (vert). */
+  /* Couleurs sémantiques pour la lisibilité : − retrait (rouge), + ajout (vert).
+     Fond teinté très léger au repos, accentué au survol. */
   .step--minus {
     color: var(--danger);
+    background: var(--danger-light);
     border-color: var(--danger-light);
   }
   .step--minus:hover:not(:disabled) {
-    background: var(--danger-light);
+    background: color-mix(in srgb, var(--danger) 14%, white);
     border-color: var(--danger);
   }
   .step--plus {
     color: var(--success);
+    background: var(--success-light);
     border-color: var(--success-light);
   }
   .step--plus:hover:not(:disabled) {
-    background: var(--success-light);
+    background: color-mix(in srgb, var(--success) 14%, white);
     border-color: var(--success);
   }
   .step :global(svg) {

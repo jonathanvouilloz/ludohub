@@ -295,6 +295,10 @@ export const attendanceRecords = pgTable(
     returnsCount: integer('returns_count').notNull().default(0),
     weather: weatherCondition('weather'),
     temperature: integer('temperature'),
+    // Site physique de la séance, pour les ludos multi-sites (config en dur dans
+    // `src/lib/server/sites.ts`, ex. Pâquis-Sécheron). `null` = ludo mono-site ou
+    // séance « non répartie » (historique antérieur à la distinction par site).
+    site: text('site'),
     // FK informatif : qui a clôturé la séance. Set null si le membre est supprimé.
     closedByMemberId: uuid('closed_by_member_id').references(() => members.id, {
       onDelete: 'set null',
@@ -303,10 +307,13 @@ export const attendanceRecords = pgTable(
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
   (t) => [
-    // Un seul `matin` / `apres_midi` par jour et par ludo ; les `evenement`
-    // restent libres (plusieurs événements possibles le même jour).
+    // Un seul `matin` / `apres_midi` par jour, par ludo et par site ; les
+    // `evenement` restent libres (plusieurs événements possibles le même jour).
+    // `coalesce(site, '')` neutralise le null (sinon Postgres traite chaque null
+    // comme distinct) : ludo mono-site → clé inchangée (1 créneau/jour) ; ludo
+    // multi-site → un créneau par site (Pâquis et Sécheron coexistent le même jour).
     uniqueIndex('attendance_unique_slot')
-      .on(t.ludoId, t.date, t.period)
+      .on(t.ludoId, t.date, t.period, sql`coalesce(${t.site}, '')`)
       .where(sql`${t.period} <> 'evenement'`),
   ],
 )
