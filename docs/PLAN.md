@@ -21,6 +21,7 @@
 | 15  | FRÉQUENTATION — Relevé & clôture d'ouverture (+ météo)           | M      | **DONE**     | [14-frequentation.md](features/14-frequentation.md)           |
 | 16  | POLISH — États, Feedback (toasts/skeleton/empty) & Motion        | M      | **DONE**     | [16-polish-feedback-motion.md](features/16-polish-feedback-motion.md) |
 | 17  | NEWSLETTER — Audience, campagnes & envoi email (Resend)          | L      | **EN COURS** | [17-newsletter.md](features/17-newsletter.md)                 |
+| 18  | DOCUMENTATION /aide — Guide utilisateur visuel (skill user-docs) | M      | **EN COURS** | [18-documentation-aide.md](features/18-documentation-aide.md) |
 
 ## Prochaines étapes prioritaires
 

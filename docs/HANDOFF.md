@@ -2,14 +2,15 @@
 
 ## Features actives
 
-| Feature                  | Fichier                                                | Statut                               |
-| ------------------------ | ------------------------------------------------------ | ------------------------------------ |
-| Backlog revue (suivi)    | [BACKLOG.md](BACKLOG.md)                               | **EN COURS** — batch 1 + 2 livrés    |
-| 17 — NEWSLETTER          | [features/17-newsletter.md](features/17-newsletter.md) | DONE code (db:push + import à jouer) |
-| 12 — TESTS E2E           | [features/10-tests-e2e.md](features/10-tests-e2e.md)   | EN ATTENTE                           |
+| Feature                  | Fichier                                                              | Statut                               |
+| ------------------------ | ------------------------------------------------------------------- | ------------------------------------ |
+| 18 — DOCUMENTATION /aide | [features/18-documentation-aide.md](features/18-documentation-aide.md) | **EN COURS** — module Thèmes (étalon) fait, 8 restants |
+| Backlog revue (suivi)    | [BACKLOG.md](BACKLOG.md)                                            | EN COURS — batch 1 + 2 livrés        |
+| 17 — NEWSLETTER          | [features/17-newsletter.md](features/17-newsletter.md)             | DONE code (db:push + import à jouer) |
+| 12 — TESTS E2E           | [features/10-tests-e2e.md](features/10-tests-e2e.md)              | EN ATTENTE                           |
 
 ## Reprendre ici
 
-**Backlog `docs/BACKLOG.md`** — Batch 2 livré (accueil objets à traiter, print thème, types d'événement par ludo, newsletter tracking/RGPD/pagination/TanStack) + optimisation UX du modal de clôture. **Action Jonathan : `pnpm db:push`** (table `event_types` + colonne `attendance_records.event_type_id`, additif) pour activer les types d'événement.
-Prochain : batch 3 (print planning, exports PDF fréquentation, comparaison admin, refonte template mail) — ou epic **12-TESTS E2E**.
-À part : newsletter Pâquis = `pnpm db:push` puis `pnpm tsx scripts/import-newsletter-paquis.ts --commit` (DB prod).
+**Doc `/aide` (feature 18)** — Skill réutilisable `user-docs` créé + module Thèmes livré comme étalon (seed démo, harness Playwright annoté, page `/[ludo]/aide`). Commit [65c1806].
+Prochain : dérouler les 8 modules restants (seed + config + content par module, régénérer captures) + lien « Aide » dans la nav. Détail dans le fichier feature.
+À part : Backlog batch 3 ; newsletter Pâquis = `pnpm db:push` puis `pnpm tsx scripts/import-newsletter-paquis.ts --commit` (DB prod).

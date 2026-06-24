@@ -4,6 +4,16 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-24 | Documentation utilisateur /aide via captures auto-régénérées (skill user-docs)
+
+**Contexte :** Besoin d'un manuel illustré pour un staff non-tech, consultable à tout moment. Le skill existant `generate-docs` (type `user-guide`) interdit les captures car elles pourrissent.
+
+**Décision :** Nouveau skill réutilisable `user-docs` (hors repo) = noyau générique + adaptateur `docs/user-docs.config.json` par projet. Les routes `src/routes/` servent de sommaire. Captures pilotées par Playwright sur le serveur dev déjà lancé, contre un **tenant démo seedé à UUID + dates figés** (déterminisme). **Annotations dessinées sur le PNG** (encadrés rouges, spotlight, zoom), ciblées par **sélecteur CSS** → robustes au changement d'UI. Rendu via route `/[ludo]/aide` (noindex, dans le shell, tokens design). **Cache-busting** des captures via `docsVersion` bumpé à chaque génération. Le problème du pourrissement est résolu à la racine : texte + captures se régénèrent ensemble.
+
+**Alternatives :** étendre `generate-docs` (rejeté : contredit sa règle anti-captures, alourdit un skill dense) ; captures manuelles / shot-list (rejeté : maintenance manuelle, pourrissement) ; annoter par coordonnées en dur (rejeté : casse au moindre changement d'UI) ; doc en markdown sur GitHub ou site/PDF séparé (rejeté : pas grand public, un bénévole n'ira pas sur GitHub).
+
+---
+
 ## 2026-06-24 | Batch 2 backlog : types d'événement par ludo + pilote TanStack + modals bornés
 
 **Contexte :** Revue produit (`docs/BACKLOG.md`), 3 clusters (accueil/thèmes, fréquentation, newsletter) + retouche UX modal.
