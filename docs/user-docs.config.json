@@ -21,6 +21,97 @@
   "mask": [],
   "sections": [
     {
+      "id": "demarrer",
+      "title": "Démarrer",
+      "shots": [
+        {
+          "id": "connexion",
+          "preAuth": true,
+          "route": "/auth/demo",
+          "waitFor": "input[name=\"password\"]",
+          "label": "L’écran de connexion",
+          "caption": "Entrez le mot de passe commun de votre ludothèque, puis « Se connecter ».",
+          "clip": { "selector": ".card", "padding": 24 }
+        },
+        {
+          "id": "membres",
+          "preAuth": true,
+          "route": "/auth/demo",
+          "waitFor": "input[name=\"password\"]",
+          "before": [
+            { "fill": { "selector": "input[name=\"password\"]", "value": "demo2026" } },
+            { "click": "button[type=\"submit\"]" },
+            { "waitFor": "text=Qui êtes-vous ?" }
+          ],
+          "label": "Choisir qui vous êtes",
+          "caption": "Sélectionnez votre nom dans la liste pour ouvrir votre espace.",
+          "clip": { "selector": ".card", "padding": 24 }
+        },
+        {
+          "id": "accueil",
+          "route": "/demo",
+          "waitFor": "h1",
+          "fullPage": true,
+          "label": "Votre page d’accueil",
+          "caption": "L’accueil : ① le bouton d’action rapide, ② l’aperçu de tous les modules.",
+          "highlights": [
+            { "selector": ".hero-action", "label": "1" },
+            { "selector": ".tiles", "label": "2", "padding": 8 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "planning",
+      "title": "Planning",
+      "shots": [
+        {
+          "id": "apercu",
+          "route": "/demo/planning",
+          "waitFor": "h1",
+          "label": "Le planning des samedis",
+          "caption": "En haut, le bandeau rappelle votre prochain samedi de service.",
+          "highlights": [{ "selector": ".hero", "label": "1" }]
+        },
+        {
+          "id": "prochain",
+          "route": "/demo/planning",
+          "waitFor": ".hero",
+          "label": "Votre prochain samedi",
+          "caption": "Zoom sur le bandeau : la date et l’équipe de service ce jour-là.",
+          "clip": { "selector": ".hero", "padding": 16 }
+        },
+        {
+          "id": "saisons",
+          "route": "/demo/planning/saisons",
+          "waitFor": "h1",
+          "label": "Les saisons",
+          "caption": "Les responsables gèrent ici les saisons : la saison active génère ses samedis."
+        }
+      ]
+    },
+    {
+      "id": "absences",
+      "title": "Absences",
+      "shots": [
+        {
+          "id": "traiter",
+          "route": "/demo/absences",
+          "waitFor": "h1",
+          "label": "Les demandes à traiter",
+          "caption": "Les demandes en attente apparaissent dans l’encadré « À traiter ».",
+          "spotlight": ".pending"
+        },
+        {
+          "id": "liste",
+          "route": "/demo/absences",
+          "waitFor": "h1",
+          "label": "Toutes les absences",
+          "caption": "Le tableau récapitule chaque demande avec son statut (en attente, approuvée…)."
+        }
+      ]
+    },
+    {
       "id": "themes",
       "title": "Thèmes",
       "shots": [

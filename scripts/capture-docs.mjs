@@ -24,7 +24,9 @@ const chromium = await loadChromium()
 const configPath = process.argv[2] ?? 'docs/user-docs.config.json'
 const config = JSON.parse(await readFile(configPath, 'utf8'))
 
-const baseUrl = config.baseUrl ?? 'http://localhost:5173'
+// `DOCS_BASE_URL` permet de viser un autre port sans toucher la config
+// (ex. quand Vite bascule sur 5174). Sinon, la config fait foi.
+const baseUrl = process.env.DOCS_BASE_URL ?? config.baseUrl ?? 'http://localhost:5173'
 const viewport = config.viewport ?? { width: 1280, height: 800 }
 const outDir = config.outDir ?? 'static/aide/captures'
 const globalMask = config.mask ?? []
@@ -131,39 +133,54 @@ const page = await context.newPage()
 let captured = 0
 let failed = 0
 
+/** Capture un shot unique (navigation + annotations + screenshot). */
+async function captureShot(section, shot) {
+  const file = join(outDir, section.id, `${shot.id}.png`)
+  try {
+    await page.goto(new URL(shot.route, baseUrl).href, { waitUntil: 'networkidle' })
+    if (shot.waitFor) await page.waitForSelector(shot.waitFor, { state: 'visible' })
+    if (shot.before?.length) await runSteps(page, shot.before)
+
+    await annotate(page, shot)
+    const clip = await clipFor(page, shot)
+
+    await mkdir(dirname(file), { recursive: true })
+    await page.screenshot({
+      path: file,
+      clip,
+      fullPage: clip ? false : (shot.fullPage ?? false),
+      mask: maskLocators(page, [...globalMask, ...(shot.mask ?? [])]),
+    })
+    captured++
+    console.log(`[ok] ${section.id}/${shot.id} -> ${file}`)
+  } catch (err) {
+    failed++
+    console.error(`[FAIL] ${section.id}/${shot.id} : ${err.message}`)
+  }
+}
+
+const sections = config.sections ?? []
+const eachShot = (pred) =>
+  sections.flatMap((section) =>
+    (section.shots ?? []).filter(pred).map((shot) => ({ section, shot })),
+  )
+
 try {
-  // 1. Authentification (une seule fois pour toute la session)
+  // 1. Shots `preAuth` : capturés AVANT le login (écrans de connexion).
+  //    Leurs `before` jouent les interactions nécessaires (saisie mot de passe…).
+  for (const { section, shot } of eachShot((s) => s.preAuth)) {
+    await captureShot(section, shot)
+  }
+
+  // 2. Authentification (une seule fois pour toute la session)
   if (config.auth?.steps?.length) {
     console.log('[auth] connexion...')
     await runSteps(page, config.auth.steps)
   }
 
-  // 2. Boucle sections -> shots
-  for (const section of config.sections ?? []) {
-    for (const shot of section.shots ?? []) {
-      const file = join(outDir, section.id, `${shot.id}.png`)
-      try {
-        await page.goto(new URL(shot.route, baseUrl).href, { waitUntil: 'networkidle' })
-        if (shot.waitFor) await page.waitForSelector(shot.waitFor, { state: 'visible' })
-        if (shot.before?.length) await runSteps(page, shot.before)
-
-        await annotate(page, shot)
-        const clip = await clipFor(page, shot)
-
-        await mkdir(dirname(file), { recursive: true })
-        await page.screenshot({
-          path: file,
-          clip,
-          fullPage: clip ? false : (shot.fullPage ?? false),
-          mask: maskLocators(page, [...globalMask, ...(shot.mask ?? [])]),
-        })
-        captured++
-        console.log(`[ok] ${section.id}/${shot.id} -> ${file}`)
-      } catch (err) {
-        failed++
-        console.error(`[FAIL] ${section.id}/${shot.id} : ${err.message}`)
-      }
-    }
+  // 3. Shots normaux (post-login)
+  for (const { section, shot } of eachShot((s) => !s.preAuth)) {
+    await captureShot(section, shot)
   }
 } finally {
   await browser.close()

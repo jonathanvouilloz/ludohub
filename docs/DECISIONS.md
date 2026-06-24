@@ -4,6 +4,14 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-24 | Aide = route globale `/aide` + présentation type guide GitBook
+
+**Contexte :** L'aide est un contenu **global** (identique pour toutes les ludos), mais vivait sous `/[ludo]/aide` (juste pour hériter du shell). La même doc était donc joignable via N URLs (une par tenant), sans URL canonique. Par ailleurs le rendu était une simple liste verticale (images trop grandes vs texte, peu navigable).
+
+**Décision :** Déplacer vers **`/aide` global**, calqué sur `/reseau/*` : `+layout.server.ts` avec `requireSessionContext` (identité via session, pas de slug dans l'URL), monté dans `AppShell`. Lien nav « Aide » → `/aide`. Rendu **type GitBook** : sommaire latéral + scroll-spy (IntersectionObserver), **recherche** client-side (filtre chapitres + étapes), carte « démarrage rapide », **images réduites à droite du texte** + zoom au survol + **lightbox** plein écran, typo soignée (gras `**` via `Rich.svelte` sans `@html`, listes numérotées + puces `tips`, note « Bon à savoir » en card sans bordure-gauche). Harness : shots `preAuth` (écrans de connexion capturés avant login) + override `DOCS_BASE_URL`. Tokens design uniquement.
+
+**Alternatives :** Garder `/[ludo]/aide` (pas de duplication réelle mais URL non canonique) ; `/aide` public hors session (perd le shell, nécessite mise en page autonome) ; rendu Markdown/MDX (surcouche inutile, le contenu vit déjà en TS typé).
+
 ## 2026-06-24 | Documentation utilisateur /aide via captures auto-régénérées (skill user-docs)
 
 **Contexte :** Besoin d'un manuel illustré pour un staff non-tech, consultable à tout moment. Le skill existant `generate-docs` (type `user-guide`) interdit les captures car elles pourrissent.

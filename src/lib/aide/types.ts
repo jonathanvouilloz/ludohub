@@ -4,9 +4,11 @@ export interface GuideStep {
   /** id du shot capturé (static/aide/captures/<section>/<shot>.png) */
   shot?: string
   title: string
-  /** chaque entrée = une étape */
+  /** chaque entrée = une étape (liste numérotée). Supporte le gras `**mot**`. */
   body: string[]
-  /** encadré "Bon à savoir" optionnel */
+  /** points complémentaires affichés en liste à puces. Supporte le gras. */
+  tips?: string[]
+  /** encadré "Bon à savoir" optionnel. Supporte le gras. */
   note?: string
 }
 

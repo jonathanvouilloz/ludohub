@@ -27,6 +27,12 @@ import {
   themeInstallationItems,
   themeCheckups,
   themeCheckupItems,
+  seasons,
+  saturdaySlots,
+  assignments,
+  closurePeriods,
+  seasonMemberSettings,
+  absences,
 } from '../src/lib/server/schema.js'
 
 // ─── UUID fixes (routes stables) ─────────────────────────────────────────────
@@ -52,13 +58,48 @@ const II = [
   '0d000000-0000-4000-8000-000000000313',
 ]
 const CHK = '0d000000-0000-4000-8000-000000000320'
+// Planning : saison, samedis, fermeture, réglages membre
+const SEASON = '0d000000-0000-4000-8000-000000000400'
+const CLOSURE = '0d000000-0000-4000-8000-000000000440'
+const SMS = [
+  '0d000000-0000-4000-8000-000000000450', // Camille (permanent)
+  '0d000000-0000-4000-8000-000000000451', // Sacha
+]
+// Absences (figées) : 1 en attente + 2 traitées
+const ABS = [
+  '0d000000-0000-4000-8000-000000000520',
+  '0d000000-0000-4000-8000-000000000521',
+  '0d000000-0000-4000-8000-000000000522',
+]
+
+// Samedis de la saison démo (dates figées pour des captures stables).
+// `assigned` = Camille + Sacha sont de service ce samedi-là. Le premier samedi
+// futur assigné alimente le bandeau « Mon prochain samedi » du planning.
+const SATURDAYS: { id: string; date: string; assigned: boolean }[] = [
+  { id: '0d000000-0000-4000-8000-000000000410', date: '2026-06-06', assigned: false },
+  { id: '0d000000-0000-4000-8000-000000000411', date: '2026-06-13', assigned: false },
+  { id: '0d000000-0000-4000-8000-000000000412', date: '2026-06-20', assigned: true },
+  { id: '0d000000-0000-4000-8000-000000000413', date: '2026-06-27', assigned: true },
+  { id: '0d000000-0000-4000-8000-000000000414', date: '2026-07-04', assigned: true },
+  { id: '0d000000-0000-4000-8000-000000000415', date: '2026-07-11', assigned: false },
+  { id: '0d000000-0000-4000-8000-000000000416', date: '2026-07-18', assigned: false }, // fermeture
+  { id: '0d000000-0000-4000-8000-000000000417', date: '2026-07-25', assigned: false }, // fermeture
+  { id: '0d000000-0000-4000-8000-000000000418', date: '2026-08-22', assigned: false }, // fermeture
+  { id: '0d000000-0000-4000-8000-000000000419', date: '2026-08-29', assigned: false },
+  { id: '0d000000-0000-4000-8000-00000000041a', date: '2026-09-05', assigned: true },
+  { id: '0d000000-0000-4000-8000-00000000041b', date: '2026-09-12', assigned: false },
+]
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is not set (.env)')
   const sql = neon(process.env.DATABASE_URL)
   const db = drizzle(sql)
 
-  // 1. Reset du tenant demo (cascade gère membres/thèmes/items/installations/check-ups).
+  // 1. Reset du tenant demo. La FK `theme_installations.ludo_id → ludotheques`
+  //    n'a PAS de cascade (une installation peut appartenir à une ludo emprunteuse),
+  //    donc on supprime d'abord les installations du demo (cascade → items/check-ups
+  //    via leurs FK installationId). Le reste part en cascade avec la ludo (slug).
+  await db.delete(themeInstallations).where(eq(themeInstallations.ludoId, LUDO))
   await db.delete(ludotheques).where(eq(ludotheques.slug, 'demo'))
 
   // 2. Ludothèque démo
@@ -154,6 +195,89 @@ async function main() {
     { checkupId: CHK, installationItemId: II[1], status: 'present' },
     { checkupId: CHK, installationItemId: II[2], status: 'present' },
     { checkupId: CHK, installationItemId: II[3], status: 'manquant', note: 'Drapeau introuvable.' },
+  ])
+
+  // ─── Planning ────────────────────────────────────────────────────────────
+  // Saison active « Saison 2026 » avec ses samedis. Camille est permanente.
+  await db.insert(seasons).values({
+    id: SEASON,
+    ludoId: LUDO,
+    name: '2026',
+    startDate: '2026-04-01',
+    endDate: '2026-12-20',
+    isActive: true,
+  })
+
+  await db.insert(saturdaySlots).values(
+    SATURDAYS.map((s) => ({
+      id: s.id,
+      seasonId: SEASON,
+      date: s.date,
+      type: 'normal' as const,
+      requiredCount: 2,
+    })),
+  )
+
+  // Camille + Sacha de service sur les samedis marqués `assigned`.
+  let asgN = 0x430
+  const assignmentRows = SATURDAYS.filter((s) => s.assigned).flatMap((s) =>
+    [M_RESP, M_BENE].map((memberId) => ({
+      id: `0d000000-0000-4000-8000-000000000${(asgN++).toString(16)}`,
+      slotId: s.id,
+      memberId,
+    })),
+  )
+  await db.insert(assignments).values(assignmentRows)
+
+  // Vacances d'été : les samedis du 13.07 au 24.08 s'affichent « fermé ».
+  await db.insert(closurePeriods).values({
+    id: CLOSURE,
+    seasonId: SEASON,
+    label: 'Vacances d’été',
+    startDate: '2026-07-13',
+    endDate: '2026-08-24',
+  })
+
+  await db.insert(seasonMemberSettings).values([
+    { id: SMS[0], seasonId: SEASON, memberId: M_RESP, isPermanent: true },
+    { id: SMS[1], seasonId: SEASON, memberId: M_BENE, isPermanent: false },
+  ])
+
+  // ─── Absences ────────────────────────────────────────────────────────────
+  // 1 demande en attente (alimente le bandeau « À traiter ») + 2 traitées.
+  await db.insert(absences).values([
+    {
+      id: ABS[0],
+      ludoId: LUDO,
+      memberId: M_BENE,
+      type: 'vacances',
+      startDate: '2026-07-20',
+      endDate: '2026-08-02',
+      status: 'en_attente',
+      notes: 'Vacances en famille, de retour le 3 août.',
+    },
+    {
+      id: ABS[1],
+      ludoId: LUDO,
+      memberId: M_BENE,
+      type: 'formation',
+      startDate: '2026-09-12',
+      endDate: '2026-09-12',
+      status: 'approuve',
+      notes: 'Formation premiers secours.',
+      responderNotes: 'Validé, pense à nous faire un retour !',
+      respondedBy: M_RESP,
+    },
+    {
+      id: ABS[2],
+      ludoId: LUDO,
+      memberId: M_RESP,
+      type: 'indisponible',
+      startDate: '2026-08-29',
+      endDate: '2026-08-29',
+      status: 'approuve',
+      respondedBy: M_RESP,
+    },
   ])
 
   console.log('✓ Tenant démo seedé : /demo (mdp demo2026)')

@@ -10,6 +10,7 @@ import DicesIcon from '@lucide/svelte/icons/dices'
 import BellIcon from '@lucide/svelte/icons/bell'
 import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
 import MailIcon from '@lucide/svelte/icons/mail'
+import CircleHelpIcon from '@lucide/svelte/icons/circle-help'
 
 /** Zone(s) du shell où une destination apparaît. */
 export type NavZone = 'sidebar' | 'tabbar' | 'sheet'
@@ -113,6 +114,14 @@ export function buildNavConfig(slug: string): NavDest[] {
       href: `${base}/absences`,
       icon: CalendarOffIcon,
       match: (p) => p.startsWith(`${base}/absences`),
+      zones: ['sidebar', 'sheet'],
+    },
+    {
+      // Aide globale (route hors slug, identité via session — cf. /reseau).
+      label: 'Aide',
+      href: '/aide',
+      icon: CircleHelpIcon,
+      match: (p) => p.startsWith('/aide'),
       zones: ['sidebar', 'sheet'],
     },
   ]
