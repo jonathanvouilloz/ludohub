@@ -6,6 +6,7 @@
   import ListIcon from '@lucide/svelte/icons/list'
   import CalendarRangeIcon from '@lucide/svelte/icons/calendar-range'
   import CalendarOffIcon from '@lucide/svelte/icons/calendar-off'
+  import ChevronDownIcon from '@lucide/svelte/icons/chevron-down'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import CloseSessionDialog from '$lib/components/frequentation/CloseSessionDialog.svelte'
   import SessionList from '$lib/components/frequentation/SessionList.svelte'
@@ -233,7 +234,10 @@
       {#each groups as g (g.key)}
         <details class="group" open={g.key === currentKey}>
           <summary>
-            <span class="group-label">{g.label}</span>
+            <span class="group-head">
+              <ChevronDownIcon class="chevron" size={18} aria-hidden="true" />
+              <span class="group-label">{g.label}</span>
+            </span>
             <span class="chips">
               <span>{g.totals.adultsCount} ad.</span>
               <span>{g.totals.childrenCount} enf.</span>
@@ -441,6 +445,19 @@
   }
   .group summary::-webkit-details-marker {
     display: none;
+  }
+  .group-head {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+  /* Chevron : pointe vers le bas quand ouvert, vers la droite quand replié. */
+  .group summary :global(.chevron) {
+    flex-shrink: 0;
+    transition: transform var(--dur-fast) var(--ease-out-strong);
+  }
+  .group:not([open]) summary :global(.chevron) {
+    transform: rotate(-90deg);
   }
   .group-label {
     font-weight: var(--weight-semibold);
