@@ -1,6 +1,6 @@
 # Feature : NEWSLETTER — Audience, campagnes & envoi email (Resend)
 
-**Epic :** 17 | **Taille :** L | **Statut :** EN COURS (codé, non commité)
+**Epic :** 17 | **Taille :** L | **Statut :** DONE (code commité — `5e7b810`, `c5cbd9a`, `7221bef` module + segments ; `48e90c1` script import Pâquis). Reste hors-code : vérif domaine `ludohub.ch` dans Resend (DNS) avant tout vrai envoi.
 
 ## Etat session 2026-06-22 — Segments (tags)
 

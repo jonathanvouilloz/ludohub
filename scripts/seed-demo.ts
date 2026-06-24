@@ -14,6 +14,7 @@
  * Autonome (tsx, hors runtime SvelteKit). Lancer : pnpm tsx scripts/seed-demo.ts
  */
 import 'dotenv/config'
+import { randomUUID } from 'node:crypto'
 import { inArray, or } from 'drizzle-orm'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
@@ -39,6 +40,9 @@ import {
   gameWishes,
   supplyRequests,
   notifications,
+  newsletterContacts,
+  campaigns,
+  campaignSends,
 } from '../src/lib/server/schema.js'
 
 // ─── UUID fixes (routes stables) ─────────────────────────────────────────────
@@ -92,6 +96,24 @@ const HR_VOISINE = '0d000000-0000-4000-8000-000000000800'
 const HR_DEMO = '0d000000-0000-4000-8000-000000000810'
 const HR_PAST = '0d000000-0000-4000-8000-000000000820'
 const HRESP = '0d000000-0000-4000-8000-000000000830'
+
+// ─── Newsletter : contacts (public) + campagnes ──────────────────────────────
+// Contacts du public côté `demo` (route /demo/newsletter). UUID fixes pour les
+// envois (campaign_sends) ; la campagne envoyée + le brouillon ont des id stables
+// (routes éditeur /[id] et rapport /[id]/stats).
+const NL_C = [
+  '0d000000-0000-4000-8000-000000000900',
+  '0d000000-0000-4000-8000-000000000901',
+  '0d000000-0000-4000-8000-000000000902',
+  '0d000000-0000-4000-8000-000000000903',
+  '0d000000-0000-4000-8000-000000000904',
+  '0d000000-0000-4000-8000-000000000905',
+  '0d000000-0000-4000-8000-000000000906',
+  '0d000000-0000-4000-8000-000000000907',
+  '0d000000-0000-4000-8000-000000000908',
+]
+const CAMP_DRAFT = '0d000000-0000-4000-8000-000000000950'
+const CAMP_SENT = '0d000000-0000-4000-8000-000000000951'
 
 // Samedis de la saison démo (dates figées pour des captures stables).
 // `assigned` = Camille + Sacha sont de service ce samedi-là. Le premier samedi
@@ -528,11 +550,76 @@ async function main() {
     },
   ])
 
+  // ─── Newsletter : public (contacts) + campagnes ────────────────────────────
+  // Contacts fictifs (domaine `example.com` réservé → aucune PII réelle), répartis
+  // en segments pour que le résumé « Famille 5 · Institution 1 · Partenaire 1 »
+  // s'affiche, avec un désabonné et un rejeté (états réalistes de la liste).
+  const NL_CREATED = new Date('2026-05-15T10:00:00Z')
+  await db.insert(newsletterContacts).values([
+    { id: NL_C[0], ludoId: LUDO, email: 'sophie.martin@example.com', firstName: 'Sophie', lastName: 'Martin', tag: 'famille', status: 'subscribed', source: 'import', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[1], ludoId: LUDO, email: 'luca.rossi@example.com', firstName: 'Luca', lastName: 'Rossi', tag: 'famille', status: 'subscribed', source: 'import', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[2], ludoId: LUDO, email: 'ines.dubois@example.com', firstName: 'Inès', lastName: 'Dubois', tag: 'famille', status: 'subscribed', source: 'import', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[3], ludoId: LUDO, email: 'theo.nguyen@example.com', firstName: 'Théo', lastName: 'Nguyen', tag: 'famille', status: 'subscribed', source: 'manual', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[4], ludoId: LUDO, email: 'lena.keller@example.com', firstName: 'Lena', lastName: 'Keller', tag: 'famille', status: 'subscribed', source: 'manual', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[5], ludoId: LUDO, email: 'creche.arc-en-ciel@example.com', firstName: null, lastName: 'Crèche Arc-en-Ciel', tag: 'institution', status: 'subscribed', source: 'import', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[6], ludoId: LUDO, email: 'librairie.desjeux@example.com', firstName: null, lastName: 'Librairie des Jeux', tag: 'partenaire', status: 'subscribed', source: 'manual', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[7], ludoId: LUDO, email: 'marco.silva@example.com', firstName: 'Marco', lastName: 'Silva', tag: 'famille', status: 'unsubscribed', source: 'import', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+    { id: NL_C[8], ludoId: LUDO, email: 'paul.favre@example.com', firstName: 'Paul', lastName: 'Favre', tag: 'famille', status: 'bounced', source: 'import', unsubscribeToken: randomUUID(), createdAt: NL_CREATED }, // prettier-ignore
+  ])
+
+  // Une campagne envoyée (→ rapport d'envoi) + un brouillon en cours (→ éditeur).
+  const CAMP_SENT_AT = new Date('2026-06-10T09:30:00Z')
+  await db.insert(campaigns).values([
+    {
+      id: CAMP_DRAFT,
+      ludoId: LUDO,
+      subject: 'Les nouveautés de la rentrée',
+      previewText: 'Trois nouveaux jeux et nos horaires de septembre.',
+      content: {
+        title: 'Trois nouveaux jeux à découvrir',
+        body: 'Bonjour {{first_name}},\n\nLa rentrée approche, et avec elle de belles nouveautés à la ludothèque ! Nous avons ajouté trois jeux à notre catalogue, à emprunter dès le premier samedi de septembre.\n\nAu plaisir de vous revoir,\nL’équipe de la Ludothèque Démo',
+        ctaLabel: 'Voir le catalogue',
+        ctaUrl: 'https://ludohub.ch',
+      },
+      status: 'draft',
+      createdAt: new Date('2026-06-22T10:00:00Z'),
+    },
+    {
+      id: CAMP_SENT,
+      ludoId: LUDO,
+      subject: 'Programme d’été à la ludothèque',
+      previewText: 'Nos horaires d’été et la fête de clôture du 28 juin.',
+      content: {
+        title: 'C’est bientôt l’été !',
+        body: 'Bonjour {{first_name}},\n\nVoici nos horaires pour la période estivale, ainsi que l’invitation à notre fête de clôture le samedi 28 juin.\n\nBel été à toutes et tous,\nL’équipe de la Ludothèque Démo',
+        ctaLabel: 'Voir le programme',
+        ctaUrl: 'https://ludohub.ch',
+      },
+      status: 'sent',
+      recipientCount: 6,
+      sentAt: CAMP_SENT_AT,
+      createdAt: new Date('2026-06-08T10:00:00Z'),
+    },
+  ])
+
+  // Résultat d'envoi de la campagne « été » : 6 livrés + 1 rejet (c'est cet envoi
+  // qui a fait passer Paul Favre en `bounced`). Alimente le rapport /[id]/stats.
+  await db.insert(campaignSends).values([
+    { campaignId: CAMP_SENT, contactId: NL_C[0], status: 'sent', createdAt: CAMP_SENT_AT },
+    { campaignId: CAMP_SENT, contactId: NL_C[1], status: 'sent', createdAt: CAMP_SENT_AT },
+    { campaignId: CAMP_SENT, contactId: NL_C[2], status: 'sent', createdAt: CAMP_SENT_AT },
+    { campaignId: CAMP_SENT, contactId: NL_C[3], status: 'sent', createdAt: CAMP_SENT_AT },
+    { campaignId: CAMP_SENT, contactId: NL_C[5], status: 'sent', createdAt: CAMP_SENT_AT },
+    { campaignId: CAMP_SENT, contactId: NL_C[6], status: 'sent', createdAt: CAMP_SENT_AT },
+    { campaignId: CAMP_SENT, contactId: NL_C[8], status: 'bounced', createdAt: CAMP_SENT_AT },
+  ])
+
   console.log('✓ Tenant démo seedé : /demo (mdp demo2026)')
   console.log(`  Thème Pirates : /demo/themes/${T_PIRATES}`)
   console.log(`  Installation  : /demo/themes/${T_PIRATES}/installations/${INSTALL}`)
   console.log('✓ Ludo voisine seedée : /demo-voisine (catalogue + aide réseau)')
   console.log('  + jeux, matériel et notifications côté /demo')
+  console.log(`  Newsletter : 9 contacts, 1 brouillon + 1 envoyée (rapport /demo/newsletter/${CAMP_SENT}/stats)`)
 }
 
 main()

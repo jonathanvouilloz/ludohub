@@ -238,6 +238,51 @@
           ]
         }
       ]
+    },
+    {
+      "id": "newsletter",
+      "title": "Newsletter",
+      "shots": [
+        {
+          "id": "contacts",
+          "route": "/demo/newsletter/contacts",
+          "waitFor": "h1",
+          "label": "Vos contacts (le public)",
+          "caption": "La liste de votre public : ① importez ou ajoutez des contacts, ② le résumé par segment (famille, institution…).",
+          "highlights": [
+            { "selector": ".head-actions", "label": "1" },
+            { "selector": ".segments", "label": "2" }
+          ]
+        },
+        {
+          "id": "campagnes",
+          "route": "/demo/newsletter",
+          "waitFor": "h1",
+          "label": "Vos campagnes",
+          "caption": "Toutes vos campagnes avec leur statut ; le bouton « Nouvelle campagne » en démarre une.",
+          "highlights": [{ "selector": ".head form", "label": "1" }]
+        },
+        {
+          "id": "editeur",
+          "route": "/demo/newsletter/0d000000-0000-4000-8000-000000000950",
+          "waitFor": ".preview-frame",
+          "fullPage": true,
+          "label": "Rédiger et prévisualiser",
+          "caption": "① À gauche vous rédigez ; ② à droite, l’aperçu en temps réel de l’email reçu.",
+          "highlights": [
+            { "selector": ".form-col", "label": "1" },
+            { "selector": ".preview-col", "label": "2" }
+          ]
+        },
+        {
+          "id": "rapport",
+          "route": "/demo/newsletter/0d000000-0000-4000-8000-000000000951/stats",
+          "waitFor": "h1",
+          "label": "Le rapport d’envoi",
+          "caption": "Après l’envoi : emails partis, échecs, et rejets/plaintes (mis à jour automatiquement).",
+          "spotlight": ".cards"
+        }
+      ]
     }
   ]
 }
