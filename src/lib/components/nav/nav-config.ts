@@ -64,13 +64,6 @@ export function buildNavConfig(slug: string): NavDest[] {
       zones: ['sidebar', 'tabbar'],
     },
     {
-      label: 'Absences',
-      href: `${base}/absences`,
-      icon: CalendarOffIcon,
-      match: (p) => p.startsWith(`${base}/absences`),
-      zones: ['sidebar', 'sheet'],
-    },
-    {
       label: 'Fréquentation',
       href: `${base}/frequentation`,
       icon: ClipboardListIcon,
@@ -114,6 +107,13 @@ export function buildNavConfig(slug: string): NavDest[] {
       match: (p) => p.startsWith(`${base}/settings`),
       zones: ['sidebar', 'sheet'],
       responsableOnly: true,
+    },
+    {
+      label: 'Absences',
+      href: `${base}/absences`,
+      icon: CalendarOffIcon,
+      match: (p) => p.startsWith(`${base}/absences`),
+      zones: ['sidebar', 'sheet'],
     },
   ]
 }
