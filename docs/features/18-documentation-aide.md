@@ -18,7 +18,7 @@ Système de documentation utilisateur grand public (non-tech) avec captures d'é
 - Seul **`@playwright/test`** est installé (pas `playwright` bare). Le harness a un fallback ; un script Playwright ad hoc doit importer `@playwright/test` ET vivre dans le projet (résolution node_modules).
 - Hero planning « prochain samedi » dépend du temps réel → seeder des samedis encadrant largement la date courante.
 
-**Commit :** [à venir] feat(aide): batch 1 + refonte /aide globale type guide
+**Commit :** [7ed7b71] feat(aide): batch 1 (démarrer/planning/absences) + refonte /aide globale type guide
 
 ---
 
