@@ -29,7 +29,7 @@
   <div class="stepper">
     <button
       type="button"
-      class="step"
+      class="step step--minus"
       onclick={dec}
       aria-label="Diminuer {label}"
       disabled={value <= 0}
@@ -46,7 +46,7 @@
       oninput={onInput}
       aria-label={label}
     />
-    <button type="button" class="step" onclick={inc} aria-label="Augmenter {label}">
+    <button type="button" class="step step--plus" onclick={inc} aria-label="Augmenter {label}">
       <PlusIcon aria-hidden="true" />
     </button>
   </div>
@@ -79,12 +79,26 @@
       background var(--dur-fast) var(--ease-out-strong),
       border-color var(--dur-fast) var(--ease-out-strong);
   }
-  .step:hover:not(:disabled) {
-    background: var(--bg-hover);
-  }
   .step:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+  /* Couleurs sémantiques pour la lisibilité : − retrait (rouge), + ajout (vert). */
+  .step--minus {
+    color: var(--danger);
+    border-color: var(--danger-light);
+  }
+  .step--minus:hover:not(:disabled) {
+    background: var(--danger-light);
+    border-color: var(--danger);
+  }
+  .step--plus {
+    color: var(--success);
+    border-color: var(--success-light);
+  }
+  .step--plus:hover:not(:disabled) {
+    background: var(--success-light);
+    border-color: var(--success);
   }
   .step :global(svg) {
     width: 1.1rem;
