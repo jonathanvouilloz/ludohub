@@ -216,7 +216,6 @@
   {#if viewMode === 'calendar'}
     <AbsenceCalendar
       absences={filtered}
-      slug={data.ludo.slug}
       filter={data.responsable && data.members.length > 0 ? memberFilter : undefined}
     />
   {:else if tableRows.length === 0}

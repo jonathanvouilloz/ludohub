@@ -14,9 +14,8 @@
 
   let {
     absences = [],
-    slug,
     filter,
-  }: { absences?: AbsenceWithMember[]; slug?: string; filter?: Snippet } = $props()
+  }: { absences?: AbsenceWithMember[]; filter?: Snippet } = $props()
 
   const typeLabels: Record<string, string> = {
     conge: 'Congé',
