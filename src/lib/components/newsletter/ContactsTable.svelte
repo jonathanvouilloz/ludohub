@@ -68,7 +68,10 @@
     createTable<NewsletterContactRow>({
       data: contacts,
       columns,
-      state: { sorting },
+      // `columnPinning` doit être initialisé : `getHeaderGroups()` lit `state…
+      // .columnPinning.left` et planterait (SSR 500) dès qu'il y a des lignes à
+      // rendre si on ne fournit qu'un état partiel. Le tri reste purement serveur.
+      state: { sorting, columnPinning: { left: [], right: [] } },
       manualSorting: true,
       manualPagination: true,
       pageCount,
