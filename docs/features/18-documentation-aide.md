@@ -2,6 +2,25 @@
 
 Système de documentation utilisateur grand public (non-tech) avec captures d'écran auto-régénérées, servi comme guide dans l'app (`/aide`, URL globale). Produit par le skill réutilisable `user-docs` (`~/.claude/skills/user-docs/`, hors repo). Objectif : un manuel illustré consultable à tout moment par le staff des ludothèques.
 
+## Etat session 2026-06-24 — Module Newsletter + fix prod ContactsTable
+
+**Fait :**
+- Module **Newsletter** livré (profondeur « essentiel ») → total **24 captures, 0 échec**. 4 shots : `contacts` (head-actions + segments), `campagnes` (bouton nouvelle), `editeur` (fullPage, form + aperçu email peint en live), `rapport` (spotlight cartes stats 6/0/1).
+- Seed démo étendu : **9 contacts** public (segments famille×5/institution/partenaire + 1 désabonné + 1 rejeté), **1 brouillon** (`…0950`) + **1 campagne envoyée** (`…0951`) avec ses `campaign_sends` (6 livrés + 1 rejet → alimente le rapport). Les 3 tables newsletter sont en cascade `ludoId`/`campaignId` → **pas de purge à ajouter** au reset.
+- **Bug de prod trouvé et corrigé** : `ContactsTable.svelte` ne passait qu'un état partiel (`{ sorting }`) à `createTable` → `@tanstack/table-core` lit `state.columnPinning.left` → **500 SSR dès qu'il y a ≥ 1 contact**. Jamais déclenché avant (aucun tenant testé n'avait de contacts). ⚠️ La page Contacts de **paquis-secheron** (113 contacts importés) est cassée en prod **jusqu'au prochain déploiement**.
+- `pnpm check` vert (2217 fichiers, 0 erreur). Reseed + capture exécutés sur le serveur dev de Jonathan (port **5174** ce coup-ci).
+
+**Prochain :** **Batch 3** = modules **Fréquentation** et **Paramètres** (même pattern : seed si besoin + section config + `content/[module].ts` + recapture, bump `docsVersion`). Puis penser à **déployer** pour réparer la page Contacts Pâquis-Sécheron en prod.
+
+**Pièges :**
+- Le serveur dev de Jonathan tourne sur le port qui change (5173 **ou** 5174). Vérifier avant capture (`Invoke-WebRequest`), puis `$env:DOCS_BASE_URL='http://localhost:5174'`. Là, 5173 servait un **autre projet** (« Bénévoles ACGB ») → bien viser le bon.
+- L'éditeur de campagne `[id]/+page.svelte` **n'a pas de `<h1>`** (titre dans `<svelte:head>`) → `waitFor` sur `.preview-frame`, pas `h1`. Sinon le `waitFor: h1` matche le `<h1>500</h1>` de la page d'erreur et capture un **faux « ok »**.
+- Erreurs SSR : le serveur renvoie « Internal Error » générique côté client (SvelteKit masque le détail) ; le vrai stack n'est que dans le terminal de Jonathan. Pour debug : `__data.json` (load seul) vs navigation (rend SSR) discrimine load vs rendu.
+
+**Commit :** [e8a713d] feat(aide): module Newsletter dans la doc /aide
+
+---
+
 ## Etat session 2026-06-24 — Batch 2 partiel (Réseau/Jeux/Matériel) + polish sommaire
 
 **Fait :**
@@ -64,19 +83,20 @@ Système de documentation utilisateur grand public (non-tech) avec captures d'é
 
 | Fichier | Role |
 |---------|------|
-| `scripts/seed-demo.ts` | Seed tenants démo `demo` (+ `demo-voisine`) à UUID/dates figés : thèmes+installations, planning, absences, **jeux, matériel, notifications**, et côté voisine **thèmes partagés + prêt + demandes d'aide** (écrans réseau). Reset robuste multi-ludo : `help_requests` → `theme_loans` → `theme_installations` → ludos (FK sans cascade). |
+| `scripts/seed-demo.ts` | Seed tenants démo `demo` (+ `demo-voisine`) à UUID/dates figés : thèmes+installations, planning, absences, jeux, matériel, notifications, **newsletter (9 contacts + brouillon + campagne envoyée + sends)**, et côté voisine thèmes partagés + prêt + demandes d'aide. Reset robuste multi-ludo : `help_requests` → `theme_loans` → `theme_installations` → ludos (FK sans cascade) ; les tables newsletter partent en cascade `ludoId`/`campaignId`. |
 | `scripts/capture-docs.mjs` | Harness Playwright : shots `preAuth` (avant login) + normaux, annotations highlights/spotlight/clip, override `DOCS_BASE_URL`, sortie `static/aide/captures/`. |
-| `docs/user-docs.config.json` | Adaptateur : scénario d'auth + sections `demarrer`/`planning`/`absences`/`themes`/`jeux`/`materiel`/`reseau` (shots + annotations). baseUrl 5173 par défaut. |
+| `docs/user-docs.config.json` | Adaptateur : scénario d'auth + sections `demarrer`/`planning`/`absences`/`themes`/`jeux`/`materiel`/`reseau`/**`newsletter`** (shots + annotations). baseUrl 5173 par défaut. ⚠️ shot `editeur` = `waitFor` sur `.preview-frame` (pas de `<h1>` sur l'éditeur). |
 | `src/lib/aide/types.ts` | Types `GuideSection`/`GuideStep` (`body` numéroté, `tips` puces, `note`). |
 | `src/lib/aide/Rich.svelte` | Rendu du gras `**mot**` sans `@html` (découpage en segments). |
 | `src/lib/aide/GuideSection.svelte` | Rendu d'un chapitre : étapes (corps à **puces colorées**) + tips + note (card), image cliquable avec zoom au survol (callback `onZoom`). |
-| `src/lib/aide/content/index.ts` | Agrège les sections (ordre sommaire : `demarrer,planning,absences,themes,jeux,materiel,reseau`) + `docsVersion` (cache-busting). |
-| `src/lib/aide/content/{demarrer,planning,absences,themes,jeux,materiel,reseau}.ts` | Contenu rédigé par module (gras + tips). |
+| `src/lib/aide/content/index.ts` | Agrège les sections (ordre sommaire : `demarrer,planning,absences,themes,jeux,materiel,newsletter,reseau`) + `docsVersion` (cache-busting, actuel `2026-06-24-6`). |
+| `src/lib/aide/content/{demarrer,planning,absences,themes,jeux,materiel,newsletter,reseau}.ts` | Contenu rédigé par module (gras + tips). |
 | `src/routes/aide/+layout.server.ts` | `requireSessionContext` — aide globale, identité via session. |
 | `src/routes/aide/+layout.svelte` | Monte `AppShell` + `--ludo-color`. |
 | `src/routes/aide/+page.svelte` | Page type GitBook : sommaire latéral **en accordéon** (scroll-spy, `transition:slide`) + recherche + démarrage rapide + lightbox ; conteneur élargi (gap gauche resserré). |
 | `src/lib/components/nav/nav-config.ts` | Lien « Aide » → `/aide` (global, hors slug). |
-| `static/aide/captures/{demarrer,planning,absences,themes,jeux,materiel,reseau}/*.png` | Captures versionnées (diffs visuels). |
+| `src/lib/components/newsletter/ContactsTable.svelte` | **Fix prod (1802b95)** : `createTable` doit recevoir `columnPinning` dans `state`, sinon `getHeaderGroups()` plante en SSR (500) dès qu'il y a des lignes. |
+| `static/aide/captures/{…,newsletter}/*.png` | Captures versionnées (diffs visuels). |
 
 ### Decisions cles
 - Aide = **route globale `/aide`** (pas par tenant) : une URL canonique, contenu + captures uniques, identité résolue via la session comme `/reseau/*`.

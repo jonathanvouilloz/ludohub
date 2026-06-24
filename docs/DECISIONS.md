@@ -4,6 +4,14 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-06-24 | `createTable` (table-core) contrôlé exige `columnPinning` dans `state`
+
+**Contexte :** `ContactsTable.svelte` (seul usage de `@tanstack/table-core` du repo) passait un état partiel `state: { sorting }`. `getHeaderGroups()` lit `state.columnPinning.left` → `TypeError` en SSR, donc **500 sur la page Contacts dès qu'il y a ≥ 1 ligne**. Latent jusqu'ici (aucun tenant testé n'avait de contacts) ; révélé en seedant la doc `/aide` Newsletter, et cassait aussi la prod `paquis-secheron` (113 contacts importés).
+
+**Décision :** Quand on fournit un `state` contrôlé à `createTable`, **toujours initialiser les clés d'état lues par les modèles** — au minimum `columnPinning: { left: [], right: [] }`. Le tri reste 100 % serveur (`manualSorting`, indicateur piloté par la prop `sort`).
+
+**Alternatives :** Passer par `initialState` plutôt que `state` (table-core gère alors les défauts) ; ne pas passer `state` du tout (mais on veut refléter le tri serveur). Le fix minimal explicite a été retenu pour rester lisible.
+
 ## 2026-06-24 | Aide = route globale `/aide` + présentation type guide GitBook
 
 **Contexte :** L'aide est un contenu **global** (identique pour toutes les ludos), mais vivait sous `/[ludo]/aide` (juste pour hériter du shell). La même doc était donc joignable via N URLs (une par tenant), sans URL canonique. Par ailleurs le rendu était une simple liste verticale (images trop grandes vs texte, peu navigable).
