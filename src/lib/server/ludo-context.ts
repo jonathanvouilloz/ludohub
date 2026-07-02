@@ -53,13 +53,14 @@ export async function requireResponsableContext(event: Ctx) {
 }
 
 /**
- * Résout `ludo` + `member` à partir de la seule session (cookie), sans param
- * `[ludo]` dans l'URL. Pour les routes cross-ludo `/reseau/*` et l'endpoint
- * d'upload, qui n'ont pas de slug. Renvoie vers `/` si pas de session valide.
+ * Résout `ludo` + `member` à partir de la seule session (cookie), SANS redirect
+ * ni exception : retourne `null` si pas de session valide. Utile pour les pages
+ * publiques qui veulent adapter leur comportement selon l'état de connexion
+ * (ex. la page racine `/` qui renvoie un membre déjà connecté vers sa ludo).
  */
-export async function requireSessionContext(event: Pick<RequestEvent, 'locals' | 'cookies'>) {
+export async function resolveSessionContext(event: Pick<RequestEvent, 'locals'>) {
   const session = event.locals.ludoSession
-  if (!session) throw redirect(303, '/')
+  if (!session) return null
 
   const [ludo, member] = await Promise.all([
     getLudoById(session.ludoId),
@@ -72,9 +73,22 @@ export async function requireSessionContext(event: Pick<RequestEvent, 'locals' |
     !isActiveMember(member) ||
     !belongsToLudo(member, ludo.id)
   ) {
-    clearLudoSession(event.cookies)
-    throw redirect(303, '/')
+    return null
   }
 
   return { ludo, member }
+}
+
+/**
+ * Résout `ludo` + `member` à partir de la seule session (cookie), sans param
+ * `[ludo]` dans l'URL. Pour les routes cross-ludo `/reseau/*` et l'endpoint
+ * d'upload, qui n'ont pas de slug. Renvoie vers `/` si pas de session valide.
+ */
+export async function requireSessionContext(event: Pick<RequestEvent, 'locals' | 'cookies'>) {
+  const ctx = await resolveSessionContext(event)
+  if (!ctx) {
+    clearLudoSession(event.cookies)
+    throw redirect(303, '/')
+  }
+  return ctx
 }
