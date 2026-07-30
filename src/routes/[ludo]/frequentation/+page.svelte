@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { goto, replaceState } from '$app/navigation'
-  import { page } from '$app/state'
+  import { goto } from '$app/navigation'
+  import { consumeNewIntent } from '$lib/utils/new-intent.svelte.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import * as Select from '$lib/components/ui/select/index.js'
   import ListIcon from '@lucide/svelte/icons/list'
@@ -104,16 +104,9 @@
     dialogOpen = true
   }
 
-  // Ouverture directe du dialog depuis le FAB de la bottom bar (`?new=1`), puis
-  // on nettoie l'URL pour ne pas le rouvrir au rechargement.
-  $effect(() => {
-    if (page.url.searchParams.get('new') === '1') {
-      openNew()
-      const url = new URL(page.url.href)
-      url.searchParams.delete('new')
-      replaceState(url, {})
-    }
-  })
+  // Ouverture directe du dialog depuis le FAB de la bottom bar (`?new=1`).
+  consumeNewIntent(openNew)
+
   function openEdit(record: AttendanceRow) {
     editing = record
     dialogOpen = true

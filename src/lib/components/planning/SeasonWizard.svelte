@@ -85,7 +85,7 @@
         Marquez les membres <strong>permanents</strong> (présents tous les samedis) et ajoutez leurs indisponibilités
         déjà connues.
       </p>
-      <SeasonMemberConfig {members} {memberSettings} {seasonAbsences} readOnly={false} />
+      <SeasonMemberConfig {season} {members} {memberSettings} {seasonAbsences} readOnly={false} />
     </div>
     <div class="step-nav">
       <Button variant="ghost" onclick={() => (step = 1)}>← Précédent</Button>

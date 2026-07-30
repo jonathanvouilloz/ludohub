@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit'
 import { getActiveMembersByLudo } from '$lib/server/db/members.js'
 import { getApprovedAbsencesInRange } from '$lib/server/db/absences.js'
+import { AbsenceServiceError, deleteAbsenceForLudo } from '$lib/server/services/absences.js'
 import { clearAssignmentsBySeason, getMemberSettingsBySeason } from '$lib/server/db/planning.js'
 import {
   addMemberUnavailability,
@@ -67,7 +68,9 @@ async function run(fn: () => Promise<unknown>) {
     await fn()
     return { success: true }
   } catch (err) {
-    if (err instanceof PlanningServiceError) return fail(400, { error: err.message })
+    if (err instanceof PlanningServiceError || err instanceof AbsenceServiceError) {
+      return fail(400, { error: err.message })
+    }
     throw err
   }
 }
@@ -183,6 +186,12 @@ export const actions: Actions = {
         String(data.get('endDate') ?? ''),
       ),
     )
+  },
+
+  deleteUnavailability: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() => deleteAbsenceForLudo(String(data.get('absenceId') ?? ''), ludo.id))
   },
 
   generatePlanning: async (event) => {

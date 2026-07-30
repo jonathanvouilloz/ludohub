@@ -63,6 +63,9 @@
   }
 
   let date = $state('')
+  // Saisie rétroactive : volontairement discrète (cas rare de rattrapage/oubli).
+  // Fermée par défaut → la séance est datée du jour.
+  let backdating = $state(false)
   let period = $state<string>('matin')
   let site = $state<string>('')
   let eventLabel = $state('')
@@ -144,9 +147,11 @@
       returnsCount = record.returnsCount
       weather = record.weather
       temperature = record.temperature
+      backdating = false
       loadedKey = `${record.date}|${record.period}` // pas de re-fetch sur une séance existante
     } else {
       date = todayLocal()
+      backdating = false
       period = defaultPeriodForNow()
       site = defaultSite()
       eventLabel = ''
@@ -211,8 +216,19 @@
           <Label for="freq-date">Date</Label>
           <DatePicker id="freq-date" name="date" bind:value={date} />
         </div>
+      {:else if backdating}
+        <!-- Rattrapage d'un oubli : on borne à aujourd'hui (pas de séance future). -->
+        <div class="field">
+          <Label for="freq-date">Date de la séance</Label>
+          <DatePicker id="freq-date" name="date" bind:value={date} maxValue={todayLocal()} />
+        </div>
       {:else}
-        <p class="today-label">Aujourd'hui · {formatDayMonth(date)}</p>
+        <p class="today-label">
+          Aujourd'hui · {formatDayMonth(date)}
+          <button type="button" class="backdate-link" onclick={() => (backdating = true)}>
+            Autre date
+          </button>
+        </p>
         <input type="hidden" name="date" value={date} />
       {/if}
 
@@ -318,9 +334,29 @@
     gap: var(--space-4);
   }
   .today-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
     margin: 0;
     font-size: var(--text-h3, var(--text-body));
     font-weight: var(--weight-semibold);
+    color: var(--text-main);
+  }
+  /* Saisie rétroactive : lien discret, pas un bouton — le flux normal reste
+     la séance du jour, ceci n'est qu'un rattrapage occasionnel. */
+  .backdate-link {
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    font-size: var(--text-small);
+    font-weight: var(--weight-regular, 400);
+    color: var(--text-muted);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .backdate-link:hover {
     color: var(--text-main);
   }
   .field {

@@ -4,6 +4,22 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-07-30 | Une intention d'UI se consomme une fois — `?new=1` hors d'un `$effect` réactif
+
+**Contexte :** Les pages `frequentation`, `games` et `supplies` ouvraient leur dialog de création en lisant `?new=1` dans un `$effect`, puis nettoyaient l'URL via `replaceState`. Le paramètre étant relu à **chaque** reconstruction de `page.url` — dont celle déclenchée par l'`invalidateAll()` qui suit l'enregistrement du formulaire — le dialog se **rouvrait juste après validation**. Aggravant : `replaceState` lève si le routeur n'est pas encore initialisé, et l'échec silencieux laissait `new=1` dans l'URL indéfiniment.
+
+**Décision :** Utilitaire unique `src/lib/utils/new-intent.svelte.ts` (`consumeNewIntent`). L'intention est consommée **une seule fois par URL** (garde `handledHref`), `replaceState` est protégé par `try/catch`, et la garde se **réarme** dès que le paramètre disparaît pour qu'un second appui sur le FAB rouvre le dialog (navigation client, sans remontage du composant). Règle générale : un état d'UI transitoire ne se stocke pas durablement dans l'URL, et s'il y transite, il se lit une fois — pas réactivement.
+
+**Alternatives :** Garde « une fois par montage » (rejetée : casse le second appui sur le FAB, même route donc pas de remontage) ; désarmer à la fermeture du dialog (rejetée : couple l'utilitaire à l'état du dialog) ; supprimer `?new=1` et passer par un store (rejetée : le FAB et les actions rapides de l'accueil sont de vrais liens, l'URL reste le bon véhicule).
+
+## 2026-07-30 | Les bornes de saisie doivent refléter le filtre de lecture
+
+**Contexte :** À l'étape « Configuration des membres » du wizard de saison, une indisponibilité ajoutée n'apparaissait pas dans le tableau. La liste affichée vient de `getApprovedAbsencesInRange(ludoId, season.startDate, season.endDate)` : une période saisie **hors de la plage de la saison** était bien enregistrée en base mais restait **invisible** — l'utilisateur ne pouvait pas savoir si son ajout avait été pris en compte.
+
+**Décision :** Borner les `DatePicker` d'indisponibilité à la saison (`minValue`/`maxValue`), ce qui a nécessité d'ajouter la prop `maxValue` au composant (symétrique de `minValue` existante, avec effet de cohérence qui efface une valeur hors borne). Règle : **quand une liste est filtrée sur une plage, le formulaire qui l'alimente doit être borné sur la même plage** — sinon on produit des lignes fantômes. Feedback renforcé en parallèle : le panneau d'ajout reste ouvert et affiche la liste à jour au-dessus du formulaire.
+
+**Alternatives :** Afficher toutes les absences du membre sans filtre de saison (rejeté : le panneau sert à configurer *cette* saison, le hors-plage est du bruit) ; avertir côté serveur si hors plage (rejeté : corrige après coup ce que la borne empêche en amont, coût UX supérieur).
+
 ## 2026-06-24 | `createTable` (table-core) contrôlé exige `columnPinning` dans `state`
 
 **Contexte :** `ContactsTable.svelte` (seul usage de `@tanstack/table-core` du repo) passait un état partiel `state: { sorting }`. `getHeaderGroups()` lit `state.columnPinning.left` → `TypeError` en SSR, donc **500 sur la page Contacts dès qu'il y a ≥ 1 ligne**. Latent jusqu'ici (aucun tenant testé n'avait de contacts) ; révélé en seedant la doc `/aide` Newsletter, et cassait aussi la prod `paquis-secheron` (113 contacts importés).

@@ -1,4 +1,4 @@
-# BACKLOG — Revue produit (revues du 2026-06-24 et 2026-07-22)
+# BACKLOG — Revue produit (revues du 2026-06-24, 2026-07-22 et 2026-07-30)
 
 Liste de suivi des points relevés par Jonathan. Chaque item a un statut :
 `☐ à faire` · `◐ en cours` · `☑ fait` · `❓ à clarifier` (question ouverte ci-dessous).
@@ -12,6 +12,10 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
 > **+ UX modal (2026-06-24)** — modal de clôture fréquentation : compteurs en grille 2×2 à toutes les tailles, et primitive `dialog-content` bornée au viewport + corps scrollable (footer toujours atteignable, tous les modals).
 >
 > **Revue 2026-07-22 (note vocale)** — 13 nouveaux items, marqués `_(revue 2026-07-22)_` ci-dessous : absences/vacances + swap samedi (§5), fréquentation rétroactive + bug de modal (§4), chantier mail complet — pièces jointes, templates, tracking, domaine d'envoi par ludo (§6), horaires + Google Business Profile (§9), double ludothèque Pâquis-Sécheron (§10), durcissement auth (§11), module site public Pâquis (§12). Brut : `cerveau/10-Projets/ludo/hub/transcripts/2026-07-22_revue-produit-vocal.md`.
+>
+> **Batch correctifs 2026-07-30** 🟡 — 3 items codés, **vérification en attente** (`node_modules` corrompu → `pnpm check`/`pnpm test` non exécutés) : modal de fréquentation qui se rouvre, indisponibilités invisibles + modal, saisie rétroactive. Détail, carte du code et pièges → [features/19-revue-produit-2026-07.md](features/19-revue-produit-2026-07.md).
+>
+> **Précisions 2026-07-30 (relecture en live)** — aucun item du 2026-07-22 n'était codé avant ce batch. Les 13 items sont **re-cadrés** ci-dessous (marqués `_(précisé 2026-07-30)_`) et les 3 questions ouvertes sont **tranchées** : swap **auto-proposé à valider** · domaine d'envoi **gelé au statu quo** · double ludo = **un espace, deux lieux** (cas d'usage moteur : la fréquentation). Deux items sortent du périmètre immédiat : Google Business Profile (§9) et domaine par ludo (§6).
 
 ---
 
@@ -42,14 +46,17 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
 - [x] **Chevron dans le header des mois.** ✅ _Batch 1 (2026-06-24)._ Chevron rotatif dans le `<summary>` (le repli `<details>` existait déjà).
 - [ ] **Export rapport mensuel de fréquentation** — PDF propre avec statistiques (totaux adultes/enfants/prêts/retours, météo, etc.). C'était listé « V2 » dans le cadrage feature 14.
 - [ ] **Export rapport de comparaison** (multi-mois / multi-période) — _voir aussi Admin §6._
-- [ ] **Saisie rétroactive d'une fréquentation.** _(revue 2026-07-22)_ Aujourd'hui on ne peut saisir que pour le **jour même**. Pouvoir **ajouter** une fréquentation à une date passée (oubli) et **éditer** une fréquentation existante. Une option directement sur la page fréquentation suffit — pas besoin d'un écran dédié.
-- [ ] **🐛 La modal se rouvre après validation.** _(revue 2026-07-22)_ Ajout + validation d'une fréquentation : l'enregistrement passe bien, mais la fenêtre se **rouvre automatiquement** juste après (`CloseSessionDialog` — état d'ouverture non réinitialisé après l'action ?).
+- [x] **Saisie rétroactive d'une fréquentation.** 🟡 _Batch correctifs (2026-07-30), non vérifié._ Lien discret « Autre date » à côté de « Aujourd'hui · … » dans `CloseSessionDialog`, révélant un `DatePicker` borné à aujourd'hui (`maxValue`, prop ajoutée au composant). Le serveur n'a jamais restreint la date : la limite était purement UI. **L'édition d'une séance existante existait déjà** (action `?/update` + `openEdit`).
+- [x] **🐛 La modal se rouvre après validation.** 🟡 _Batch correctifs (2026-07-30), non vérifié._ Cause : `?new=1` était relu dans un `$effect` réactif, donc ré-évalué à chaque reconstruction de `page.url` — dont celle déclenchée par l'`invalidateAll()` du submit. Nouvel utilitaire `src/lib/utils/new-intent.svelte.ts` qui consomme l'intention **une fois par URL** et protège `replaceState` (qui lève avant init du routeur). Le pattern était dupliqué dans `frequentation`, `games` et `supplies` → les trois passent par l'utilitaire.
 
 ## 5. Planning & Absences
 
 - [ ] **Impression du planning** — version propre, clean, imprimable (CSS print dédié sur `[ludo]/planning`).
-- [ ] **Vacances en début de saison — comportement incomplet.** _(revue 2026-07-22)_ Ajouter des vacances à un membre **en début de saison** ne fonctionne pas totalement. À reproduire puis reprendre (epic 05-absences).
-- [ ] **Absence en cours de saison → détection samedi + swap.** _(revue 2026-07-22)_ Périmètre : **uniquement les samedis**, pas le planning normal. Depuis un bouton « ajouter une absence » pour un membre, le système doit indiquer si, **sur la période saisie**, ce membre était assigné à un ou plusieurs samedis — et si oui, enchaîner sur le changement (swap). L'information doit circuler **dans les deux sens** (l'absence remonte au planning, le planning remonte à l'absence). ❓ _Voir question 1 ci-dessous._
+- [x] **🐛 Indisponibilités de début de saison — aucun retour visible.** 🟡 _Batch correctifs (2026-07-30), non vérifié._ Trou d'UI, pas un bug de calcul (reproduit en live : création saison → import GE → étape disponibilités). `SeasonMemberConfig.svelte` réécrit :
+  - **(a) Feedback immédiat** — le panneau « + Indispo » reste ouvert après enregistrement et affiche **la liste des périodes du membre au-dessus du formulaire** ; la nouvelle ligne apparaît sur place. La colonne devient un **compteur** lisible (« 2 périodes · Voir ») au lieu de chips discrètes.
+  - **(b) Modal « Voir les indisponibilités »** — dates, type, note et **suppression** (nouvelle action serveur `deleteUnavailability`).
+  - **Cause probable du « ça ne marche pas totalement »** : la liste est filtrée sur la plage de la saison (`getApprovedAbsencesInRange`), donc une indispo saisie **hors saison** était enregistrée mais invisible. Les `DatePicker` sont désormais bornés à la saison (`minValue`/`maxValue`).
+- [ ] **Absence en cours de saison → détection samedi + swap auto-proposé.** _(précisé 2026-07-30)_ Périmètre : **uniquement les samedis**, pas le planning normal. Depuis le bouton « ajouter une absence » pour un membre, le système doit indiquer si, **sur la période saisie**, ce membre était assigné à un ou plusieurs samedis. Si oui → **le système propose automatiquement un swap** (il choisit un remplaçant disponible) et **l'humain valide ou change**. Jamais appliqué sans validation. L'information circule **dans les deux sens** (l'absence remonte au planning, le planning remonte à l'absence). ✅ _Question 1 tranchée._
 
 ## 6. Newsletter / Emailing
 
@@ -59,13 +66,13 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
 - [ ] **Revoir le design de base du mail** (template `email/template.ts`) — rendu plus soigné. _(Reporté batch 3.)_
 - [x] **Pagination de la liste emails (50 / page).** ✅ _Batch 2 (2026-06-24)._ Pagination serveur (`listContacts` limit/offset + `countContacts`), tri serveur, contrôles préc./suiv.
 
-> **Objectif de la revue 2026-07-22 : que le système de mail soit complet et utilisable de bout en bout.** Le plan **Resend payant n'est pas un blocage** si une capacité en dépend — mais tout doit être fait proprement.
+> **Objectif : que le système de mail soit complet, utilisable de bout en bout et ÉVOLUTIF.** Le plan **Resend payant n'est pas un blocage** si une capacité en dépend — mais tout doit être fait proprement, de A à Z.
 
 - [ ] **Pièces jointes.** _(revue 2026-07-22)_ D'abord vérifier si c'est déjà supporté aujourd'hui ; sinon l'ajouter (upload → Vercel Blob → `attachments` de l'API Resend, attention aux limites de taille).
 - [ ] **Templates de mail.** _(revue 2026-07-22)_ Pouvoir créer et réutiliser des templates de campagne (par ludo).
-- [ ] **Clarifier archivage / pagination / duplication.** _(revue 2026-07-22)_ Comprendre et documenter le comportement actuel sur ces trois points, puis décider ce qui doit changer. Livrable attendu : une note de comportement, pas forcément du code.
-- [ ] **Tracking d'envoi plus complet.** _(revue 2026-07-22)_ Au-delà des stats `campaign_sends` du batch 2 : le **nombre de personnes qui ont bien reçu**, statut `delivered` / `sent` si l'API le permet. Évaluer jusqu'où Resend permet de pousser (webhooks `email.delivered`, `email.opened`… selon le plan).
-- [ ] **Domaine d'envoi par ludothèque.** _(revue 2026-07-22)_ Aujourd'hui : un seul domaine d'envoi (celui du site, `NEWSLETTER_FROM`) ; seul le **nom** de l'expéditeur est configurable, l'adresse reste la même. Étudier ce qu'implique un domaine (ou sous-domaine) **spécifique par ludo** côté Resend. ❓ _Voir question 2 ci-dessous — l'attente première est de comprendre les options ; le statu quo reste acceptable._
+- [ ] **Cycle de vie complet d'une campagne : archivage, pagination, suppression, duplication.** _(précisé 2026-07-30)_ Ce n'est plus seulement « documenter le comportement actuel » : le livrable est **du code**. Il faut que la pagination fonctionne, que l'archivage soit clair, qu'on puisse **supprimer** et **dupliquer** une campagne, et que l'ensemble soit **facilement évolutif**. Commencer par un état des lieux du comportement actuel, puis livrer les manques.
+- [ ] **Tracking d'envoi plus complet.** _(précisé 2026-07-30)_ Au-delà des stats `campaign_sends` du batch 2 : le **nombre de personnes qui ont bien reçu**, statut `delivered` / `sent`. **Livrable préalable attendu : dire explicitement si un plan Resend payant est nécessaire** (webhooks `email.delivered`, `email.opened`… selon le plan) avant de coder quoi que ce soit.
+- [ ] ❄️ **Domaine d'envoi par ludothèque — GELÉ, statu quo assumé.** _(précisé 2026-07-30)_ On **garde** un domaine unique (`NEWSLETTER_FROM`, celui du site) avec le **nom** d'expéditeur configurable par ludo. Pas d'étude ni de travail à engager pour l'instant. ✅ _Question 2 tranchée._
 
 ## 7. Admin / Export
 
@@ -77,12 +84,15 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
 
 ## 9. Réglages / Horaires
 
-- [ ] **Horaires d'ouverture dans les réglages.** _(revue 2026-07-22)_ Ajouter les horaires de la ludothèque dans `settings`. C'est aussi le socle du module Pâquis (§12) et de la connexion Google (item suivant).
-- [ ] **Connexion à la fiche Google Business Profile.** _(revue 2026-07-22)_ Objectif **à terme** : qu'une ludothèque connecte sa fiche Google Business et modifie ses horaires **directement depuis l'application** (API Google Business Profile, OAuth par ludo). À cadrer une fois les horaires en place.
+- [ ] **Horaires d'ouverture dans les réglages — version simple.** _(précisé 2026-07-30)_ Ajouter les horaires de la ludothèque dans `settings`. **On fait simple, sans Google My Business** (qui implique trop d'autres choses). Socle du module Pâquis (§12). À noter : sur une ludo double (§10), les horaires sont **par lieu**.
+- [ ] ⏸️ **Connexion à la fiche Google Business Profile — reporté.** _(précisé 2026-07-30)_ Objectif **à terme** : qu'une ludothèque connecte sa fiche Google Business et modifie ses horaires directement depuis l'application (API Google Business Profile, OAuth par ludo). **Hors périmètre immédiat** — trop d'implications ; à rouvrir une fois les horaires simples en place et éprouvés.
 
 ## 10. Structure de données
 
-- [ ] **Double ludothèque Pâquis-Sécheron.** _(revue 2026-07-22)_ Toutes les autres ludos sont des **lieux simples** ; Pâquis-Sécheron est une **double** ludothèque. Revoir le modèle pour que ce cas soit correctement géré **dans tous les modules** (planning/samedis, fréquentation, thèmes et installations, réseau, newsletter, admin). ❓ _Voir question 3 ci-dessous._
+- [ ] **Double ludothèque Pâquis-Sécheron — modèle « un espace, deux lieux ».** _(précisé 2026-07-30)_ Toutes les autres ludos sont des **lieux simples** ; Pâquis-Sécheron est une **double** ludothèque. Modèle retenu (confirmé 2026-07-30) : **deux lieux physiques distincts, mais UNE SEULE ÉQUIPE qui gère les deux** → un seul slug / espace / login, **un seul jeu de membres**, avec N lieux (table `sites` ou `locations` rattachée à la ludo, `1` lieu par défaut pour les 11 autres). Les membres, le planning et l'équipe ne sont **pas** dédoublés ; ce qui se rattache à un lieu, c'est ce qui est **physique** (fréquentation, horaires, adresse). ✅ _Question 3 tranchée._
+  - **Cas d'usage moteur : la fréquentation.** C'est là que la différence est concrète — à la saisie, il faut dire **dans quel lieu** on relève. Les stats et le dashboard doivent pouvoir être lus par lieu **et** consolidés.
+  - **Phase 2 (confort, pas prérequis) : pré-sélection du lieu par géolocalisation.** Stocker l'**adresse (lat/lng) par lieu**, demander l'autorisation navigateur, pré-cocher le lieu le plus proche. ⚠️ La géoloc **ne peut pas être la source de vérité** : précise sur mobile (GPS, 5–20 m) mais pas sur desktop (wifi/IP, 100 m à plusieurs km) alors que Pâquis et Sécheron sont proches, et l'autorisation peut être refusée. Donc : **sélecteur explicite toujours présent et modifiable**, géoloc en simple suggestion. Fallback moins cher qui couvre l'essentiel : **mémoriser le dernier lieu choisi sur l'appareil**.
+  - Balayer ensuite les autres modules : planning/samedis, thèmes et installations, réseau, newsletter, admin.
 
 ## 11. Auth
 
@@ -94,13 +104,26 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
 
 ---
 
-## Questions ouvertes (revue 2026-07-22)
+## Questions tranchées (2026-07-30)
 
-1. **Absence → samedi (§5).** « Faire le changement » = **swap automatique proposé** par le système (il choisit un remplaçant disponible et le soumet), ou **simple alerte** à l'humain qui choisit lui-même dans le mécanisme de swap existant ?
-2. **Domaine d'envoi par ludo (§6).** Un domaine (ou sous-domaine) par ludothèque implique une **vérification DNS par ludo** côté Resend — donc de l'admin récurrent à chaque nouvelle ludo. À arbitrer après l'étude : garder un domaine unique avec nom d'expéditeur variable, ou passer à des sous-domaines gérés.
-3. **Double ludothèque (§10).** « Double » = **deux lieux sous un même slug/espace** (un seul login, deux sites physiques), ou **deux slugs frères** reliés ? Le choix change tout le modèle en aval.
+1. **Absence → samedi (§5).** → **Swap auto-proposé, validé par l'humain.** Le système détecte les samedis assignés sur la période et propose un remplaçant ; la personne valide ou change. Jamais appliqué automatiquement.
+2. **Domaine d'envoi par ludo (§6).** → **Statu quo, item gelé.** Domaine unique, nom d'expéditeur configurable. Pas d'étude engagée pour l'instant.
+3. **Double ludothèque (§10).** → **Un espace, deux lieux.** Un seul slug/login, N lieux rattachés. Le cas d'usage qui pilote le modèle est la **fréquentation** (saisie par lieu).
+
+## Questions ouvertes
+
+_(aucune — les trois questions de la revue 2026-07-22 sont tranchées ci-dessus)_
 
 ---
+
+## Décisions (revue 2026-07-30)
+
+1. **Swap sur absence** → **auto-proposé, validé par l'humain**, samedis uniquement.
+2. **Saisie rétroactive de fréquentation** → option **discrète** sur la page fréquentation (cas rare).
+3. **Domaine d'envoi Resend** → **statu quo** (domaine unique, nom d'expéditeur variable). Item gelé.
+4. **Horaires** → version **simple** dans les settings ; **Google Business Profile reporté**.
+5. **Double ludothèque** → **un espace, deux lieux** ; géoloc en pré-sélection seulement, jamais source de vérité.
+6. **Mail** → le cycle de vie (archivage / pagination / suppression / duplication) devient du **code**, pas une note.
 
 ## Décisions (revue 2026-06-24)
 

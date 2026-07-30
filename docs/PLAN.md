@@ -21,7 +21,25 @@
 | 15  | FRÉQUENTATION — Relevé & clôture d'ouverture (+ météo)           | M      | **DONE**     | [14-frequentation.md](features/14-frequentation.md)           |
 | 16  | POLISH — États, Feedback (toasts/skeleton/empty) & Motion        | M      | **DONE**     | [16-polish-feedback-motion.md](features/16-polish-feedback-motion.md) |
 | 17  | NEWSLETTER — Audience, campagnes & envoi email (Resend)          | L      | **DONE**     | [17-newsletter.md](features/17-newsletter.md)                 |
-| 18  | DOCUMENTATION /aide — Guide utilisateur visuel (skill user-docs) | M      | **EN COURS** | [18-documentation-aide.md](features/18-documentation-aide.md) |
+| 18  | DOCUMENTATION /aide — Guide utilisateur visuel (skill user-docs) | M      | EN ATTENTE   | [18-documentation-aide.md](features/18-documentation-aide.md) |
+| 19  | REVUE PRODUIT 2026-07 — 13 items de la note vocale du 22 juillet | L      | **EN COURS** | [19-revue-produit-2026-07.md](features/19-revue-produit-2026-07.md) |
+
+## Backlog produit — epic 19
+
+Les demandes produit vivent dans **[BACKLOG.md](BACKLOG.md)** (statuts, décisions, questions) ;
+l'exécution est suivie dans **[features/19-revue-produit-2026-07.md](features/19-revue-produit-2026-07.md)**.
+État au **2026-07-30** : les 13 items sont re-cadrés, les 3 questions tranchées, **3 correctifs codés
+mais non vérifiés**. Les chantiers qui deviendront probablement des epics à part entière :
+
+- **Double ludothèque** (§10) — modèle « un espace, N lieux », impacte fréquentation en premier,
+  puis planning, thèmes, réseau, newsletter, admin. Le plus structurant, à cadrer avant de coder.
+- **Mail complet & évolutif** (§6) — pièces jointes, templates, cycle de vie campagne
+  (archivage/pagination/suppression/duplication), tracking `delivered`.
+- **Module site public Pâquis-Sécheron** (§12) — dépend des horaires (§9) et de la double ludo (§10).
+- **Durcissement auth** (§11).
+
+Le reste (bugs fréquentation/indispos, saisie rétroactive, swap sur absence, horaires simples)
+se traite en batchs de correctifs sur les epics existantes (05, 15, 17).
 
 ## Prochaines étapes prioritaires
 
