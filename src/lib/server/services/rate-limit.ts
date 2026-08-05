@@ -10,6 +10,7 @@
 type Bucket = { count: number; resetAt: number }
 
 const buckets = new Map<string, Bucket>()
+export const MAX_RATE_LIMIT_BUCKETS = 5000
 
 export type RateLimitResult = { ok: boolean; retryAfter: number }
 
@@ -23,8 +24,9 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): Ra
   const bucket = buckets.get(key)
 
   if (!bucket || now >= bucket.resetAt) {
+    if (bucket) buckets.delete(key)
+    makeRoomForBucket(now)
     buckets.set(key, { count: 1, resetAt: now + windowMs })
-    pruneIfNeeded(now)
     return { ok: true, retryAfter: 0 }
   }
 
@@ -35,10 +37,15 @@ export function checkRateLimit(key: string, limit: number, windowMs: number): Ra
   return { ok: true, retryAfter: 0 }
 }
 
-/** Purge opportuniste des fenêtres expirées (évite la croissance non bornée de la Map). */
-function pruneIfNeeded(now: number): void {
-  if (buckets.size < 5000) return
+/** Purge les fenêtres expirées puis évince les plus anciennes insertions à capacité. */
+function makeRoomForBucket(now: number): void {
+  if (buckets.size < MAX_RATE_LIMIT_BUCKETS) return
   for (const [key, bucket] of buckets) {
     if (now >= bucket.resetAt) buckets.delete(key)
+  }
+  while (buckets.size >= MAX_RATE_LIMIT_BUCKETS) {
+    const oldest = buckets.keys().next().value
+    if (oldest === undefined) break
+    buckets.delete(oldest)
   }
 }

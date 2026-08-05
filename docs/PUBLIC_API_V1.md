@@ -100,3 +100,13 @@ Un document est de type `mission`, `statutes`, `annual_report` ou `other`. L'ann
 ## Équipe et comité
 
 `GET /api/public/v1/{ludo}/profiles` retourne les profils publics ordonnés. `?section=team|committee` sélectionne une section ; `?site={slug}` et `?limit={1..200}` complètent le filtre. Le lien facultatif vers un membre LudoHub, les auteurs et les clés de stockage ne sont jamais exposés.
+
+## Annuaire des ludothèques genevoises
+
+`GET /api/public/v1/{ludo}/directory` retourne au plus 100 entrées publiées, dans l'ordre manuel (`?limit={1..200}`). Une entrée expose `id`, `slug`, `name`, `descriptionMarkdown`, l'adresse et les coordonnées publiques, `website` facultatif, ainsi que les liens distincts et obligatoires `directionsUrl` et `officialUrl`. Ces liens sont toujours des URL `http:` ou `https:` validées. Les brouillons, entrées masquées, auteurs, révisions et métadonnées d'audit ne sont jamais exposés.
+
+## Formulaire de contact public
+
+L'écriture est volontairement séparée de l'API publique de lecture : `POST /api/public/contact/v1/{ludo}`. Le JSON doit contenir `recipient` (`paquis`, `secheron` ou `general`), `name`, `email`, `subject` et `message`; `phone` est facultatif. L'en-tête `Idempotency-Key` est obligatoire (16 à 200 caractères ASCII visibles). Une première soumission répond `201`, une répétition reconnue répond `200`, toujours avec seulement `{ "accepted": true, "receiptId": "…" }`. Le message et les coordonnées ne sont jamais renvoyés par cette route.
+
+La route impose une taille maximale de 16 Kio, un champ honeypot `website` et un quota par empreinte de source de 5 requêtes par 10 minutes. Ce quota en mémoire est une protection best-effort par instance et doit être remplacé par un stockage partagé si l'application est déployée sur plusieurs instances. Les messages sont conservés dans la boîte interne avec les états `new`, `processed` ou `archived`; aucun e-mail n'est envoyé et aucun destinataire réel n'est inventé. Les données personnelles ne doivent apparaître ni dans les journaux, ni dans les audits, ni dans une API publique de lecture.

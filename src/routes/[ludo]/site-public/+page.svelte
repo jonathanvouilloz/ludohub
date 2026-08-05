@@ -45,6 +45,8 @@
         >
         <a class="content-link" href="/{data.ludo.slug}/site-public/galerie">Gérer la galerie</a>
         <a class="content-link" href="/{data.ludo.slug}/site-public/profils">Gérer les profils</a>
+        <a class="content-link" href="/{data.ludo.slug}/site-public/annuaire">Gérer l’annuaire</a>
+        <a class="content-link" href="/{data.ludo.slug}/site-public/contacts">Messages reçus</a>
       </div>
     </section>
   {:else}

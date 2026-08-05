@@ -12,6 +12,8 @@ import {
   publicDocuments,
   publicGalleryImages,
   publicProfiles,
+  publicDirectoryEntries,
+  publicContactMessages,
   type MemberInsert,
   type MemberRow,
 } from '../schema.js'
@@ -166,5 +168,19 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     ),
     columns: { id: true },
   })
-  return Boolean(profile)
+  if (profile) return true
+  const directory = await db.query.publicDirectoryEntries.findFirst({
+    where: or(
+      eq(publicDirectoryEntries.authorMemberId, id),
+      eq(publicDirectoryEntries.updatedByMemberId, id),
+      eq(publicDirectoryEntries.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  if (directory) return true
+  const contact = await db.query.publicContactMessages.findFirst({
+    where: eq(publicContactMessages.handledByMemberId, id),
+    columns: { id: true },
+  })
+  return Boolean(contact)
 }

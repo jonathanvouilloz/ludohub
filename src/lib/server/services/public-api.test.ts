@@ -17,6 +17,7 @@ const {
   getVisibleDocument,
   listVisibleGallery,
   listVisibleProfiles,
+  listPublishedDirectory,
 } = vi.hoisted(() => ({
   getLudoBySlug: vi.fn(),
   isPublicSiteEnabled: vi.fn(),
@@ -34,6 +35,7 @@ const {
   getVisibleDocument: vi.fn(),
   listVisibleGallery: vi.fn(),
   listVisibleProfiles: vi.fn(),
+  listPublishedDirectory: vi.fn(),
 }))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
@@ -60,6 +62,9 @@ vi.mock('./public-documents.js', () => ({
 }))
 vi.mock('./public-gallery.js', () => ({ listVisiblePublicGallery: listVisibleGallery }))
 vi.mock('./public-profiles.js', () => ({ listVisiblePublicProfiles: listVisibleProfiles }))
+vi.mock('./public-directory.js', () => ({
+  listPublishedPublicDirectory: listPublishedDirectory,
+}))
 
 import {
   getPublicAnnouncementsByLudoSlug,
@@ -76,6 +81,7 @@ import {
   getPublicGalleryByLudoSlug,
   getPublicProfilesByLudoSlug,
   getPublicSitesByLudoSlug,
+  getPublicDirectoryByLudoSlug,
 } from './public-api.js'
 
 const ludo = { id: '10000000-0000-4000-8000-000000000001', slug: 'demo', name: 'Démo' }
@@ -98,6 +104,7 @@ beforeEach(() => {
   getVisibleDocument.mockResolvedValue(undefined)
   listVisibleGallery.mockResolvedValue([])
   listVisibleProfiles.mockResolvedValue([])
+  listPublishedDirectory.mockResolvedValue([])
 })
 
 describe('galerie et profils publics', () => {
@@ -446,5 +453,25 @@ describe('getPublicSitesByLudoSlug', () => {
         }),
       ],
     })
+  })
+})
+
+describe('getPublicDirectoryByLudoSlug', () => {
+  it('délègue la projection publiée et bornée au service annuaire', async () => {
+    const entries = [
+      {
+        id: 'directory-a',
+        slug: 'paquis',
+        name: 'Pâquis',
+        directionsUrl: 'https://maps.example/paquis',
+        officialUrl: 'https://geneve.example/paquis',
+      },
+    ]
+    listPublishedDirectory.mockResolvedValueOnce(entries)
+    await expect(getPublicDirectoryByLudoSlug('demo', 25)).resolves.toEqual({
+      ludo: { slug: 'demo', name: ludo.name },
+      entries,
+    })
+    expect(listPublishedDirectory).toHaveBeenCalledWith(ludo.id, 25)
   })
 })

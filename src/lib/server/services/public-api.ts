@@ -16,6 +16,7 @@ import { listVisiblePublicFaqs } from './public-faqs.js'
 import { getVisiblePublicDocumentBySlug, listVisiblePublicDocuments } from './public-documents.js'
 import { listVisiblePublicGallery } from './public-gallery.js'
 import { listVisiblePublicProfiles } from './public-profiles.js'
+import { listPublishedPublicDirectory } from './public-directory.js'
 
 export type PublicOpeningInterval = {
   dayOfWeek: number
@@ -198,6 +199,34 @@ export type PublicProfilesPayload = {
   site: string | null
   section: 'team' | 'committee' | null
   profiles: PublicProfileItem[]
+}
+export type PublicDirectoryPayload = {
+  ludo: { slug: string; name: string }
+  entries: Array<{
+    id: string
+    slug: string
+    name: string
+    descriptionMarkdown: string | null
+    address: string | null
+    postalCode: string | null
+    city: string
+    phone: string | null
+    email: string | null
+    website: string | null
+    directionsUrl: string
+    officialUrl: string
+    sortOrder: number
+  }>
+}
+
+export async function getPublicDirectoryByLudoSlug(
+  slug: string,
+  limit = 100,
+): Promise<PublicDirectoryPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const entries = await listPublishedPublicDirectory(ludo.id, limit)
+  return { ludo: { slug: ludo.slug, name: ludo.name }, entries }
 }
 
 function publicTime(value: string): string {

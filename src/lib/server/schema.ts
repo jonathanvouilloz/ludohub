@@ -795,6 +795,144 @@ export const publicProfileSites = pgTable(
   ],
 )
 
+/** Entrée administrable de l'annuaire genevois propre à un tenant. */
+export const publicDirectoryEntries = pgTable(
+  'public_directory_entries',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    descriptionMarkdown: text('description_markdown'),
+    address: text('address'),
+    postalCode: text('postal_code'),
+    city: text('city').notNull().default('Genève'),
+    phone: text('phone'),
+    email: text('email'),
+    website: text('website'),
+    directionsUrl: text('directions_url').notNull(),
+    officialUrl: text('official_url').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_directory_entries_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_directory_entries_ludo_slug_unique').on(t.ludoId, t.slug),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_directory_entries_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_directory_entries_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_directory_entries_published_by_tenant_fk',
+    }),
+    check(
+      'public_directory_entries_publication_check',
+      sql`(${t.status}='draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published','hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check(
+      'public_directory_entries_name_check',
+      sql`char_length(trim(${t.name})) between 1 and 180`,
+    ),
+    check(
+      'public_directory_entries_description_check',
+      sql`${t.descriptionMarkdown} is null or char_length(trim(${t.descriptionMarkdown})) between 1 and 10000`,
+    ),
+    check(
+      'public_directory_entries_contact_check',
+      sql`${t.address} is null or char_length(trim(${t.address})) between 1 and 500`,
+    ),
+    check(
+      'public_directory_entries_urls_check',
+      sql`char_length(trim(${t.directionsUrl})) between 1 and 2000 and char_length(trim(${t.officialUrl})) between 1 and 2000`,
+    ),
+    check('public_directory_entries_sort_check', sql`${t.sortOrder} between 0 and 1000000`),
+    index('public_directory_entries_public_order_idx').on(t.ludoId, t.status, t.sortOrder, t.id),
+  ],
+)
+
+export const publicContactStatus = pgEnum('public_contact_status', ['new', 'processed', 'archived'])
+export const publicContactRecipient = pgEnum('public_contact_recipient', [
+  'paquis',
+  'secheron',
+  'general',
+])
+/** Message entrant privé. Cette table ne doit jamais alimenter une API publique de lecture. */
+export const publicContactMessages = pgTable(
+  'public_contact_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    idempotencyKeyHash: text('idempotency_key_hash').notNull(),
+    recipient: publicContactRecipient('recipient').notNull(),
+    name: text('name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone'),
+    subject: text('subject').notNull(),
+    message: text('message').notNull(),
+    status: publicContactStatus('status').notNull().default('new'),
+    revision: integer('revision').notNull().default(1),
+    handledByMemberId: uuid('handled_by_member_id'),
+    processedAt: timestamp('processed_at'),
+    archivedAt: timestamp('archived_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_contact_messages_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_contact_messages_ludo_idempotency_unique').on(t.ludoId, t.idempotencyKeyHash),
+    foreignKey({
+      columns: [t.handledByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_contact_messages_handler_tenant_fk',
+    }),
+    check('public_contact_messages_hash_check', sql`char_length(${t.idempotencyKeyHash})=64`),
+    check(
+      'public_contact_messages_name_check',
+      sql`char_length(trim(${t.name})) between 1 and 160`,
+    ),
+    check(
+      'public_contact_messages_email_check',
+      sql`char_length(trim(${t.email})) between 3 and 320`,
+    ),
+    check(
+      'public_contact_messages_phone_check',
+      sql`${t.phone} is null or char_length(trim(${t.phone})) between 3 and 50`,
+    ),
+    check(
+      'public_contact_messages_subject_check',
+      sql`char_length(trim(${t.subject})) between 1 and 200`,
+    ),
+    check(
+      'public_contact_messages_message_check',
+      sql`char_length(trim(${t.message})) between 1 and 5000`,
+    ),
+    check(
+      'public_contact_messages_state_check',
+      sql`(${t.status}='new' and ${t.processedAt} is null and ${t.archivedAt} is null) or (${t.status}='processed' and ${t.processedAt} is not null and ${t.archivedAt} is null and ${t.handledByMemberId} is not null) or (${t.status}='archived' and ${t.archivedAt} is not null and ${t.handledByMemberId} is not null)`,
+    ),
+    index('public_contact_messages_inbox_idx').on(t.ludoId, t.status, t.createdAt.desc()),
+  ],
+)
+
 export const publicActivityType = pgEnum('public_activity_type', [
   'one_off',
   'recurring',
@@ -1077,6 +1215,18 @@ export const membersRelations = relations(members, ({ many }) => ({
   authoredPublicProfiles: many(publicProfiles, { relationName: 'publicProfileAuthor' }),
   updatedPublicProfiles: many(publicProfiles, { relationName: 'publicProfileUpdater' }),
   publishedPublicProfiles: many(publicProfiles, { relationName: 'publicProfilePublisher' }),
+  authoredPublicDirectoryEntries: many(publicDirectoryEntries, {
+    relationName: 'publicDirectoryAuthor',
+  }),
+  updatedPublicDirectoryEntries: many(publicDirectoryEntries, {
+    relationName: 'publicDirectoryUpdater',
+  }),
+  publishedPublicDirectoryEntries: many(publicDirectoryEntries, {
+    relationName: 'publicDirectoryPublisher',
+  }),
+  handledPublicContactMessages: many(publicContactMessages, {
+    relationName: 'publicContactHandler',
+  }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -1498,6 +1648,30 @@ export const publicProfileSitesRelations = relations(publicProfileSites, ({ one 
   site: one(ludoSites, {
     fields: [publicProfileSites.siteId, publicProfileSites.ludoId],
     references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+export const publicDirectoryEntriesRelations = relations(publicDirectoryEntries, ({ one }) => ({
+  author: one(members, {
+    fields: [publicDirectoryEntries.authorMemberId, publicDirectoryEntries.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicDirectoryAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicDirectoryEntries.updatedByMemberId, publicDirectoryEntries.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicDirectoryUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicDirectoryEntries.publishedByMemberId, publicDirectoryEntries.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicDirectoryPublisher',
+  }),
+}))
+export const publicContactMessagesRelations = relations(publicContactMessages, ({ one }) => ({
+  handler: one(members, {
+    fields: [publicContactMessages.handledByMemberId, publicContactMessages.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicContactHandler',
   }),
 }))
 
@@ -2094,6 +2268,12 @@ export type PublicGalleryImageInsert = typeof publicGalleryImages.$inferInsert
 export type PublicProfileSection = (typeof publicProfileSection.enumValues)[number]
 export type PublicProfileRow = typeof publicProfiles.$inferSelect
 export type PublicProfileInsert = typeof publicProfiles.$inferInsert
+export type PublicDirectoryEntryRow = typeof publicDirectoryEntries.$inferSelect
+export type PublicDirectoryEntryInsert = typeof publicDirectoryEntries.$inferInsert
+export type PublicContactStatus = (typeof publicContactStatus.enumValues)[number]
+export type PublicContactRecipient = (typeof publicContactRecipient.enumValues)[number]
+export type PublicContactMessageRow = typeof publicContactMessages.$inferSelect
+export type PublicContactMessageInsert = typeof publicContactMessages.$inferInsert
 export type PublicActivityRow = typeof publicActivities.$inferSelect
 export type PublicActivityInsert = typeof publicActivities.$inferInsert
 export type PublicActivityType = (typeof publicActivityType.enumValues)[number]
