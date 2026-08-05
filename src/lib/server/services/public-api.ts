@@ -3,6 +3,11 @@ import { listSiteRowsWithOpeningHours } from '../db/sites.js'
 import { isPublicSiteEnabled } from './public-site.js'
 import { listVisiblePublicAnnouncements } from './public-announcements.js'
 import { getVisiblePublicNewsBySlug, listVisiblePublicNewsSummaries } from './public-news.js'
+import {
+  getVisiblePublicActivityBySlug,
+  listArchivedPublicActivitySummaries,
+  listVisiblePublicActivitySummaries,
+} from './public-activities.js'
 
 export type PublicOpeningInterval = {
   dayOfWeek: number
@@ -64,6 +69,40 @@ export type PublicNewsPayload = {
   ludo: { slug: string; name: string }
   site: string | null
   news: PublicNewsSummaryItem[]
+}
+
+export type PublicActivitySchedule = {
+  type: 'one_off' | 'recurring' | 'permanent'
+  recurrenceRule: string | null
+  dates: Array<{ startsAt: string; endsAt: string | null }>
+  exceptions: Array<{ excludedAt: string; reason: string | null }>
+}
+
+export type PublicActivitySchedulePreview = Omit<PublicActivitySchedule, 'exceptions'>
+
+export type PublicActivitySummaryItem = {
+  id: string
+  slug: string
+  title: string
+  summary: string
+  location: string | null
+  image: { url: string; alt: string } | null
+  lifecycle: 'active' | 'archived'
+  featuredRank: number | null
+  publishedAt: string
+  schedule: PublicActivitySchedulePreview
+}
+
+export type PublicActivityItem = Omit<PublicActivitySummaryItem, 'schedule'> & {
+  bodyMarkdown: string
+  schedule: PublicActivitySchedule
+}
+
+export type PublicActivitiesPayload = {
+  ludo: { slug: string; name: string }
+  site: string | null
+  timeZone: 'Europe/Zurich'
+  activities: PublicActivitySummaryItem[]
 }
 
 function publicTime(value: string): string {
@@ -211,5 +250,110 @@ export async function getPublicNewsDetailByLudoSlug(
     ludo: { slug: ludo.slug, name: ludo.name },
     site: siteSlug ?? null,
     news: publicNewsDetailItem(news),
+  }
+}
+
+type PublicActivityRow = Awaited<ReturnType<typeof listVisiblePublicActivitySummaries>>[number]
+
+function publicActivitySummaryItem(activity: PublicActivityRow): PublicActivitySummaryItem {
+  return {
+    id: activity.id,
+    slug: activity.slug,
+    title: activity.title,
+    summary: activity.summary,
+    location: activity.location,
+    image:
+      activity.imageUrl && activity.imageAlt
+        ? { url: activity.imageUrl, alt: activity.imageAlt }
+        : null,
+    lifecycle: activity.lifecycle as 'active' | 'archived',
+    featuredRank: activity.featuredRank,
+    publishedAt: activity.publishedAt!.toISOString(),
+    schedule: {
+      type: activity.type,
+      recurrenceRule: activity.recurrenceRule,
+      dates: activity.dates.map((date) => ({
+        startsAt: date.startsAt,
+        endsAt: date.endsAt,
+      })),
+    },
+  }
+}
+
+async function getPublicActivitiesByLifecycle(
+  slug: string,
+  lifecycle: 'active' | 'archived',
+  siteSlug?: string,
+  limit = 20,
+): Promise<PublicActivitiesPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const list =
+    lifecycle === 'active'
+      ? listVisiblePublicActivitySummaries
+      : listArchivedPublicActivitySummaries
+  const rows = await list(ludo.id, resolvedSite.siteId, limit)
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    timeZone: 'Europe/Zurich',
+    activities: rows.map(publicActivitySummaryItem),
+  }
+}
+
+export function getPublicActivitiesByLudoSlug(slug: string, siteSlug?: string, limit = 20) {
+  return getPublicActivitiesByLifecycle(slug, 'active', siteSlug, limit)
+}
+
+export function getArchivedPublicActivitiesByLudoSlug(slug: string, siteSlug?: string, limit = 20) {
+  return getPublicActivitiesByLifecycle(slug, 'archived', siteSlug, limit)
+}
+
+export async function getPublicActivityDetailByLudoSlug(
+  slug: string,
+  activitySlug: string,
+  siteSlug?: string,
+): Promise<
+  (Omit<PublicActivitiesPayload, 'activities'> & { activity: PublicActivityItem }) | null
+> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const activity = await getVisiblePublicActivityBySlug(ludo.id, activitySlug, resolvedSite.siteId)
+  if (!activity) return null
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    timeZone: 'Europe/Zurich',
+    activity: {
+      id: activity.id,
+      slug: activity.slug,
+      title: activity.title,
+      summary: activity.summary,
+      location: activity.location,
+      image:
+        activity.imageUrl && activity.imageAlt
+          ? { url: activity.imageUrl, alt: activity.imageAlt }
+          : null,
+      lifecycle: activity.lifecycle as 'active' | 'archived',
+      featuredRank: activity.featuredRank,
+      publishedAt: activity.publishedAt!.toISOString(),
+      bodyMarkdown: activity.body,
+      schedule: {
+        type: activity.type,
+        recurrenceRule: activity.recurrenceRule,
+        dates: activity.dates.map((date) => ({
+          startsAt: date.startsAt.toISOString(),
+          endsAt: date.endsAt?.toISOString() ?? null,
+        })),
+        exceptions: activity.exceptions.map((exception) => ({
+          excludedAt: exception.excludedAt.toISOString(),
+          reason: exception.reason,
+        })),
+      },
+    },
   }
 }

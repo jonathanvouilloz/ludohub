@@ -5,6 +5,7 @@ import {
   assignments,
   members,
   publicAnnouncements,
+  publicActivities,
   publicNews,
   type MemberInsert,
   type MemberRow,
@@ -101,5 +102,15 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     ),
     columns: { id: true },
   })
-  return Boolean(news)
+  if (news) return true
+
+  const activity = await db.query.publicActivities.findFirst({
+    where: or(
+      eq(publicActivities.authorMemberId, id),
+      eq(publicActivities.updatedByMemberId, id),
+      eq(publicActivities.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  return Boolean(activity)
 }

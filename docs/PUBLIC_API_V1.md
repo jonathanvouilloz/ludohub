@@ -63,3 +63,14 @@ Seuls `id`, `title`, `message`, `publishedAt` et les lieux publics sont exposés
 - `?limit=3` sur la liste fournit le bloc d'accueil ; la limite vaut 20 par défaut et va de 1 à 50. Elle est appliquée directement en base.
 
 Le détail expose `bodyMarkdown`. LudoHub refuse le HTML brut et les schémas de liens dangereux. Le consommateur doit tout de même rendre le Markdown avec HTML désactivé et n'autoriser que les liens `https:`, `http:` et `mailto:`. Une image est soit `null`, soit un objet `{ url, alt }` complet.
+
+## Activités
+
+- `GET /api/public/v1/{ludo}/activities` retourne les activités publiées actuelles.
+- `GET /api/public/v1/{ludo}/activities/archive` retourne uniquement les activités publiées archivées.
+- `GET /api/public/v1/{ludo}/activities/{slug}` retourne le détail d'une activité actuelle ou archivée.
+- `?site={slug-du-lieu}` filtre sur un lieu actif ; `?limit={1..50}` vaut 20 par défaut sur les listes.
+
+Les listes sont bornées en base et n'exposent ni auteurs, ni clés de stockage, ni futures inscriptions. Le corps `bodyMarkdown` n'apparaît que dans le détail. `lifecycle` vaut `active` ou `archived` ; les brouillons, contenus masqués et éléments en corbeille ne sont jamais publics.
+
+Le payload indique `timeZone: "Europe/Zurich"`. Une liste ne contient qu'un aperçu des trois premières dates et aucun motif d'exception ; le détail porte le calendrier complet, borné à 366 dates et 366 exceptions. Les instants sont renvoyés en ISO-8601 : le consommateur les affiche dans ce fuseau, sans développer lui-même une récurrence. `schedule.type` vaut `one_off`, `recurring` ou `permanent`; une activité permanente n'a ni dates ni exceptions. Une RRULE récurrente est toujours bornée par `COUNT` (maximum 366) ou par `UNTIL` (au plus cinq ans après la première occurrence).

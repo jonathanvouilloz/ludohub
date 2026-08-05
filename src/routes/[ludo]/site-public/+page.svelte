@@ -35,6 +35,9 @@
         <a class="content-link" href="/{data.ludo.slug}/site-public/actualites"
           >Gérer les actualités</a
         >
+        <a class="content-link" href="/{data.ludo.slug}/site-public/activites"
+          >Gérer les activités</a
+        >
       </div>
     </section>
   {:else}

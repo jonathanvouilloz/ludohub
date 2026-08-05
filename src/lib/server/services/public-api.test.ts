@@ -7,6 +7,9 @@ const {
   listVisible,
   listVisibleNews,
   getVisibleNews,
+  listVisibleActivities,
+  listArchivedActivities,
+  getVisibleActivity,
 } = vi.hoisted(() => ({
   getLudoBySlug: vi.fn(),
   isPublicSiteEnabled: vi.fn(),
@@ -14,6 +17,9 @@ const {
   listVisible: vi.fn(),
   listVisibleNews: vi.fn(),
   getVisibleNews: vi.fn(),
+  listVisibleActivities: vi.fn(),
+  listArchivedActivities: vi.fn(),
+  getVisibleActivity: vi.fn(),
 }))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
@@ -24,11 +30,19 @@ vi.mock('./public-news.js', () => ({
   listVisiblePublicNewsSummaries: listVisibleNews,
   getVisiblePublicNewsBySlug: getVisibleNews,
 }))
+vi.mock('./public-activities.js', () => ({
+  listVisiblePublicActivitySummaries: listVisibleActivities,
+  listArchivedPublicActivitySummaries: listArchivedActivities,
+  getVisiblePublicActivityBySlug: getVisibleActivity,
+}))
 
 import {
   getPublicAnnouncementsByLudoSlug,
   getPublicNewsByLudoSlug,
   getPublicNewsDetailByLudoSlug,
+  getArchivedPublicActivitiesByLudoSlug,
+  getPublicActivitiesByLudoSlug,
+  getPublicActivityDetailByLudoSlug,
   getPublicSitesByLudoSlug,
 } from './public-api.js'
 
@@ -42,6 +56,78 @@ beforeEach(() => {
   listVisible.mockResolvedValue([])
   listVisibleNews.mockResolvedValue([])
   getVisibleNews.mockResolvedValue(undefined)
+  listVisibleActivities.mockResolvedValue([])
+  listArchivedActivities.mockResolvedValue([])
+  getVisibleActivity.mockResolvedValue(undefined)
+})
+
+const activityRow = {
+  id: '70000000-0000-4000-8000-000000000001',
+  slug: 'soiree-jeux',
+  title: 'Soirée jeux',
+  summary: 'Une soirée ouverte à toutes et tous.',
+  body: '**Bienvenue**',
+  location: 'Pâquis',
+  type: 'recurring' as const,
+  recurrenceRule: 'FREQ=WEEKLY;BYDAY=FR',
+  imageUrl: null,
+  imageAlt: null,
+  lifecycle: 'active' as const,
+  featuredRank: 1,
+  publishedAt: new Date('2026-08-05T09:00:00.000Z'),
+  dates: [
+    {
+      startsAt: new Date('2026-10-23T17:00:00.000Z'),
+      endsAt: new Date('2026-10-23T20:00:00.000Z'),
+    },
+  ],
+  exceptions: [{ excludedAt: new Date('2026-10-30T18:00:00.000Z'), reason: 'Vacances' }],
+}
+
+const activitySummaryRow = {
+  ...activityRow,
+  dates: [
+    {
+      startsAt: '2026-10-23T17:00:00.000Z',
+      endsAt: '2026-10-23T20:00:00.000Z',
+    },
+  ],
+}
+
+describe('activités publiques', () => {
+  it('sépare la liste actuelle des archives et borne en base', async () => {
+    listVisibleActivities.mockResolvedValue([activitySummaryRow])
+    listArchivedActivities.mockResolvedValue([{ ...activitySummaryRow, lifecycle: 'archived' }])
+
+    const current = await getPublicActivitiesByLudoSlug('demo', undefined, 3)
+    const archived = await getArchivedPublicActivitiesByLudoSlug('demo', undefined, 5)
+
+    expect(listVisibleActivities).toHaveBeenCalledWith(ludo.id, undefined, 3)
+    expect(listArchivedActivities).toHaveBeenCalledWith(ludo.id, undefined, 5)
+    expect(current?.timeZone).toBe('Europe/Zurich')
+    expect(current?.activities[0]).toMatchObject({
+      slug: 'soiree-jeux',
+      lifecycle: 'active',
+      schedule: {
+        type: 'recurring',
+        dates: [{ startsAt: '2026-10-23T17:00:00.000Z' }],
+      },
+    })
+    expect(current?.activities[0]).not.toHaveProperty('bodyMarkdown')
+    expect(archived?.activities[0].lifecycle).toBe('archived')
+  })
+
+  it('retourne le détail courant ou archivé sans champ interne', async () => {
+    getVisibleActivity.mockResolvedValue(activityRow)
+    const result = await getPublicActivityDetailByLudoSlug('demo', 'soiree-jeux')
+    expect(result?.activity).toMatchObject({
+      id: activityRow.id,
+      bodyMarkdown: '**Bienvenue**',
+      image: null,
+    })
+    expect(result?.activity).not.toHaveProperty('imageStorageKey')
+    expect(getVisibleActivity).toHaveBeenCalledWith(ludo.id, 'soiree-jeux', undefined)
+  })
 })
 
 const newsRow = {

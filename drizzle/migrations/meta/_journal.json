@@ -36,6 +36,13 @@
       "when": 1785948736778,
       "tag": "0004_public_news",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785951713392,
+      "tag": "0005_public_activities",
+      "breakpoints": true
     }
   ]
 }
