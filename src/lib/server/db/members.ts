@@ -5,6 +5,7 @@ import {
   assignments,
   members,
   publicAnnouncements,
+  publicNews,
   type MemberInsert,
   type MemberRow,
 } from '../schema.js'
@@ -90,5 +91,15 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     ),
     columns: { id: true },
   })
-  return Boolean(announcement)
+  if (announcement) return true
+
+  const news = await db.query.publicNews.findFirst({
+    where: or(
+      eq(publicNews.authorMemberId, id),
+      eq(publicNews.updatedByMemberId, id),
+      eq(publicNews.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  return Boolean(news)
 }

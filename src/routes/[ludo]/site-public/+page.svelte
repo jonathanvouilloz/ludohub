@@ -29,11 +29,13 @@
   {#if enabled}
     <section class="foundation-card">
       <h2>Contenus du site</h2>
-      <p>
-        Publiez les fermetures, changements d’horaires et informations urgentes pour un ou plusieurs
-        lieux.
-      </p>
-      <a class="content-link" href="/{data.ludo.slug}/site-public/annonces">Gérer les annonces</a>
+      <p>Gérez les informations urgentes et les articles publiés pour un ou plusieurs lieux.</p>
+      <div class="content-links">
+        <a class="content-link" href="/{data.ludo.slug}/site-public/annonces">Gérer les annonces</a>
+        <a class="content-link" href="/{data.ludo.slug}/site-public/actualites"
+          >Gérer les actualités</a
+        >
+      </div>
     </section>
   {:else}
     <section class="foundation-card">
@@ -122,9 +124,13 @@
     line-height: 1.6;
   }
   .content-link {
-    justify-self: start;
     color: var(--ludo-color);
     font-weight: var(--weight-semibold);
+  }
+  .content-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
   }
   form {
     display: flex;

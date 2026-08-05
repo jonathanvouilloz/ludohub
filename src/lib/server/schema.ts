@@ -271,6 +271,87 @@ export const publicAnnouncementSites = pgTable(
   ],
 )
 
+/** Actualité Markdown publiée sur le site public. */
+export const publicNews = pgTable(
+  'public_news',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary').notNull(),
+    body: text('body').notNull(),
+    imageUrl: text('image_url'),
+    imageStorageKey: text('image_storage_key'),
+    imageAlt: text('image_alt'),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_news_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_news_ludo_slug_unique').on(t.ludoId, t.slug),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_news_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_news_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_news_published_by_tenant_fk',
+    }),
+    check(
+      'public_news_publication_state_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published', 'hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check('public_news_slug_check', sql`char_length(${t.slug}) between 1 and 120`),
+    check('public_news_title_check', sql`char_length(trim(${t.title})) between 1 and 180`),
+    check('public_news_summary_check', sql`char_length(trim(${t.summary})) between 1 and 500`),
+    check('public_news_body_check', sql`char_length(trim(${t.body})) between 1 and 50000`),
+    check(
+      'public_news_image_check',
+      sql`(${t.imageUrl} is null and ${t.imageStorageKey} is null and ${t.imageAlt} is null) or (${t.imageUrl} is not null and char_length(trim(${t.imageUrl})) between 1 and 2000 and ${t.imageStorageKey} is not null and char_length(trim(${t.imageStorageKey})) between 1 and 1000 and ${t.imageAlt} is not null and char_length(trim(${t.imageAlt})) between 1 and 300)`,
+    ),
+    index('public_news_public_published_idx').on(t.ludoId, t.status, t.publishedAt.desc()),
+  ],
+)
+
+/** Cibles explicites d'une actualité ; aucune ligne signifie tous les lieux actifs. */
+export const publicNewsSites = pgTable(
+  'public_news_sites',
+  {
+    newsId: uuid('news_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.newsId, t.siteId] }),
+    foreignKey({
+      columns: [t.newsId, t.ludoId],
+      foreignColumns: [publicNews.id, publicNews.ludoId],
+      name: 'public_news_sites_news_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_news_sites_site_tenant_fk',
+    }),
+  ],
+)
+
 // ─── Planning ────────────────────────────────────────────────────────────────
 
 export const seasons = pgTable('seasons', {
@@ -364,6 +445,9 @@ export const membersRelations = relations(members, ({ many }) => ({
   publishedPublicAnnouncements: many(publicAnnouncements, {
     relationName: 'publicAnnouncementPublisher',
   }),
+  authoredPublicNews: many(publicNews, { relationName: 'publicNewsAuthor' }),
+  updatedPublicNews: many(publicNews, { relationName: 'publicNewsUpdater' }),
+  publishedPublicNews: many(publicNews, { relationName: 'publicNewsPublisher' }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -542,6 +626,7 @@ export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
   openingIntervals: many(siteOpeningIntervals),
   attendanceRecords: many(attendanceRecords),
   publicAnnouncementTargets: many(publicAnnouncementSites),
+  publicNewsTargets: many(publicNewsSites),
 }))
 
 export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
@@ -588,6 +673,40 @@ export const publicAnnouncementSitesRelations = relations(publicAnnouncementSite
   }),
   site: one(ludoSites, {
     fields: [publicAnnouncementSites.siteId, publicAnnouncementSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+
+export const publicNewsRelations = relations(publicNews, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [publicNews.ludoId],
+    references: [ludotheques.id],
+  }),
+  author: one(members, {
+    fields: [publicNews.authorMemberId, publicNews.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicNewsAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicNews.updatedByMemberId, publicNews.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicNewsUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicNews.publishedByMemberId, publicNews.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicNewsPublisher',
+  }),
+  targets: many(publicNewsSites),
+}))
+
+export const publicNewsSitesRelations = relations(publicNewsSites, ({ one }) => ({
+  news: one(publicNews, {
+    fields: [publicNewsSites.newsId, publicNewsSites.ludoId],
+    references: [publicNews.id, publicNews.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicNewsSites.siteId, publicNewsSites.ludoId],
     references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
@@ -1117,6 +1236,10 @@ export type PublicAnnouncementRow = typeof publicAnnouncements.$inferSelect
 export type PublicAnnouncementInsert = typeof publicAnnouncements.$inferInsert
 export type PublicAnnouncementSiteRow = typeof publicAnnouncementSites.$inferSelect
 export type PublicAnnouncementSiteInsert = typeof publicAnnouncementSites.$inferInsert
+export type PublicNewsRow = typeof publicNews.$inferSelect
+export type PublicNewsInsert = typeof publicNews.$inferInsert
+export type PublicNewsSiteRow = typeof publicNewsSites.$inferSelect
+export type PublicNewsSiteInsert = typeof publicNewsSites.$inferInsert
 export type LudoSiteRow = typeof ludoSites.$inferSelect
 export type LudoSiteInsert = typeof ludoSites.$inferInsert
 export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect

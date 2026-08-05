@@ -54,3 +54,12 @@ Le CDN ne sert pas de réponse périmée au-delà de ce TTL court. Le site publi
 Le filtre facultatif `?site={slug-du-lieu}` limite les annonces à un lieu actif. Sans filtre, la route retourne toutes les annonces actives qui concernent au moins un lieu encore actif. Une liste `sites` vide sur une annonce signifie « tous les lieux actifs ».
 
 Seuls `id`, `title`, `message`, `publishedAt` et les lieux publics sont exposés. Les auteurs internes, états de brouillon et métadonnées d'audit ne quittent jamais LudoHub.
+
+## Actualités
+
+- `GET /api/public/v1/{ludo}/news` retourne une projection légère des actualités publiées, les plus récentes d'abord, sans leur corps Markdown.
+- `GET /api/public/v1/{ludo}/news/{slug}` retourne une page de détail partageable.
+- `?site={slug-du-lieu}` applique le même filtrage de lieu que les annonces.
+- `?limit=3` sur la liste fournit le bloc d'accueil ; la limite vaut 20 par défaut et va de 1 à 50. Elle est appliquée directement en base.
+
+Le détail expose `bodyMarkdown`. LudoHub refuse le HTML brut et les schémas de liens dangereux. Le consommateur doit tout de même rendre le Markdown avec HTML désactivé et n'autoriser que les liens `https:`, `http:` et `mailto:`. Une image est soit `null`, soit un objet `{ url, alt }` complet.

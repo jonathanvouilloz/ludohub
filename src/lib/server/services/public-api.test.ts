@@ -1,19 +1,36 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { getLudoBySlug, isPublicSiteEnabled, listSiteRowsWithOpeningHours, listVisible } =
-  vi.hoisted(() => ({
-    getLudoBySlug: vi.fn(),
-    isPublicSiteEnabled: vi.fn(),
-    listSiteRowsWithOpeningHours: vi.fn(),
-    listVisible: vi.fn(),
-  }))
+const {
+  getLudoBySlug,
+  isPublicSiteEnabled,
+  listSiteRowsWithOpeningHours,
+  listVisible,
+  listVisibleNews,
+  getVisibleNews,
+} = vi.hoisted(() => ({
+  getLudoBySlug: vi.fn(),
+  isPublicSiteEnabled: vi.fn(),
+  listSiteRowsWithOpeningHours: vi.fn(),
+  listVisible: vi.fn(),
+  listVisibleNews: vi.fn(),
+  getVisibleNews: vi.fn(),
+}))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
 vi.mock('../db/sites.js', () => ({ listSiteRowsWithOpeningHours }))
 vi.mock('./public-site.js', () => ({ isPublicSiteEnabled }))
 vi.mock('./public-announcements.js', () => ({ listVisiblePublicAnnouncements: listVisible }))
+vi.mock('./public-news.js', () => ({
+  listVisiblePublicNewsSummaries: listVisibleNews,
+  getVisiblePublicNewsBySlug: getVisibleNews,
+}))
 
-import { getPublicAnnouncementsByLudoSlug, getPublicSitesByLudoSlug } from './public-api.js'
+import {
+  getPublicAnnouncementsByLudoSlug,
+  getPublicNewsByLudoSlug,
+  getPublicNewsDetailByLudoSlug,
+  getPublicSitesByLudoSlug,
+} from './public-api.js'
 
 const ludo = { id: '10000000-0000-4000-8000-000000000001', slug: 'demo', name: 'Démo' }
 
@@ -23,6 +40,56 @@ beforeEach(() => {
   isPublicSiteEnabled.mockResolvedValue(true)
   listSiteRowsWithOpeningHours.mockResolvedValue([])
   listVisible.mockResolvedValue([])
+  listVisibleNews.mockResolvedValue([])
+  getVisibleNews.mockResolvedValue(undefined)
+})
+
+const newsRow = {
+  id: '60000000-0000-4000-8000-000000000001',
+  slug: 'nouvelle',
+  title: 'Nouvelle',
+  summary: 'Résumé',
+  body: '**Contenu**',
+  imageUrl: null,
+  imageAlt: null,
+  publishedAt: new Date('2026-08-05T09:00:00.000Z'),
+  targets: [],
+}
+
+describe('actualités publiques', () => {
+  it('applique la limite par défaut en base et ne sérialise pas le corps dans la liste', async () => {
+    const rows = [newsRow, newsRow, newsRow, newsRow]
+    listVisibleNews.mockImplementation(
+      async (_ludoId: string, _siteId: string | undefined, limit: number) => rows.slice(0, limit),
+    )
+    const all = await getPublicNewsByLudoSlug('demo')
+    const latest = await getPublicNewsByLudoSlug('demo', undefined, 3)
+    expect(all?.news).toHaveLength(4)
+    expect(latest?.news).toHaveLength(3)
+    expect(all?.news[0]).toMatchObject({
+      slug: 'nouvelle',
+      image: null,
+      publishedAt: '2026-08-05T09:00:00.000Z',
+    })
+    expect(all?.news[0]).not.toHaveProperty('body')
+    expect(all?.news[0]).not.toHaveProperty('bodyMarkdown')
+    expect(listVisibleNews).toHaveBeenNthCalledWith(1, ludo.id, undefined, 20)
+    expect(listVisibleNews).toHaveBeenNthCalledWith(2, ludo.id, undefined, 3)
+  })
+
+  it('retourne un détail par slug sans exposer les relations internes', async () => {
+    getVisibleNews.mockResolvedValue(newsRow)
+    const result = await getPublicNewsDetailByLudoSlug('demo', 'nouvelle')
+    expect(result?.news).toEqual(
+      expect.objectContaining({
+        id: newsRow.id,
+        slug: 'nouvelle',
+        bodyMarkdown: '**Contenu**',
+        sites: [],
+      }),
+    )
+    expect(getVisibleNews).toHaveBeenCalledWith(ludo.id, 'nouvelle', undefined)
+  })
 })
 
 describe('getPublicAnnouncementsByLudoSlug', () => {
