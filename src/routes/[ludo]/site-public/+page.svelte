@@ -39,6 +39,10 @@
           >Gérer les activités</a
         >
         <a class="content-link" href="/{data.ludo.slug}/site-public/top-3">Gérer les Top 3</a>
+        <a class="content-link" href="/{data.ludo.slug}/site-public/faq">Gérer la FAQ</a>
+        <a class="content-link" href="/{data.ludo.slug}/site-public/documents"
+          >Gérer les documents</a
+        >
       </div>
     </section>
   {:else}

@@ -429,6 +429,193 @@ export const publicTopThreeSites = pgTable(
   ],
 )
 
+/** Question fréquente ordonnée manuellement sur le site public. */
+export const publicFaqs = pgTable(
+  'public_faqs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    question: text('question').notNull(),
+    answerMarkdown: text('answer_markdown').notNull(),
+    category: text('category'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_faqs_id_ludo_id_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_faqs_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_faqs_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_faqs_published_by_tenant_fk',
+    }),
+    check(
+      'public_faqs_publication_state_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published', 'hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check('public_faqs_question_check', sql`char_length(trim(${t.question})) between 1 and 300`),
+    check(
+      'public_faqs_answer_check',
+      sql`char_length(trim(${t.answerMarkdown})) between 1 and 20000`,
+    ),
+    check(
+      'public_faqs_category_check',
+      sql`${t.category} is null or char_length(trim(${t.category})) between 1 and 100`,
+    ),
+    check('public_faqs_sort_order_check', sql`${t.sortOrder} between 0 and 1000000`),
+    index('public_faqs_public_order_idx').on(t.ludoId, t.status, t.sortOrder, t.id),
+  ],
+)
+
+export const publicFaqSites = pgTable(
+  'public_faq_sites',
+  {
+    faqId: uuid('faq_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.faqId, t.siteId] }),
+    foreignKey({
+      columns: [t.faqId, t.ludoId],
+      foreignColumns: [publicFaqs.id, publicFaqs.ludoId],
+      name: 'public_faq_sites_faq_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_faq_sites_site_tenant_fk',
+    }),
+  ],
+)
+
+export const publicDocumentKind = pgEnum('public_document_kind', [
+  'mission',
+  'statutes',
+  'annual_report',
+  'other',
+])
+
+/** Document institutionnel Markdown et/ou PDF géré. */
+export const publicDocuments = pgTable(
+  'public_documents',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    kind: publicDocumentKind('kind').notNull(),
+    title: text('title').notNull(),
+    summary: text('summary'),
+    bodyMarkdown: text('body_markdown'),
+    year: integer('year'),
+    pdfUrl: text('pdf_url'),
+    pdfStorageKey: text('pdf_storage_key'),
+    pdfFileName: text('pdf_file_name'),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_documents_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_documents_ludo_slug_unique').on(t.ludoId, t.slug),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_documents_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_documents_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_documents_published_by_tenant_fk',
+    }),
+    check(
+      'public_documents_publication_state_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published', 'hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check('public_documents_slug_check', sql`char_length(${t.slug}) between 1 and 120`),
+    check('public_documents_title_check', sql`char_length(trim(${t.title})) between 1 and 180`),
+    check(
+      'public_documents_summary_check',
+      sql`${t.summary} is null or char_length(trim(${t.summary})) between 1 and 500`,
+    ),
+    check(
+      'public_documents_body_check',
+      sql`${t.bodyMarkdown} is null or char_length(trim(${t.bodyMarkdown})) between 1 and 50000`,
+    ),
+    check(
+      'public_documents_year_check',
+      sql`(${t.kind} = 'annual_report' and ${t.year} between 1000 and 9999) or (${t.kind} <> 'annual_report' and ${t.year} is null)`,
+    ),
+    check(
+      'public_documents_pdf_check',
+      sql`(${t.pdfUrl} is null and ${t.pdfStorageKey} is null and ${t.pdfFileName} is null) or (${t.pdfUrl} is not null and char_length(trim(${t.pdfUrl})) between 1 and 2000 and ${t.pdfStorageKey} is not null and char_length(trim(${t.pdfStorageKey})) between 1 and 1000 and ${t.pdfFileName} is not null and char_length(trim(${t.pdfFileName})) between 1 and 300)`,
+    ),
+    check(
+      'public_documents_content_check',
+      sql`${t.status} = 'draft' or ${t.bodyMarkdown} is not null or ${t.pdfStorageKey} is not null`,
+    ),
+    index('public_documents_public_idx').on(
+      t.ludoId,
+      t.status,
+      t.kind,
+      t.year.desc(),
+      t.publishedAt.desc(),
+    ),
+  ],
+)
+
+export const publicDocumentSites = pgTable(
+  'public_document_sites',
+  {
+    documentId: uuid('document_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.documentId, t.siteId] }),
+    foreignKey({
+      columns: [t.documentId, t.ludoId],
+      foreignColumns: [publicDocuments.id, publicDocuments.ludoId],
+      name: 'public_document_sites_document_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_document_sites_site_tenant_fk',
+    }),
+  ],
+)
+
 export const publicActivityType = pgEnum('public_activity_type', [
   'one_off',
   'recurring',
@@ -692,6 +879,12 @@ export const membersRelations = relations(members, ({ many }) => ({
   authoredPublicTopThrees: many(publicTopThrees, { relationName: 'publicTopThreeAuthor' }),
   updatedPublicTopThrees: many(publicTopThrees, { relationName: 'publicTopThreeUpdater' }),
   publishedPublicTopThrees: many(publicTopThrees, { relationName: 'publicTopThreePublisher' }),
+  authoredPublicFaqs: many(publicFaqs, { relationName: 'publicFaqAuthor' }),
+  updatedPublicFaqs: many(publicFaqs, { relationName: 'publicFaqUpdater' }),
+  publishedPublicFaqs: many(publicFaqs, { relationName: 'publicFaqPublisher' }),
+  authoredPublicDocuments: many(publicDocuments, { relationName: 'publicDocumentAuthor' }),
+  updatedPublicDocuments: many(publicDocuments, { relationName: 'publicDocumentUpdater' }),
+  publishedPublicDocuments: many(publicDocuments, { relationName: 'publicDocumentPublisher' }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -873,6 +1066,8 @@ export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
   publicNewsTargets: many(publicNewsSites),
   publicActivityTargets: many(publicActivitySites),
   publicTopThreeTargets: many(publicTopThreeSites),
+  publicFaqTargets: many(publicFaqSites),
+  publicDocumentTargets: many(publicDocumentSites),
 }))
 
 export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
@@ -984,6 +1179,68 @@ export const publicTopThreeSitesRelations = relations(publicTopThreeSites, ({ on
   }),
   site: one(ludoSites, {
     fields: [publicTopThreeSites.siteId, publicTopThreeSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+
+export const publicFaqsRelations = relations(publicFaqs, ({ one, many }) => ({
+  ludo: one(ludotheques, { fields: [publicFaqs.ludoId], references: [ludotheques.id] }),
+  author: one(members, {
+    fields: [publicFaqs.authorMemberId, publicFaqs.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicFaqAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicFaqs.updatedByMemberId, publicFaqs.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicFaqUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicFaqs.publishedByMemberId, publicFaqs.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicFaqPublisher',
+  }),
+  targets: many(publicFaqSites),
+}))
+
+export const publicFaqSitesRelations = relations(publicFaqSites, ({ one }) => ({
+  faq: one(publicFaqs, {
+    fields: [publicFaqSites.faqId, publicFaqSites.ludoId],
+    references: [publicFaqs.id, publicFaqs.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicFaqSites.siteId, publicFaqSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+
+export const publicDocumentsRelations = relations(publicDocuments, ({ one, many }) => ({
+  ludo: one(ludotheques, { fields: [publicDocuments.ludoId], references: [ludotheques.id] }),
+  author: one(members, {
+    fields: [publicDocuments.authorMemberId, publicDocuments.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicDocumentAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicDocuments.updatedByMemberId, publicDocuments.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicDocumentUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicDocuments.publishedByMemberId, publicDocuments.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicDocumentPublisher',
+  }),
+  targets: many(publicDocumentSites),
+}))
+
+export const publicDocumentSitesRelations = relations(publicDocumentSites, ({ one }) => ({
+  document: one(publicDocuments, {
+    fields: [publicDocumentSites.documentId, publicDocumentSites.ludoId],
+    references: [publicDocuments.id, publicDocuments.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicDocumentSites.siteId, publicDocumentSites.ludoId],
     references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
@@ -1571,6 +1828,11 @@ export type PublicTopThreeRow = typeof publicTopThrees.$inferSelect
 export type PublicTopThreeInsert = typeof publicTopThrees.$inferInsert
 export type PublicTopThreeSiteRow = typeof publicTopThreeSites.$inferSelect
 export type PublicTopThreeSiteInsert = typeof publicTopThreeSites.$inferInsert
+export type PublicFaqRow = typeof publicFaqs.$inferSelect
+export type PublicFaqInsert = typeof publicFaqs.$inferInsert
+export type PublicDocumentKind = (typeof publicDocumentKind.enumValues)[number]
+export type PublicDocumentRow = typeof publicDocuments.$inferSelect
+export type PublicDocumentInsert = typeof publicDocuments.$inferInsert
 export type PublicActivityRow = typeof publicActivities.$inferSelect
 export type PublicActivityInsert = typeof publicActivities.$inferInsert
 export type PublicActivityType = (typeof publicActivityType.enumValues)[number]

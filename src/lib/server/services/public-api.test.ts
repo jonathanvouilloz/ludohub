@@ -12,6 +12,9 @@ const {
   getVisibleActivity,
   listVisibleTopThrees,
   getVisibleTopThree,
+  listVisibleFaqs,
+  listVisibleDocuments,
+  getVisibleDocument,
 } = vi.hoisted(() => ({
   getLudoBySlug: vi.fn(),
   isPublicSiteEnabled: vi.fn(),
@@ -24,6 +27,9 @@ const {
   getVisibleActivity: vi.fn(),
   listVisibleTopThrees: vi.fn(),
   getVisibleTopThree: vi.fn(),
+  listVisibleFaqs: vi.fn(),
+  listVisibleDocuments: vi.fn(),
+  getVisibleDocument: vi.fn(),
 }))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
@@ -43,6 +49,11 @@ vi.mock('./public-top-threes.js', () => ({
   listVisiblePublicTopThreeSummaries: listVisibleTopThrees,
   getVisiblePublicTopThreeBySlug: getVisibleTopThree,
 }))
+vi.mock('./public-faqs.js', () => ({ listVisiblePublicFaqs: listVisibleFaqs }))
+vi.mock('./public-documents.js', () => ({
+  listVisiblePublicDocuments: listVisibleDocuments,
+  getVisiblePublicDocumentBySlug: getVisibleDocument,
+}))
 
 import {
   getPublicAnnouncementsByLudoSlug,
@@ -53,6 +64,9 @@ import {
   getPublicActivityDetailByLudoSlug,
   getPublicTopThreeDetailByLudoSlug,
   getPublicTopThreesByLudoSlug,
+  getPublicDocumentDetailByLudoSlug,
+  getPublicDocumentsByLudoSlug,
+  getPublicFaqsByLudoSlug,
   getPublicSitesByLudoSlug,
 } from './public-api.js'
 
@@ -71,6 +85,60 @@ beforeEach(() => {
   getVisibleActivity.mockResolvedValue(undefined)
   listVisibleTopThrees.mockResolvedValue([])
   getVisibleTopThree.mockResolvedValue(undefined)
+  listVisibleFaqs.mockResolvedValue([])
+  listVisibleDocuments.mockResolvedValue([])
+  getVisibleDocument.mockResolvedValue(undefined)
+})
+
+describe('FAQ et documents publics', () => {
+  it('projette la FAQ dans son ordre public sans métadonnées internes', async () => {
+    listVisibleFaqs.mockResolvedValue([
+      {
+        id: '90000000-0000-4000-8000-000000000001',
+        question: 'Comment adhérer ?',
+        answerMarkdown: 'Sur place.',
+        category: 'Adhésion',
+        sortOrder: 10,
+      },
+    ])
+    const result = await getPublicFaqsByLudoSlug('demo', undefined, 25)
+    expect(listVisibleFaqs).toHaveBeenCalledWith(ludo.id, undefined, 25)
+    expect(result?.faqs[0]).toEqual({
+      id: '90000000-0000-4000-8000-000000000001',
+      question: 'Comment adhérer ?',
+      answerMarkdown: 'Sur place.',
+      category: 'Adhésion',
+      sortOrder: 10,
+    })
+  })
+
+  it('sépare la projection document de son détail et masque la clé Blob', async () => {
+    const row = {
+      id: 'a0000000-0000-4000-8000-000000000001',
+      slug: 'rapport-2025',
+      kind: 'annual_report' as const,
+      title: 'Rapport 2025',
+      summary: 'Résumé',
+      bodyMarkdown: '**Bilan**',
+      year: 2025,
+      pdfUrl: 'https://blob.test/rapport.pdf',
+      pdfFileName: 'rapport-2025.pdf',
+      pdfStorageKey: 'private-key',
+      publishedAt: new Date('2026-08-05T09:00:00.000Z'),
+      targets: [],
+    }
+    listVisibleDocuments.mockResolvedValue([row])
+    getVisibleDocument.mockResolvedValue(row)
+    const list = await getPublicDocumentsByLudoSlug('demo')
+    const detail = await getPublicDocumentDetailByLudoSlug('demo', 'rapport-2025')
+    expect(list?.documents[0]).not.toHaveProperty('bodyMarkdown')
+    expect(list?.documents[0]).not.toHaveProperty('pdfStorageKey')
+    expect(detail?.document).toMatchObject({
+      bodyMarkdown: '**Bilan**',
+      pdf: { url: 'https://blob.test/rapport.pdf', fileName: 'rapport-2025.pdf' },
+    })
+    expect(detail?.document).not.toHaveProperty('pdfStorageKey')
+  })
 })
 
 const topThreeRow = {

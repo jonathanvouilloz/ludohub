@@ -8,6 +8,8 @@ import {
   publicActivities,
   publicNews,
   publicTopThrees,
+  publicFaqs,
+  publicDocuments,
   type MemberInsert,
   type MemberRow,
 } from '../schema.js'
@@ -123,5 +125,25 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     ),
     columns: { id: true },
   })
-  return Boolean(topThree)
+  if (topThree) return true
+
+  const faq = await db.query.publicFaqs.findFirst({
+    where: or(
+      eq(publicFaqs.authorMemberId, id),
+      eq(publicFaqs.updatedByMemberId, id),
+      eq(publicFaqs.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  if (faq) return true
+
+  const document = await db.query.publicDocuments.findFirst({
+    where: or(
+      eq(publicDocuments.authorMemberId, id),
+      eq(publicDocuments.updatedByMemberId, id),
+      eq(publicDocuments.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  return Boolean(document)
 }

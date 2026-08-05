@@ -12,6 +12,8 @@ import {
   getVisiblePublicTopThreeBySlug,
   listVisiblePublicTopThreeSummaries,
 } from './public-top-threes.js'
+import { listVisiblePublicFaqs } from './public-faqs.js'
+import { getVisiblePublicDocumentBySlug, listVisiblePublicDocuments } from './public-documents.js'
 
 export type PublicOpeningInterval = {
   dayOfWeek: number
@@ -126,6 +128,42 @@ export type PublicTopThreesPayload = {
   ludo: { slug: string; name: string }
   site: string | null
   topThrees: PublicTopThreeSummaryItem[]
+}
+
+export type PublicFaqItem = {
+  id: string
+  question: string
+  answerMarkdown: string
+  category: string | null
+  sortOrder: number
+}
+
+export type PublicFaqsPayload = {
+  ludo: { slug: string; name: string }
+  site: string | null
+  faqs: PublicFaqItem[]
+}
+
+export type PublicDocumentSummaryItem = {
+  id: string
+  slug: string
+  kind: 'mission' | 'statutes' | 'annual_report' | 'other'
+  title: string
+  summary: string | null
+  year: number | null
+  pdf: { url: string; fileName: string } | null
+  publishedAt: string
+}
+
+export type PublicDocumentItem = PublicDocumentSummaryItem & {
+  bodyMarkdown: string | null
+  sites: Array<{ id: string; slug: string; name: string }>
+}
+
+export type PublicDocumentsPayload = {
+  ludo: { slug: string; name: string }
+  site: string | null
+  documents: PublicDocumentSummaryItem[]
 }
 
 function publicTime(value: string): string {
@@ -427,6 +465,89 @@ export async function getPublicTopThreeDetailByLudoSlug(
         description: game.description ?? null,
       })),
       publishedAt: item.publishedAt!.toISOString(),
+      sites: item.targets
+        .filter((target) => target.site.isActive)
+        .map((target) => ({
+          id: target.site.id,
+          slug: target.site.slug,
+          name: target.site.name,
+        })),
+    },
+  }
+}
+
+export async function getPublicFaqsByLudoSlug(
+  slug: string,
+  siteSlug?: string,
+  limit = 100,
+): Promise<PublicFaqsPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const rows = await listVisiblePublicFaqs(ludo.id, resolvedSite.siteId, limit)
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    faqs: rows.map((faq) => ({
+      id: faq.id,
+      question: faq.question,
+      answerMarkdown: faq.answerMarkdown,
+      category: faq.category,
+      sortOrder: faq.sortOrder,
+    })),
+  }
+}
+
+function publicDocumentSummaryItem(
+  item: Awaited<ReturnType<typeof listVisiblePublicDocuments>>[number],
+): PublicDocumentSummaryItem {
+  return {
+    id: item.id,
+    slug: item.slug,
+    kind: item.kind,
+    title: item.title,
+    summary: item.summary,
+    year: item.year,
+    pdf: item.pdfUrl && item.pdfFileName ? { url: item.pdfUrl, fileName: item.pdfFileName } : null,
+    publishedAt: item.publishedAt!.toISOString(),
+  }
+}
+
+export async function getPublicDocumentsByLudoSlug(
+  slug: string,
+  siteSlug?: string,
+  limit = 20,
+): Promise<PublicDocumentsPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const rows = await listVisiblePublicDocuments(ludo.id, resolvedSite.siteId, limit)
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    documents: rows.map(publicDocumentSummaryItem),
+  }
+}
+
+export async function getPublicDocumentDetailByLudoSlug(
+  slug: string,
+  documentSlug: string,
+  siteSlug?: string,
+): Promise<(Omit<PublicDocumentsPayload, 'documents'> & { document: PublicDocumentItem }) | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const item = await getVisiblePublicDocumentBySlug(ludo.id, documentSlug, resolvedSite.siteId)
+  if (!item) return null
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    document: {
+      ...publicDocumentSummaryItem(item),
+      bodyMarkdown: item.bodyMarkdown,
       sites: item.targets
         .filter((target) => target.site.isActive)
         .map((target) => ({

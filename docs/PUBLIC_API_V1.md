@@ -81,3 +81,14 @@ Le payload indique `timeZone: "Europe/Zurich"`. Une liste ne contient qu'un aper
 - `GET /api/public/v1/{ludo}/top-threes/{slug}` retourne une sélection publiée et ses descriptions.
 
 Chaque sélection contient exactement trois jeux saisis directement. La liste ne projette que leur nom ; le détail ajoute la description facultative. Aucun identifiant de catalogue, membre interne, révision ou historique n'est exposé.
+
+## FAQ
+
+`GET /api/public/v1/{ludo}/faqs` retourne les questions publiées dans l'ordre manuel, puis par identifiant stable. `?site={slug}` filtre un lieu actif et `?limit={1..200}` vaut 100 par défaut. Les réponses sont exposées en `answerMarkdown`, avec HTML brut désactivé et liens filtrés.
+
+## Documents institutionnels
+
+- `GET /api/public/v1/{ludo}/documents` retourne une projection légère des documents publiés.
+- `GET /api/public/v1/{ludo}/documents/{slug}` retourne le détail et le texte Markdown éventuel.
+
+Un document est de type `mission`, `statutes`, `annual_report` ou `other`. L'année est présente uniquement pour un rapport annuel. Le contenu comporte un texte, un PDF public ou les deux. L'objet PDF expose uniquement `{ url, fileName }`; la clé de stockage, les auteurs internes et la révision restent privés.

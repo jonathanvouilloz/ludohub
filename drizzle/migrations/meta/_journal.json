@@ -50,6 +50,13 @@
       "when": 1785952638298,
       "tag": "0006_public_top_threes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785953883559,
+      "tag": "0007_public_faqs_documents",
+      "breakpoints": true
     }
   ]
 }
