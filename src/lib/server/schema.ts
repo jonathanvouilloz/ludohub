@@ -5,10 +5,12 @@ import {
   date,
   doublePrecision,
   foreignKey,
+  index,
   integer,
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   time,
   timestamp,
@@ -187,6 +189,88 @@ export const members = pgTable(
   (t) => [unique('members_id_ludo_id_unique').on(t.id, t.ludoId)],
 )
 
+/** Annonce éditoriale publique, activée et désactivée manuellement. */
+export const publicAnnouncements = pgTable(
+  'public_announcements',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    message: text('message').notNull(),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_announcements_id_ludo_id_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_announcements_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_announcements_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_announcements_published_by_tenant_fk',
+    }),
+    check(
+      'public_announcements_publication_state_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published', 'hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check(
+      'public_announcements_title_length_check',
+      sql`char_length(trim(${t.title})) between 1 and 160`,
+    ),
+    check(
+      'public_announcements_message_length_check',
+      sql`char_length(trim(${t.message})) between 1 and 2000`,
+    ),
+    index('public_announcements_ludo_status_created_idx').on(
+      t.ludoId,
+      t.status,
+      t.createdAt.desc(),
+    ),
+  ],
+)
+
+/**
+ * Cibles explicites d'une annonce. L'absence de ligne signifie « tous les lieux
+ * actifs ». Un lieu ciblé ne peut donc pas être supprimé silencieusement.
+ */
+export const publicAnnouncementSites = pgTable(
+  'public_announcement_sites',
+  {
+    announcementId: uuid('announcement_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.announcementId, t.siteId] }),
+    foreignKey({
+      columns: [t.announcementId, t.ludoId],
+      foreignColumns: [publicAnnouncements.id, publicAnnouncements.ludoId],
+      name: 'public_announcement_sites_announcement_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_announcement_sites_site_tenant_fk',
+    }),
+  ],
+)
+
 // ─── Planning ────────────────────────────────────────────────────────────────
 
 export const seasons = pgTable('seasons', {
@@ -271,6 +355,15 @@ export const membersRelations = relations(members, ({ many }) => ({
   assignments: many(assignments),
   absences: many(absences),
   seasonSettings: many(seasonMemberSettings),
+  authoredPublicAnnouncements: many(publicAnnouncements, {
+    relationName: 'publicAnnouncementAuthor',
+  }),
+  updatedPublicAnnouncements: many(publicAnnouncements, {
+    relationName: 'publicAnnouncementUpdater',
+  }),
+  publishedPublicAnnouncements: many(publicAnnouncements, {
+    relationName: 'publicAnnouncementPublisher',
+  }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -448,6 +541,7 @@ export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
   }),
   openingIntervals: many(siteOpeningIntervals),
   attendanceRecords: many(attendanceRecords),
+  publicAnnouncementTargets: many(publicAnnouncementSites),
 }))
 
 export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
@@ -461,6 +555,40 @@ export const publicSiteSettingsRelations = relations(publicSiteSettings, ({ one 
   ludo: one(ludotheques, {
     fields: [publicSiteSettings.ludoId],
     references: [ludotheques.id],
+  }),
+}))
+
+export const publicAnnouncementsRelations = relations(publicAnnouncements, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [publicAnnouncements.ludoId],
+    references: [ludotheques.id],
+  }),
+  author: one(members, {
+    fields: [publicAnnouncements.authorMemberId, publicAnnouncements.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicAnnouncementAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicAnnouncements.updatedByMemberId, publicAnnouncements.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicAnnouncementUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicAnnouncements.publishedByMemberId, publicAnnouncements.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicAnnouncementPublisher',
+  }),
+  targets: many(publicAnnouncementSites),
+}))
+
+export const publicAnnouncementSitesRelations = relations(publicAnnouncementSites, ({ one }) => ({
+  announcement: one(publicAnnouncements, {
+    fields: [publicAnnouncementSites.announcementId, publicAnnouncementSites.ludoId],
+    references: [publicAnnouncements.id, publicAnnouncements.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicAnnouncementSites.siteId, publicAnnouncementSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
 
@@ -985,6 +1113,10 @@ export type LudothequeInsert = typeof ludotheques.$inferInsert
 export type PublicSiteSettingsRow = typeof publicSiteSettings.$inferSelect
 export type PublicSiteSettingsInsert = typeof publicSiteSettings.$inferInsert
 export type PublicContentStatus = (typeof publicContentStatus.enumValues)[number]
+export type PublicAnnouncementRow = typeof publicAnnouncements.$inferSelect
+export type PublicAnnouncementInsert = typeof publicAnnouncements.$inferInsert
+export type PublicAnnouncementSiteRow = typeof publicAnnouncementSites.$inferSelect
+export type PublicAnnouncementSiteInsert = typeof publicAnnouncementSites.$inferInsert
 export type LudoSiteRow = typeof ludoSites.$inferSelect
 export type LudoSiteInsert = typeof ludoSites.$inferInsert
 export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect

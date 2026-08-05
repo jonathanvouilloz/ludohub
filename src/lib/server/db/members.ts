@@ -1,6 +1,13 @@
 import { and, count, eq, or } from 'drizzle-orm'
 import { db } from './index.js'
-import { absences, assignments, members, type MemberInsert, type MemberRow } from '../schema.js'
+import {
+  absences,
+  assignments,
+  members,
+  publicAnnouncements,
+  type MemberInsert,
+  type MemberRow,
+} from '../schema.js'
 
 export async function getMembersByLudo(ludoId: string): Promise<MemberRow[]> {
   return db.query.members.findMany({
@@ -61,7 +68,7 @@ export async function countResponsablesActifs(ludoId: string): Promise<number> {
   return row?.value ?? 0
 }
 
-/** true si le membre est référencé par une assignation ou une absence (suppression bloquée). */
+/** true si le membre est référencé par une donnée métier (suppression bloquée). */
 export async function memberHasDependencies(id: string): Promise<boolean> {
   const assignment = await db.query.assignments.findFirst({
     where: eq(assignments.memberId, id),
@@ -73,5 +80,15 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     where: or(eq(absences.memberId, id), eq(absences.respondedBy, id)),
     columns: { id: true },
   })
-  return Boolean(absence)
+  if (absence) return true
+
+  const announcement = await db.query.publicAnnouncements.findFirst({
+    where: or(
+      eq(publicAnnouncements.authorMemberId, id),
+      eq(publicAnnouncements.updatedByMemberId, id),
+      eq(publicAnnouncements.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  return Boolean(announcement)
 }

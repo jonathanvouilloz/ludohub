@@ -28,11 +28,12 @@
 
   {#if enabled}
     <section class="foundation-card">
-      <h2>Fondation prête</h2>
+      <h2>Contenus du site</h2>
       <p>
-        Les lieux, horaires, permissions et statuts de publication sont disponibles. Les annonces,
-        actualités et activités seront ajoutées dans les prochains lots.
+        Publiez les fermetures, changements d’horaires et informations urgentes pour un ou plusieurs
+        lieux.
       </p>
+      <a class="content-link" href="/{data.ludo.slug}/site-public/annonces">Gérer les annonces</a>
     </section>
   {:else}
     <section class="foundation-card">
@@ -119,6 +120,11 @@
   .foundation-card p {
     color: var(--text-muted);
     line-height: 1.6;
+  }
+  .content-link {
+    justify-self: start;
+    color: var(--ludo-color);
+    font-weight: var(--weight-semibold);
   }
   form {
     display: flex;
