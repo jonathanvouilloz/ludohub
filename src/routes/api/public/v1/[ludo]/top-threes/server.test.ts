@@ -32,7 +32,7 @@ describe('GET /api/public/v1/[ludo]/top-threes', () => {
   })
 
   it('transmet le lieu et applique le cache court', async () => {
-    getTopThrees.mockResolvedValueOnce({ topThrees: [] })
+    getTopThrees.mockResolvedValueOnce({ topThrees: [{ id: 'top-a', isHomepage: true }] })
     const request = new Request(
       'https://api.test/api/public/v1/demo/top-threes?site=paquis&limit=3',
     )
@@ -43,5 +43,6 @@ describe('GET /api/public/v1/[ludo]/top-threes', () => {
     } as never)
     expect(getTopThrees).toHaveBeenCalledWith('demo', 'paquis', 3)
     expect(response.headers.get('cache-control')).toContain('s-maxage=60')
+    expect((await response.json()).data.topThrees[0].isHomepage).toBe(true)
   })
 })

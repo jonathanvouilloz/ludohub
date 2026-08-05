@@ -1,0 +1,3 @@
+ALTER TABLE "public_top_threes" ADD COLUMN "is_homepage" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "public_top_threes_one_homepage_per_ludo_idx" ON "public_top_threes" USING btree ("ludo_id") WHERE "public_top_threes"."is_homepage" = true;--> statement-breakpoint
+ALTER TABLE "public_top_threes" ADD CONSTRAINT "public_top_threes_homepage_published_check" CHECK (not "public_top_threes"."is_homepage" or "public_top_threes"."status" = 'published');

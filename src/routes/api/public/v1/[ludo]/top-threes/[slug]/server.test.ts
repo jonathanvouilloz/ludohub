@@ -20,6 +20,18 @@ beforeEach(() => {
 })
 
 describe('GET /api/public/v1/[ludo]/top-threes/[slug]', () => {
+  it('conserve le booléen contractuel de sélection accueil', async () => {
+    getDetail.mockResolvedValueOnce({ topThree: { id: 'top-a', isHomepage: false } })
+    const request = new Request('https://api.test/api/public/v1/demo/top-threes/top-a')
+    const response = await GET({
+      params: { ludo: 'demo', slug: 'top-a' },
+      request,
+      url: new URL(request.url),
+    } as never)
+    expect(response.status).toBe(200)
+    expect((await response.json()).data.topThree.isHomepage).toBe(false)
+  })
+
   it('répond 404/no-store pour un brouillon ou une cible invalide', async () => {
     getDetail.mockResolvedValueOnce(null)
     const request = new Request('https://api.test/api/public/v1/demo/top-threes/inconnu')

@@ -82,6 +82,8 @@ Le payload indique `timeZone: "Europe/Zurich"`. Une liste ne contient qu'un aper
 
 Chaque sélection contient exactement trois jeux saisis directement. La liste ne projette que leur nom ; le détail ajoute la description facultative. Aucun identifiant de catalogue, membre interne, révision ou historique n'est exposé.
 
+Le booléen `isHomepage` est présent dans la liste et le détail. Au plus un Top 3 publié par ludothèque peut valoir `true`; cette sélection est éditoriale et n'est jamais déduite automatiquement de la date. Un brouillon ou un Top 3 masqué ne peut jamais être sélectionné pour l'accueil.
+
 ## FAQ
 
 `GET /api/public/v1/{ludo}/faqs` retourne les questions publiées dans l'ordre manuel, puis par identifiant stable. `?site={slug}` filtre un lieu actif et `?limit={1..200}` vaut 100 par défaut. Les réponses sont exposées en `answerMarkdown`, avec HTML brut désactivé et liens filtrés.

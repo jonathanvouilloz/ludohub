@@ -5,10 +5,12 @@ import { emitAuditEvent } from '$lib/server/services/events.js'
 import { isPublicSiteEnabled, PublicSiteServiceError } from '$lib/server/services/public-site.js'
 import {
   createPublicTopThree,
+  deselectPublicTopThreeFromHomepage,
   deleteDraftPublicTopThree,
   hidePublicTopThree,
   listPublicTopThreesForManagement,
   publishPublicTopThree,
+  selectPublicTopThreeForHomepage,
   PublicTopThreeServiceError,
   type PublicTopThreeInput,
   type PublicTopThreeTargeting,
@@ -187,6 +189,33 @@ export const actions: Actions = {
             fromStatus: transition.previousStatus,
             toStatus: transition.topThree.status,
           },
+        })
+      }
+      return { success: true }
+    })
+  },
+
+  homepage: async (event) => {
+    const { ludo, member } = await requireTopThreeContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      const next = data.get('isHomepage')
+      if (next !== 'true' && next !== 'false') {
+        throw new PublicTopThreeServiceError('Sélection d’accueil invalide.')
+      }
+      const selection = next === 'true'
+        ? await selectPublicTopThreeForHomepage(id, ludo.id, member.id, revisionInput(data))
+        : await deselectPublicTopThreeFromHomepage(id, ludo.id, member.id, revisionInput(data))
+      if (selection.changed) {
+        await audit({
+          action: selection.topThree.isHomepage
+            ? 'public_top_three.homepage_selected'
+            : 'public_top_three.homepage_deselected',
+          ludoId: ludo.id,
+          memberId: member.id,
+          topThreeId: selection.topThree.id,
+          metadata: { isHomepage: selection.topThree.isHomepage },
         })
       }
       return { success: true }

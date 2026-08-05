@@ -1,11 +1,13 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicTopThreeRow,
+  deselectPublicTopThreeHomepageRow,
   getPublishedPublicTopThreeRowBySlug,
   getPublicTopThreeRowForLudo,
   insertPublicTopThreeAtomic,
   listPublicTopThreeRows,
   listVisiblePublicTopThreeSummaryRows,
+  selectPublicTopThreeHomepageAtomic,
   updatePublicTopThreeAtomic,
   updatePublicTopThreePublicationRow,
 } from '../db/public-top-threes.js'
@@ -178,6 +180,7 @@ export async function createPublicTopThree(
           slug: normalizePublicTopThreeSlug(input.slug),
           theme: text(input.theme, 'Le thème', 160),
           games: validatePublicTopThreeGames(input.games),
+          isHomepage: false,
           status: publication.status,
           revision: 1,
           authorMemberId: memberId,
@@ -304,6 +307,62 @@ export const hidePublicTopThree = (
   expectedRevision: number,
   now = new Date(),
 ) => transition(id, ludoId, 'hidden', memberId, expectedRevision, now)
+
+export async function selectPublicTopThreeForHomepage(
+  id: string,
+  ludoId: string,
+  memberId: string,
+  expectedRevision: number,
+  now = new Date(),
+) {
+  revision(expectedRevision)
+  const current = await getPublicTopThree(id, ludoId)
+  if (current.revision !== expectedRevision) concurrent()
+  if (current.status !== 'published') {
+    throw new PublicTopThreeServiceError(
+      "Seul un Top 3 publié peut être sélectionné pour l'accueil.",
+    )
+  }
+  if (current.isHomepage) return { topThree: current, changed: false }
+  try {
+    const updated = await selectPublicTopThreeHomepageAtomic(
+      id,
+      ludoId,
+      memberId,
+      expectedRevision,
+      now,
+    )
+    if (!updated) concurrent()
+    return { topThree: updated, changed: true }
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505') {
+      concurrent()
+    }
+    throw error
+  }
+}
+
+export async function deselectPublicTopThreeFromHomepage(
+  id: string,
+  ludoId: string,
+  memberId: string,
+  expectedRevision: number,
+  now = new Date(),
+) {
+  revision(expectedRevision)
+  const current = await getPublicTopThree(id, ludoId)
+  if (current.revision !== expectedRevision) concurrent()
+  if (!current.isHomepage) return { topThree: current, changed: false }
+  const updated = await deselectPublicTopThreeHomepageRow(
+    id,
+    ludoId,
+    memberId,
+    expectedRevision,
+    now,
+  )
+  if (!updated) concurrent()
+  return { topThree: await getPublicTopThree(id, ludoId), changed: true }
+}
 
 export async function deleteDraftPublicTopThree(
   id: string,

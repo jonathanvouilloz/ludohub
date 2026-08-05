@@ -13,6 +13,8 @@ vi.mock('$lib/server/services/public-top-threes.js', () => {
     PublicTopThreeServiceError,
     listPublicTopThreesForManagement: vi.fn(),
     createPublicTopThree: vi.fn(),
+    selectPublicTopThreeForHomepage: vi.fn(),
+    deselectPublicTopThreeFromHomepage: vi.fn(),
     updatePublicTopThree: vi.fn(),
     publishPublicTopThree: vi.fn(),
     hidePublicTopThree: vi.fn(),
@@ -26,10 +28,12 @@ import { emitAuditEvent } from '$lib/server/services/events.js'
 import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import {
   createPublicTopThree,
+  deselectPublicTopThreeFromHomepage,
   deleteDraftPublicTopThree,
   hidePublicTopThree,
   listPublicTopThreesForManagement,
   publishPublicTopThree,
+  selectPublicTopThreeForHomepage,
   updatePublicTopThree,
 } from '$lib/server/services/public-top-threes.js'
 import { actions, load } from './+page.server.js'
@@ -52,6 +56,7 @@ const topThree = {
   status: 'draft',
   revision: 1,
   publishedAt: null,
+  isHomepage: false,
   targets: [],
 }
 
@@ -97,6 +102,14 @@ beforeEach(() => {
     topThree: { ...topThree, status: 'hidden', revision: 2 },
     changed: true,
     previousStatus: 'published',
+  } as never)
+  vi.mocked(selectPublicTopThreeForHomepage).mockResolvedValue({
+    topThree: { ...topThree, status: 'published', revision: 2, isHomepage: true },
+    changed: true,
+  } as never)
+  vi.mocked(deselectPublicTopThreeFromHomepage).mockResolvedValue({
+    topThree: { ...topThree, status: 'published', revision: 2, isHomepage: false },
+    changed: true,
   } as never)
 })
 
@@ -229,6 +242,86 @@ describe('gestion des Top 3 publics', () => {
       ]) as never,
     )
     expect(hidePublicTopThree).toHaveBeenCalledWith(TOP_THREE_ID, LUDO_ID, MEMBER_ID, 3)
+  })
+
+  it('sélectionne un Top 3 publié pour l’accueil avec CAS et audit minimal', async () => {
+    await actions.homepage!(
+      event([
+        ['id', TOP_THREE_ID],
+        ['revision', '5'],
+        ['isHomepage', 'true'],
+      ]) as never,
+    )
+    expect(selectPublicTopThreeForHomepage).toHaveBeenCalledWith(
+      TOP_THREE_ID,
+      LUDO_ID,
+      MEMBER_ID,
+      5,
+    )
+    expect(emitAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'public_top_three.homepage_selected',
+        entityType: 'public_top_three',
+        entityId: TOP_THREE_ID,
+        metadata: { isHomepage: true },
+      }),
+    )
+    expect(vi.mocked(emitAuditEvent).mock.calls[0][0].metadata).not.toHaveProperty('games')
+    expect(vi.mocked(emitAuditEvent).mock.calls[0][0].metadata).not.toHaveProperty('theme')
+  })
+
+  it('désélectionne avec CAS et n’audite pas une opération idempotente', async () => {
+    await actions.homepage!(
+      event([
+        ['id', TOP_THREE_ID],
+        ['revision', '6'],
+        ['isHomepage', 'false'],
+      ]) as never,
+    )
+    expect(deselectPublicTopThreeFromHomepage).toHaveBeenCalledWith(
+      TOP_THREE_ID,
+      LUDO_ID,
+      MEMBER_ID,
+      6,
+    )
+    expect(emitAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'public_top_three.homepage_deselected',
+        metadata: { isHomepage: false },
+      }),
+    )
+
+    vi.clearAllMocks()
+    vi.mocked(requireLudoContext).mockResolvedValue({
+      ludo: { id: LUDO_ID },
+      member: { id: MEMBER_ID },
+    } as never)
+    vi.mocked(isPublicSiteEnabled).mockResolvedValue(true)
+    vi.mocked(deselectPublicTopThreeFromHomepage).mockResolvedValue({
+      topThree: { ...topThree, status: 'published', isHomepage: false },
+      changed: false,
+    } as never)
+    await actions.homepage!(
+      event([
+        ['id', TOP_THREE_ID],
+        ['revision', '7'],
+        ['isHomepage', 'false'],
+      ]) as never,
+    )
+    expect(emitAuditEvent).not.toHaveBeenCalled()
+  })
+
+  it('rejette une intention d’accueil invalide avant le service', async () => {
+    const result = await actions.homepage!(
+      event([
+        ['id', TOP_THREE_ID],
+        ['revision', '1'],
+        ['isHomepage', 'yes'],
+      ]) as never,
+    )
+    expect(result).toMatchObject({ status: 400 })
+    expect(selectPublicTopThreeForHomepage).not.toHaveBeenCalled()
+    expect(deselectPublicTopThreeFromHomepage).not.toHaveBeenCalled()
   })
 
   it('supprime uniquement via le service de brouillons avec CAS et audit', async () => {

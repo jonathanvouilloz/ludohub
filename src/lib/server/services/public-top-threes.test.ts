@@ -8,6 +8,8 @@ const mocks = vi.hoisted(() => ({
   listVisible: vi.fn(),
   update: vi.fn(),
   publication: vi.fn(),
+  selectHomepage: vi.fn(),
+  deselectHomepage: vi.fn(),
   remove: vi.fn(),
   activeSites: vi.fn(),
   enabled: vi.fn(),
@@ -22,6 +24,8 @@ vi.mock('../db/public-top-threes.js', () => ({
   listVisiblePublicTopThreeSummaryRows: mocks.listVisible,
   updatePublicTopThreeAtomic: mocks.update,
   updatePublicTopThreePublicationRow: mocks.publication,
+  selectPublicTopThreeHomepageAtomic: mocks.selectHomepage,
+  deselectPublicTopThreeHomepageRow: mocks.deselectHomepage,
   deleteDraftPublicTopThreeRow: mocks.remove,
 }))
 vi.mock('../db/sites.js', () => ({ listActiveSiteRows: mocks.activeSites }))
@@ -38,6 +42,8 @@ import {
   listVisiblePublicTopThreeSummaries,
   normalizePublicTopThreeSlug,
   publishPublicTopThree,
+  selectPublicTopThreeForHomepage,
+  deselectPublicTopThreeFromHomepage,
   updatePublicTopThree,
   validatePublicTopThreeGames,
 } from './public-top-threes.js'
@@ -56,6 +62,7 @@ function item(overrides: Record<string, unknown> = {}) {
     slug: 'jeux-cooperatifs',
     theme: 'Jeux coopératifs',
     games,
+    isHomepage: false,
     status: 'draft',
     revision: 1,
     authorMemberId: MEMBER,
@@ -75,6 +82,10 @@ beforeEach(() => {
   mocks.insert.mockResolvedValue(item())
   mocks.update.mockResolvedValue(item({ revision: 2 }))
   mocks.publication.mockResolvedValue(item({ revision: 2 }))
+  mocks.selectHomepage.mockResolvedValue(
+    item({ revision: 2, status: 'published', isHomepage: true }),
+  )
+  mocks.deselectHomepage.mockResolvedValue(item({ revision: 2, status: 'published' }))
   mocks.remove.mockResolvedValue({ id: 'top-a' })
   mocks.enabled.mockResolvedValue(true)
   mocks.activeSites.mockResolvedValue([{ id: 'site-a', ludoId: LUDO, isActive: true }])
@@ -246,11 +257,90 @@ describe('publication et suppression', () => {
     expect(mocks.publication).not.toHaveBeenCalled()
   })
 
+  it('masque une sélection accueil et relit son état désélectionné', async () => {
+    const selected = item({
+      status: 'published',
+      isHomepage: true,
+      publishedAt: FIRST,
+      publishedByMemberId: MEMBER,
+    })
+    const hidden = item({
+      status: 'hidden',
+      isHomepage: false,
+      revision: 2,
+      publishedAt: FIRST,
+      publishedByMemberId: MEMBER,
+    })
+    mocks.get.mockResolvedValueOnce(selected).mockResolvedValueOnce(hidden)
+    mocks.publication.mockResolvedValueOnce(hidden)
+    await expect(hidePublicTopThree('top-a', LUDO, MEMBER, 1, NOW)).resolves.toEqual({
+      topThree: hidden,
+      changed: true,
+      previousStatus: 'published',
+    })
+  })
+
   it('supprime uniquement un brouillon avec CAS', async () => {
     await deleteDraftPublicTopThree('top-a', LUDO, 1)
     expect(mocks.remove).toHaveBeenCalledWith('top-a', LUDO, 1)
     mocks.get.mockResolvedValue(item({ status: 'hidden', publishedAt: FIRST }))
     await expect(deleteDraftPublicTopThree('top-a', LUDO, 1)).rejects.toThrow(/jamais publié/)
+  })
+})
+
+describe('sélection accueil', () => {
+  it('sélectionne uniquement un publié avec CAS et identité tenant', async () => {
+    mocks.get.mockResolvedValue(
+      item({ status: 'published', publishedAt: FIRST, publishedByMemberId: MEMBER }),
+    )
+    const result = await selectPublicTopThreeForHomepage('top-a', LUDO, MEMBER, 1, NOW)
+    expect(mocks.selectHomepage).toHaveBeenCalledWith('top-a', LUDO, MEMBER, 1, NOW)
+    expect(result).toEqual({
+      topThree: expect.objectContaining({ isHomepage: true }),
+      changed: true,
+    })
+  })
+
+  it.each(['draft', 'hidden'] as const)('refuse un Top 3 %s', async (status) => {
+    mocks.get.mockResolvedValue(
+      item({
+        status,
+        publishedAt: status === 'hidden' ? FIRST : null,
+        publishedByMemberId: status === 'hidden' ? MEMBER : null,
+      }),
+    )
+    await expect(selectPublicTopThreeForHomepage('top-a', LUDO, MEMBER, 1)).rejects.toThrow(
+      /publié/,
+    )
+    expect(mocks.selectHomepage).not.toHaveBeenCalled()
+  })
+
+  it('rend sélection et désélection idempotentes', async () => {
+    const selected = item({ status: 'published', isHomepage: true, revision: 2 })
+    mocks.get.mockResolvedValue(selected)
+    await expect(selectPublicTopThreeForHomepage('top-a', LUDO, MEMBER, 2)).resolves.toEqual({
+      topThree: selected,
+      changed: false,
+    })
+    expect(mocks.selectHomepage).not.toHaveBeenCalled()
+
+    const ordinary = item({ status: 'published', isHomepage: false, revision: 3 })
+    mocks.get.mockResolvedValue(ordinary)
+    await expect(deselectPublicTopThreeFromHomepage('top-a', LUDO, MEMBER, 3)).resolves.toEqual({
+      topThree: ordinary,
+      changed: false,
+    })
+    expect(mocks.deselectHomepage).not.toHaveBeenCalled()
+  })
+
+  it('désélectionne explicitement avec CAS et relit la ligne', async () => {
+    const selected = item({ status: 'published', isHomepage: true, revision: 2 })
+    const deselected = item({ status: 'published', isHomepage: false, revision: 3 })
+    mocks.get.mockResolvedValueOnce(selected).mockResolvedValueOnce(deselected)
+    await expect(
+      deselectPublicTopThreeFromHomepage('top-a', LUDO, MEMBER, 2, NOW),
+    ).resolves.toEqual({ topThree: deselected, changed: true })
+    expect(mocks.deselectHomepage).toHaveBeenCalledWith('top-a', LUDO, MEMBER, 2, NOW)
   })
 })
 

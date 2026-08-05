@@ -365,6 +365,7 @@ export const publicTopThrees = pgTable(
     slug: text('slug').notNull(),
     theme: text('theme').notNull(),
     games: jsonb('games').$type<PublicTopThreeGame[]>().notNull(),
+    isHomepage: boolean('is_homepage').notNull().default(false),
     status: publicContentStatus('status').notNull().default('draft'),
     revision: integer('revision').notNull().default(1),
     authorMemberId: uuid('author_member_id').notNull(),
@@ -402,6 +403,13 @@ export const publicTopThrees = pgTable(
       'public_top_threes_games_shape_check',
       sql`jsonb_typeof(${t.games}) = 'array' and jsonb_array_length(${t.games}) = 3 and not jsonb_path_exists(${t.games}, '$[*] ? (@.type() != "object" || !exists(@.name) || @.name.type() != "string" || (exists(@.description) && @.description.type() != "string"))') and not jsonb_path_exists(${t.games}, '$[*].keyvalue() ? (@.key != "name" && @.key != "description")') and not jsonb_path_exists(${t.games}, '$[*] ? (!(@.name like_regex "^\\\\s*.{0,159}\\\\S\\\\s*$" flag "s") || (exists(@.description) && !(@.description like_regex "^\\\\s*.{0,1999}\\\\S\\\\s*$" flag "s")))')`,
     ),
+    check(
+      'public_top_threes_homepage_published_check',
+      sql`not ${t.isHomepage} or ${t.status} = 'published'`,
+    ),
+    uniqueIndex('public_top_threes_one_homepage_per_ludo_idx')
+      .on(t.ludoId)
+      .where(sql`${t.isHomepage} = true`),
     index('public_top_threes_public_published_idx').on(t.ludoId, t.status, t.publishedAt.desc()),
   ],
 )

@@ -119,6 +119,7 @@ export type PublicTopThreeSummaryItem = {
   slug: string
   theme: string
   games: Array<{ name: string }>
+  isHomepage: boolean
   publishedAt: string
 }
 
@@ -500,6 +501,7 @@ export async function getPublicTopThreesByLudoSlug(
       slug: item.slug,
       theme: item.theme,
       games: item.games,
+      isHomepage: item.isHomepage,
       publishedAt: item.publishedAt!.toISOString(),
     })),
   }
@@ -523,6 +525,7 @@ export async function getPublicTopThreeDetailByLudoSlug(
       id: item.id,
       slug: item.slug,
       theme: item.theme,
+      isHomepage: item.isHomepage,
       games: item.games.map((game) => ({
         name: game.name,
         description: game.description ?? null,

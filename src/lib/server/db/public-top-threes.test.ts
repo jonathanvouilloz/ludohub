@@ -2,6 +2,7 @@ import { getTableConfig, PgDialect } from 'drizzle-orm/pg-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mocks = vi.hoisted(() => ({
+  batch: vi.fn(),
   execute: vi.fn(),
   findFirst: vi.fn(),
   select: vi.fn(),
@@ -13,6 +14,7 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('./index.js', () => ({
   db: {
+    batch: mocks.batch,
     execute: mocks.execute,
     select: mocks.select,
     query: { publicTopThrees: { findFirst: mocks.findFirst } },
@@ -21,10 +23,14 @@ vi.mock('./index.js', () => ({
 
 import {
   listVisiblePublicTopThreeSummaryRows,
+  selectPublicTopThreeHomepageAtomic,
   updatePublicTopThreeAtomic,
 } from './public-top-threes.js'
 import { publicTopThrees } from '../schema.js'
 
+// Limite volontaire : neon-http ne permet pas de transaction callback locale et ce test
+// n'ouvre pas deux connexions PostgreSQL. Il vérifie donc le batch transactionnel réellement
+// utilisé en production, son ordre, ses gardes SQL et ses issues stale/contrainte.
 describe('public-top-threes DB', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -77,6 +83,7 @@ describe('public-top-threes DB', () => {
       'ludoId',
       'slug',
       'theme',
+      'isHomepage',
       'games',
       'publishedAt',
     ])
@@ -92,6 +99,83 @@ describe('public-top-threes DB', () => {
     expect(whereSql).toContain('target.site_id = active.id')
   })
 
+  it('ordonne une vraie transaction wire: verrou, candidat FOR UPDATE, clear conditionnel, sélection', async () => {
+    mocks.batch.mockResolvedValue([{ rows: [{}] }, { rows: [] }, { rows: [] }, { rows: [] }])
+    await expect(
+      selectPublicTopThreeHomepageAtomic(
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000002',
+        '00000000-0000-4000-8000-000000000003',
+        4,
+        new Date('2026-08-05T12:00:00Z'),
+      ),
+    ).resolves.toBeUndefined()
+    expect(mocks.batch).toHaveBeenCalledOnce()
+    const queries = mocks.execute.mock.calls.map(([query]) => new PgDialect().sqlToQuery(query).sql)
+    expect(queries).toHaveLength(4)
+    expect(queries[0]).toContain('pg_advisory_xact_lock')
+    expect(queries[1]).toContain('FOR UPDATE')
+    expect(queries[1]).toMatch(/candidate\.status = 'published'/)
+    expect(queries[1]).toMatch(/candidate\.revision = \$/)
+    expect(queries[1]).toContain('candidate.is_homepage = false')
+    expect(queries[2]).toContain('previous.is_homepage = true')
+    expect(queries[2]).toContain('EXISTS')
+    expect(queries[2]).toMatch(/candidate\.status = 'published'/)
+    expect(queries[3]).toContain('SET is_homepage = true')
+    expect(queries[3]).toMatch(/candidate\.revision = \$/)
+    expect(mocks.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('ne relit ni ne considère sélectionné un candidat stale après le verrou', async () => {
+    mocks.batch.mockResolvedValue([{ rows: [{}] }, { rows: [] }, { rows: [] }, { rows: [] }])
+    await expect(
+      selectPublicTopThreeHomepageAtomic(
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000002',
+        '00000000-0000-4000-8000-000000000003',
+        4,
+        new Date('2026-08-05T12:00:00Z'),
+      ),
+    ).resolves.toBeUndefined()
+    expect(mocks.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('relit le candidat seulement après une sélection transactionnelle réussie', async () => {
+    mocks.batch.mockResolvedValue([
+      { rows: [{}] },
+      { rows: [{ id: 'top-a' }] },
+      { rows: [{ id: 'top-old' }] },
+      { rows: [{ id: 'top-a' }] },
+    ])
+    mocks.findFirst.mockResolvedValue({ id: 'top-a', isHomepage: true })
+    await expect(
+      selectPublicTopThreeHomepageAtomic(
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000002',
+        '00000000-0000-4000-8000-000000000003',
+        4,
+        new Date('2026-08-05T12:00:00Z'),
+      ),
+    ).resolves.toEqual({ id: 'top-a', isHomepage: true })
+    expect(mocks.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.anything() }),
+    )
+  })
+
+  it.each(['23505', '23514'])('traduit la violation %s en conflit contrôlé', async (code) => {
+    mocks.batch.mockRejectedValue({ code })
+    await expect(
+      selectPublicTopThreeHomepageAtomic(
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000002',
+        '00000000-0000-4000-8000-000000000003',
+        4,
+        new Date('2026-08-05T12:00:00Z'),
+      ),
+    ).resolves.toBeUndefined()
+    expect(mocks.findFirst).not.toHaveBeenCalled()
+  })
+
   it('borne aussi les valeurs JSON dans le CHECK PostgreSQL', () => {
     const constraint = getTableConfig(publicTopThrees).checks.find(
       (entry) => entry.name === 'public_top_threes_games_shape_check',
@@ -101,5 +185,15 @@ describe('public-top-threes DB', () => {
     expect(checkSql).toContain('jsonb_array_length')
     expect(checkSql).toContain('like_regex "^\\\\s*.{0,159}\\\\S\\\\s*$" flag "s"')
     expect(checkSql).toContain('like_regex "^\\\\s*.{0,1999}\\\\S\\\\s*$" flag "s"')
+  })
+
+  it('garantit une seule sélection accueil publiée par tenant', () => {
+    const config = getTableConfig(publicTopThrees)
+    expect(config.checks.map((entry) => entry.name)).toContain(
+      'public_top_threes_homepage_published_check',
+    )
+    expect(config.indexes.map((entry) => entry.config.name)).toContain(
+      'public_top_threes_one_homepage_per_ludo_idx',
+    )
   })
 })

@@ -9,6 +9,7 @@
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
   import ListOrderedIcon from '@lucide/svelte/icons/list-ordered'
+  import HouseIcon from '@lucide/svelte/icons/house'
   import PencilIcon from '@lucide/svelte/icons/pencil'
 
   let { data } = $props()
@@ -75,6 +76,7 @@
               {:else if item.status === 'hidden'}<Badge variant="secondary">Masqué</Badge>
               {:else}<Badge variant="outline">Brouillon</Badge>{/if}
               {#if inactiveTargets(item)}<Badge variant="warning">Cible inactive</Badge>{/if}
+              {#if item.isHomepage}<Badge variant="default"><HouseIcon size={14} aria-hidden="true" /> Sur l’accueil</Badge>{/if}
             </div>
           </div>
           <ol>
@@ -96,7 +98,11 @@
               method="POST"
               action="?/publication"
               use:enhance={toastEnhance({
-                success: item.status === 'published' ? 'Top 3 masqué.' : 'Top 3 publié.',
+                success: item.status === 'published'
+                  ? item.isHomepage
+                    ? 'Top 3 masqué et retiré de l’accueil.'
+                    : 'Top 3 masqué.'
+                  : 'Top 3 publié.',
                 onPending: (value) => (pendingId = value ? item.id : null),
               })}
             >
@@ -124,6 +130,35 @@
                     : 'Publier'}
               </Button>
             </form>
+            {#if item.status === 'published'}
+              <form
+                method="POST"
+                action="?/homepage"
+                use:enhance={toastEnhance({
+                  success: item.isHomepage
+                    ? 'Top 3 retiré de l’accueil.'
+                    : 'Top 3 affiché sur l’accueil.',
+                  onPending: (value) => (pendingId = value ? item.id : null),
+                })}
+              >
+                <input type="hidden" name="id" value={item.id} />
+                <input type="hidden" name="revision" value={item.revision} />
+                <input type="hidden" name="isHomepage" value={item.isHomepage ? 'false' : 'true'} />
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant={item.isHomepage ? 'outline' : 'default'}
+                  disabled={pendingId === item.id}
+                >
+                  <HouseIcon size={16} aria-hidden="true" />
+                  {pendingId === item.id
+                    ? 'Enregistrement…'
+                    : item.isHomepage
+                      ? 'Retirer de l’accueil'
+                      : 'Afficher sur l’accueil'}
+                </Button>
+              </form>
+            {/if}
             {#if item.status === 'draft'}
               <form
                 method="POST"

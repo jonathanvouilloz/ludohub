@@ -23,7 +23,7 @@ export type PublicTopThreeUpdateData = Pick<
 
 export type PublicTopThreeSummaryRow = Pick<
   PublicTopThreeRow,
-  'id' | 'ludoId' | 'slug' | 'theme' | 'publishedAt'
+  'id' | 'ludoId' | 'slug' | 'theme' | 'isHomepage' | 'publishedAt'
 > & { games: Array<Pick<PublicTopThreeGame, 'name'>> }
 
 export function listPublicTopThreeRows(ludoId: string) {
@@ -47,6 +47,7 @@ export function listVisiblePublicTopThreeSummaryRows(
       ludoId: publicTopThrees.ludoId,
       slug: publicTopThrees.slug,
       theme: publicTopThrees.theme,
+      isHomepage: publicTopThrees.isHomepage,
       games: sql<Array<{ name: string }>>`(
         SELECT jsonb_agg(jsonb_build_object('name', game.value->>'name') ORDER BY game.ordinality)
         FROM jsonb_array_elements(${publicTopThrees.games}) WITH ORDINALITY AS game(value, ordinality)
@@ -101,6 +102,7 @@ export function getPublishedPublicTopThreeRowBySlug(ludoId: string, slug: string
       slug: true,
       theme: true,
       games: true,
+      isHomepage: true,
       publishedAt: true,
     },
     with: {
@@ -178,12 +180,103 @@ export async function updatePublicTopThreePublicationRow(
 ) {
   const [row] = await db
     .update(publicTopThrees)
-    .set({ ...data, revision: sql`${publicTopThrees.revision} + 1` })
+    .set({
+      ...data,
+      ...(data.status === 'hidden' ? { isHomepage: false } : {}),
+      revision: sql`${publicTopThrees.revision} + 1`,
+    })
     .where(
       and(
         eq(publicTopThrees.id, topThreeId),
         eq(publicTopThrees.ludoId, ludoId),
         eq(publicTopThrees.status, expectedStatus),
+        eq(publicTopThrees.revision, expectedRevision),
+      ),
+    )
+    .returning()
+  return row
+}
+
+/**
+ * `neon-http` ne fournit pas de transaction callback ; `db.batch` délègue à la
+ * transaction wire Neon. Les quatre requêtes restent donc dans la même transaction,
+ * dans cet ordre : verrou tenant, validation verrouillée, clear, sélection.
+ */
+export async function selectPublicTopThreeHomepageAtomic(
+  topThreeId: string,
+  ludoId: string,
+  memberId: string,
+  expectedRevision: number,
+  updatedAt: Date,
+) {
+  const candidatePredicate = sql`
+    candidate.id = ${topThreeId}::uuid AND candidate.ludo_id = ${ludoId}::uuid
+    AND candidate.status = 'published' AND candidate.revision = ${expectedRevision}
+    AND candidate.is_homepage = false
+  `
+  try {
+    const [, candidate, , selected] = await db.batch([
+      db.execute(sql`SELECT pg_advisory_xact_lock(hashtextextended(${ludoId}::text, 0))`),
+      db.execute<{ id: string }>(sql`
+        SELECT candidate.id FROM public_top_threes AS candidate
+        WHERE ${candidatePredicate}
+        FOR UPDATE
+      `),
+      db.execute<{ id: string }>(sql`
+        UPDATE public_top_threes AS previous
+        SET is_homepage = false, revision = previous.revision + 1,
+            updated_by_member_id = ${memberId}::uuid, updated_at = ${updatedAt}
+        WHERE previous.ludo_id = ${ludoId}::uuid AND previous.is_homepage = true
+          AND previous.id <> ${topThreeId}::uuid
+          AND EXISTS (
+            SELECT 1 FROM public_top_threes AS candidate WHERE ${candidatePredicate}
+          )
+        RETURNING previous.id
+      `),
+      db.execute<{ id: string }>(sql`
+        UPDATE public_top_threes AS candidate
+        SET is_homepage = true, revision = candidate.revision + 1,
+            updated_by_member_id = ${memberId}::uuid, updated_at = ${updatedAt}
+        WHERE ${candidatePredicate}
+        RETURNING candidate.id
+      `),
+    ])
+    if (candidate.rows.length === 0 || selected.rows.length === 0) return undefined
+  } catch (error) {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error.code === '23505' || error.code === '23514')
+    ) {
+      return undefined
+    }
+    throw error
+  }
+  return getPublicTopThreeRowForLudo(topThreeId, ludoId)
+}
+
+export async function deselectPublicTopThreeHomepageRow(
+  topThreeId: string,
+  ludoId: string,
+  memberId: string,
+  expectedRevision: number,
+  updatedAt: Date,
+) {
+  const [row] = await db
+    .update(publicTopThrees)
+    .set({
+      isHomepage: false,
+      updatedByMemberId: memberId,
+      updatedAt,
+      revision: sql`${publicTopThrees.revision} + 1`,
+    })
+    .where(
+      and(
+        eq(publicTopThrees.id, topThreeId),
+        eq(publicTopThrees.ludoId, ludoId),
+        eq(publicTopThrees.status, 'published'),
+        eq(publicTopThrees.isHomepage, true),
         eq(publicTopThrees.revision, expectedRevision),
       ),
     )

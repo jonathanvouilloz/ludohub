@@ -202,6 +202,7 @@ const topThreeRow = {
   id: '80000000-0000-4000-8000-000000000001',
   slug: 'jeux-cooperatifs',
   theme: 'Jeux coopératifs',
+  isHomepage: true,
   games: [
     { name: 'Jeu A', description: 'A' },
     { name: 'Jeu B', description: null },
@@ -222,6 +223,7 @@ describe('Top 3 publics', () => {
       id: topThreeRow.id,
       slug: 'jeux-cooperatifs',
       theme: 'Jeux coopératifs',
+      isHomepage: true,
       games: [{ name: 'Jeu A' }, { name: 'Jeu B' }, { name: 'Jeu C' }],
       publishedAt: '2026-08-05T09:00:00.000Z',
     })
@@ -232,6 +234,7 @@ describe('Top 3 publics', () => {
     const result = await getPublicTopThreeDetailByLudoSlug('demo', 'jeux-cooperatifs')
     expect(result?.topThree.games).toHaveLength(3)
     expect(result?.topThree.games[1]).toEqual({ name: 'Jeu B', description: null })
+    expect(result?.topThree.isHomepage).toBe(true)
     expect(result?.topThree).not.toHaveProperty('revision')
   })
 })
