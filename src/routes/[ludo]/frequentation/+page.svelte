@@ -11,26 +11,35 @@
   import CloseSessionDialog from '$lib/components/frequentation/CloseSessionDialog.svelte'
   import SessionList from '$lib/components/frequentation/SessionList.svelte'
   import { formatMonthYear, formatWeekRange, isoWeekKey, toDateString } from '$lib/utils/dates.js'
-  import type { AttendanceRow } from '$lib/server/schema'
+  import type { AttendanceRow, LudoSiteRow } from '$lib/server/schema'
+
+  type AttendanceDisplayRow = AttendanceRow & {
+    siteRecord?: LudoSiteRow | null
+  }
 
   let { data } = $props()
 
   let dialogOpen = $state(false)
-  let editing = $state<AttendanceRow | null>(null)
+  let editing = $state<AttendanceDisplayRow | null>(null)
   let granularity = $state<'mois' | 'semaine'>('mois')
 
   // Filtre par site (ludos multi-sites only). 'all' = tous, SITE_NONE = non réparti.
   const SITE_NONE = '__none__'
   let siteFilter = $state<string>('all')
 
-  const allRecords = $derived(data.records as AttendanceRow[])
+  const allRecords = $derived(data.records as AttendanceDisplayRow[])
   // Au moins une séance non répartie (site null) → propose le filtre « Non réparti ».
-  const hasUnassigned = $derived(allRecords.some((r) => r.site == null))
+  const hasUnassigned = $derived(allRecords.some((r) => r.siteId == null && r.site == null))
   // Séances après application du filtre site (mono-site : pas de filtrage).
-  const records = $derived.by<AttendanceRow[]>(() => {
+  const records = $derived.by<AttendanceDisplayRow[]>(() => {
     if (!data.sites || siteFilter === 'all') return allRecords
-    if (siteFilter === SITE_NONE) return allRecords.filter((r) => r.site == null)
-    return allRecords.filter((r) => r.site === siteFilter)
+    if (siteFilter === SITE_NONE)
+      return allRecords.filter((r) => r.siteId == null && r.site == null)
+    const selected = data.sites.find((site) => site.id === siteFilter)
+    return allRecords.filter(
+      (record) =>
+        record.siteId === siteFilter || (!record.siteId && record.site === selected?.slug),
+    )
   })
   const todayStr = toDateString(new Date())
 
@@ -107,7 +116,7 @@
   // Ouverture directe du dialog depuis le FAB de la bottom bar (`?new=1`).
   consumeNewIntent(openNew)
 
-  function openEdit(record: AttendanceRow) {
+  function openEdit(record: AttendanceDisplayRow) {
     editing = record
     dialogOpen = true
   }
@@ -212,12 +221,12 @@
       >
         Tous
       </button>
-      {#each data.sites as s (s.value)}
+      {#each data.sites as s (s.id)}
         <button
           type="button"
-          class:active={siteFilter === s.value}
-          aria-pressed={siteFilter === s.value}
-          onclick={() => (siteFilter = s.value)}
+          class:active={siteFilter === s.id}
+          aria-pressed={siteFilter === s.id}
+          onclick={() => (siteFilter = s.id)}
         >
           {s.label}
         </button>

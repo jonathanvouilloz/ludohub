@@ -10,8 +10,8 @@ import {
 import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import type { Actions, PageServerLoad } from './$types'
 
-export const load: PageServerLoad = async ({ parent }) => {
-  const { ludo } = await parent()
+export const load: PageServerLoad = async (event) => {
+  const { ludo } = await requireResponsableContext(event)
   const eventTypes = await listTypes(ludo.id)
   return { eventTypes }
 }

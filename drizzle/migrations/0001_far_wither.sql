@@ -1,0 +1,3 @@
+-- Snapshot de référence généré après la migration additive 0000.
+-- Les tables historiques existaient avant l'adoption des migrations SQL versionnées :
+-- aucune instruction n'est rejouée ici afin de ne pas tenter de les recréer.

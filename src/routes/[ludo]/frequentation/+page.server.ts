@@ -10,12 +10,17 @@ import {
 import { getActiveSeasonByLudo, getSeasonsByLudo } from '$lib/server/db/planning.js'
 import { listTypes } from '$lib/server/services/eventTypes.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
-import { getSitesForSlug } from '$lib/server/sites.js'
+import { listActiveSitesByLudo } from '$lib/server/services/sites.js'
+import { toSiteOptions } from '$lib/server/sites.js'
 import type { Actions, PageServerLoad } from './$types'
 
 export const load: PageServerLoad = async ({ parent, url }) => {
   const { ludo } = await parent()
-  const [seasons, eventTypes] = await Promise.all([getSeasonsByLudo(ludo.id), listTypes(ludo.id)])
+  const [seasons, eventTypes, activeSites] = await Promise.all([
+    getSeasonsByLudo(ludo.id),
+    listTypes(ludo.id),
+    listActiveSitesByLudo(ludo.id),
+  ])
 
   // Saison sélectionnée : param `?season=<id>` sinon saison active.
   const paramId = url.searchParams.get('season')
@@ -39,7 +44,7 @@ export const load: PageServerLoad = async ({ parent, url }) => {
   return {
     records,
     // `null` pour les ludos mono-site : l'UI n'affiche ni sélecteur ni filtre site.
-    sites: getSitesForSlug(ludo.slug),
+    sites: activeSites.length > 1 ? toSiteOptions(activeSites) : null,
     eventTypes: eventTypes.map((t) => ({ id: t.id, name: t.name })),
     seasons: seasons.map((s) => ({ id: s.id, name: s.name })),
     season: season
@@ -78,6 +83,7 @@ function parseSessionInput(data: FormData): SessionInput {
     returnsCount: num('returnsCount'),
     weather: weather === '' ? null : weather,
     temperature: temp === '' ? null : Number(temp),
+    siteId: String(data.get('siteId') ?? '') || null,
     site: String(data.get('site') ?? '') || null,
   }
 }
@@ -86,15 +92,13 @@ export const actions: Actions = {
   record: async (event) => {
     const { ludo, member } = await requireLudoContext(event)
     const data = await event.request.formData()
-    return run(() => recordSession(ludo.id, member.id, ludo.slug, parseSessionInput(data)))
+    return run(() => recordSession(ludo.id, member.id, parseSessionInput(data)))
   },
 
   update: async (event) => {
     const { ludo } = await requireLudoContext(event)
     const data = await event.request.formData()
-    return run(() =>
-      updateSession(String(data.get('id') ?? ''), ludo.id, ludo.slug, parseSessionInput(data)),
-    )
+    return run(() => updateSession(String(data.get('id') ?? ''), ludo.id, parseSessionInput(data)))
   },
 
   delete: async (event) => {

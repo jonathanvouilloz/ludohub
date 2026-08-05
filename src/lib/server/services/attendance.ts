@@ -8,8 +8,8 @@ import {
   updateRecord,
 } from '../db/attendance.js'
 import { getEventTypeById } from '../db/eventTypes.js'
-import { getSitesForSlug } from '../sites.js'
-import type { AttendancePeriod, AttendanceRow, WeatherCondition } from '../schema.js'
+import { getSiteByIdForLudo, listActiveSitesByLudo } from './sites.js'
+import type { AttendancePeriod, AttendanceRow, LudoSiteRow, WeatherCondition } from '../schema.js'
 
 /**
  * Erreur métier : message FR destiné à l'utilisateur. Levée par le service,
@@ -40,6 +40,9 @@ export type SessionInput = {
   returnsCount: number
   weather?: string | null
   temperature?: number | null
+  /** UUID du site (contrat courant). */
+  siteId?: string | null
+  /** Slug historique, accepté temporairement pour les anciens clients. */
   site?: string | null
 }
 
@@ -132,15 +135,70 @@ async function resolveEventType(
  * - Ludo multi-site (ex. Pâquis-Sécheron) : le site est **obligatoire** et doit
  *   appartenir à la liste configurée.
  */
-function resolveSite(slug: string, value: string | null | undefined): string | null {
-  const sites = getSitesForSlug(slug)
-  if (!sites) return null
-  const site = value?.trim() || null
-  if (!site || !sites.some((s) => s.value === site)) {
-    const labels = sites.map((s) => s.label).join(' ou ')
+async function resolveSite(
+  ludoId: string,
+  siteIdValue: string | null | undefined,
+  legacySlugValue: string | null | undefined,
+): Promise<{ siteId: string; site: string; includeLegacyNull: boolean }> {
+  const sites = await listActiveSitesByLudo(ludoId)
+  if (sites.length === 0) {
+    throw new AttendanceServiceError('Aucun site actif n’est configuré pour cette ludothèque.')
+  }
+
+  // En mono-site, le site actif est toujours sélectionné côté serveur. Cela garde
+  // les anciens formulaires (qui n'envoient pas de site_id) compatibles.
+  if (sites.length === 1) {
+    return { siteId: sites[0].id, site: sites[0].slug, includeLegacyNull: true }
+  }
+
+  const siteId = siteIdValue?.trim() || null
+  const legacySlug = legacySlugValue?.trim() || null
+  let selected: LudoSiteRow | undefined = siteId
+    ? await getSiteByIdForLudo(siteId, ludoId)
+    : undefined
+
+  // Compatibilité avec l'ancienne app : son champ `site` contient encore le slug.
+  // La nouvelle donnée persistée reste toujours l'UUID.
+  if (!selected && !siteId && legacySlug) {
+    selected = sites.find((candidate) => candidate.slug === legacySlug)
+  }
+  if (!selected || !selected.isActive) {
+    const labels = sites.map((candidate) => candidate.name).join(' ou ')
     throw new AttendanceServiceError(`Choisissez le site (${labels}).`)
   }
-  return site
+  return { siteId: selected.id, site: selected.slug, includeLegacyNull: false }
+}
+
+type ResolvedSite = {
+  siteId: string | null
+  site: string | null
+  includeLegacyNull: boolean
+}
+
+/**
+ * En édition, une absence de choix signifie « conserver le rattachement actuel ».
+ * C'est indispensable pour les séances historiques liées à un site désormais
+ * désactivé : seules les nouvelles sélections sont validées contre les sites actifs.
+ */
+async function resolveSiteForUpdate(
+  record: AttendanceRow,
+  ludoId: string,
+  input: SessionInput,
+): Promise<ResolvedSite> {
+  const hasExplicitChoice = Boolean(input.siteId?.trim() || input.site?.trim())
+  if (!hasExplicitChoice) {
+    const activeSites = await listActiveSitesByLudo(ludoId)
+    const currentIsOnlyActiveSite =
+      activeSites.length === 1 &&
+      (activeSites[0].id === record.siteId ||
+        (!record.siteId && activeSites[0].slug === record.site))
+    return {
+      siteId: record.siteId,
+      site: record.site,
+      includeLegacyNull: record.site == null || currentIsOnlyActiveSite,
+    }
+  }
+  return resolveSite(ludoId, input.siteId, input.site)
 }
 
 /** Charge une séance et vérifie qu'elle appartient bien à la ludo. */
@@ -156,43 +214,64 @@ async function requireRecordInLudo(id: string, ludoId: string): Promise<Attendan
 export async function recordSession(
   ludoId: string,
   memberId: string,
-  slug: string,
   input: SessionInput,
 ): Promise<AttendanceRow> {
   const fields = normalize(input)
-  const site = resolveSite(slug, input.site)
+  const selectedSite = await resolveSite(ludoId, input.siteId, input.site)
+  const { includeLegacyNull, ...siteFields } = selectedSite
   if (
     fields.period !== 'evenement' &&
-    (await existsForSlot(ludoId, fields.date, fields.period, site))
+    (await existsForSlot(
+      ludoId,
+      fields.date,
+      fields.period,
+      selectedSite.siteId,
+      selectedSite.site,
+      includeLegacyNull,
+    ))
   ) {
     throw new AttendanceServiceError(
       'Une séance est déjà clôturée pour cette date et cette période.',
     )
   }
   const resolved = await resolveEventType(ludoId, fields)
-  return insertRecord({ ludoId, closedByMemberId: memberId, site, ...fields, ...resolved })
+  return insertRecord({
+    ludoId,
+    closedByMemberId: memberId,
+    ...siteFields,
+    ...fields,
+    ...resolved,
+  })
 }
 
 /** Corrige une séance existante (compteurs, météo, date, période…). */
 export async function updateSession(
   recordId: string,
   ludoId: string,
-  slug: string,
   input: SessionInput,
 ): Promise<AttendanceRow> {
-  await requireRecordInLudo(recordId, ludoId)
+  const record = await requireRecordInLudo(recordId, ludoId)
   const fields = normalize(input)
-  const site = resolveSite(slug, input.site)
+  const selectedSite = await resolveSiteForUpdate(record, ludoId, input)
+  const { includeLegacyNull, ...siteFields } = selectedSite
   if (
     fields.period !== 'evenement' &&
-    (await existsForSlot(ludoId, fields.date, fields.period, site, recordId))
+    (await existsForSlot(
+      ludoId,
+      fields.date,
+      fields.period,
+      selectedSite.siteId,
+      selectedSite.site,
+      includeLegacyNull,
+      recordId,
+    ))
   ) {
     throw new AttendanceServiceError(
       'Une séance est déjà clôturée pour cette date et cette période.',
     )
   }
   const resolved = await resolveEventType(ludoId, fields)
-  return updateRecord(recordId, { ...fields, ...resolved, site })
+  return updateRecord(recordId, { ...fields, ...resolved, ...siteFields })
 }
 
 /** Supprime une séance (correction d'une saisie erronée). */

@@ -1,4 +1,4 @@
-import { and, eq, gte, isNull, lte } from 'drizzle-orm'
+import { and, eq, gte, isNull, lte, or, type SQL } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   attendanceRecords,
@@ -34,6 +34,7 @@ export async function updateRecord(
       | 'returnsCount'
       | 'weather'
       | 'temperature'
+      | 'siteId'
       | 'site'
     >
   >,
@@ -63,7 +64,7 @@ export async function listByMonth(ludoId: string, year: number, month: number) {
       gte(attendanceRecords.date, start),
       lte(attendanceRecords.date, end),
     ),
-    with: { closedBy: true },
+    with: { closedBy: true, siteRecord: true },
     orderBy: (a, { desc, asc }) => [desc(a.date), asc(a.period)],
   })
 }
@@ -76,7 +77,7 @@ export async function listByDateRange(ludoId: string, start: string, end: string
       gte(attendanceRecords.date, start),
       lte(attendanceRecords.date, end),
     ),
-    with: { closedBy: true },
+    with: { closedBy: true, siteRecord: true },
     orderBy: (a, { desc, asc }) => [desc(a.date), asc(a.period)],
   })
 }
@@ -92,15 +93,26 @@ export async function existsForSlot(
   ludoId: string,
   date: string,
   period: AttendancePeriod,
-  site: string | null,
+  siteId: string | null,
+  legacySite: string | null,
+  includeLegacyNull: boolean,
   excludeId?: string,
 ): Promise<boolean> {
+  const siteConditions: SQL[] = []
+  if (siteId) siteConditions.push(eq(attendanceRecords.siteId, siteId))
+  if (legacySite) siteConditions.push(eq(attendanceRecords.site, legacySite))
+  if (includeLegacyNull) siteConditions.push(isNull(attendanceRecords.site))
+  // Compatibilité défensive pour une ancienne ligne entièrement non répartie.
+  if (siteConditions.length === 0) {
+    siteConditions.push(and(isNull(attendanceRecords.siteId), isNull(attendanceRecords.site))!)
+  }
+
   const existing = await db.query.attendanceRecords.findFirst({
     where: and(
       eq(attendanceRecords.ludoId, ludoId),
       eq(attendanceRecords.date, date),
       eq(attendanceRecords.period, period),
-      site == null ? isNull(attendanceRecords.site) : eq(attendanceRecords.site, site),
+      or(...siteConditions),
     ),
   })
   return existing != null && existing.id !== excludeId

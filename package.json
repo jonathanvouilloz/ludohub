@@ -17,7 +17,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migration/migrate.ts",
     "db:seed": "tsx src/lib/server/db/seed.ts",
+    "db:migrate-sites": "tsx scripts/migration/migrate-sites.ts",
     "db:migrate-ludops": "tsx scripts/migration/migrate-ludops.ts"
   },
   "devDependencies": {

@@ -10,7 +10,11 @@
   import WeatherPicker from './WeatherPicker.svelte'
   import Stepper from './Stepper.svelte'
   import { formatDayMonth } from '$lib/utils/dates.js'
-  import type { AttendanceRow } from '$lib/server/schema'
+  import type { AttendanceRow, LudoSiteRow } from '$lib/server/schema'
+
+  type AttendanceDialogRecord = AttendanceRow & {
+    siteRecord?: LudoSiteRow | null
+  }
 
   let {
     open = $bindable(false),
@@ -21,11 +25,11 @@
   }: {
     open?: boolean
     slug: string
-    record?: AttendanceRow | null
+    record?: AttendanceDialogRecord | null
     eventTypes?: { id: string; name: string }[]
     // Sites physiques pour les ludos multi-sites (ex. Pâquis-Sécheron) ; `null`
     // pour les ludos mono-site → aucun champ site n'est affiché.
-    sites?: { value: string; label: string }[] | null
+    sites?: { id: string; slug: string; label: string }[] | null
   } = $props()
 
   const periodLabels: Record<string, string> = {
@@ -55,11 +59,17 @@
     if (!sites || sites.length === 0) return ''
     try {
       const saved = localStorage.getItem(lastSiteKey)
-      if (saved && sites.some((s) => s.value === saved)) return saved
+      if (saved && sites.some((s) => s.id === saved)) return saved
+      // Migration transparente de l'ancienne valeur slug vers l'UUID.
+      const legacy = sites.find((s) => s.slug === saved)
+      if (legacy) {
+        localStorage.setItem(lastSiteKey, legacy.id)
+        return legacy.id
+      }
     } catch {
-      /* localStorage indisponible (mode privé) : on retombe sur le premier site */
+      /* localStorage indisponible (mode privé) : l'utilisateur choisit explicitement */
     }
-    return sites[0].value
+    return ''
   }
 
   let date = $state('')
@@ -67,7 +77,7 @@
   // Fermée par défaut → la séance est datée du jour.
   let backdating = $state(false)
   let period = $state<string>('matin')
-  let site = $state<string>('')
+  let siteId = $state<string>('')
   let eventLabel = $state('')
   // Choix dans le Select : id d'un type, `TYPE_OTHER`, ou '' (rien choisi).
   let eventTypeChoice = $state('')
@@ -84,9 +94,16 @@
   const isEdit = $derived(record != null)
   const isOther = $derived(eventTypeChoice === TYPE_OTHER)
   // Libellé affiché dans le déclencheur du Select de site.
-  const siteTriggerLabel = $derived(
-    sites?.find((s) => s.value === site)?.label ?? 'Choisir un site',
-  )
+  const siteTriggerLabel = $derived(sites?.find((s) => s.id === siteId)?.label ?? 'Choisir un site')
+  const unavailableRecordSite = $derived.by(() => {
+    if (!record || !sites) return null
+    const activeOption = sites.find(
+      (candidate) =>
+        candidate.id === record.siteId || (!record.siteId && candidate.slug === record.site),
+    )
+    if (activeOption) return null
+    return record.siteRecord?.name ?? record.site ?? 'Site historique'
+  })
   // Libellé affiché dans le déclencheur du Select.
   const typeTriggerLabel = $derived(
     eventTypeChoice === TYPE_OTHER
@@ -131,7 +148,12 @@
       date = record.date
       period = record.period
       // Site existant ; `null` (séance non répartie) → vide → force un choix.
-      site = record.site ?? ''
+      const activeSite = sites?.find(
+        (candidate) =>
+          candidate.id === record.siteId || (!record.siteId && candidate.slug === record.site),
+      )
+      // Une valeur vide conserve côté serveur un rattachement historique non actif.
+      siteId = activeSite?.id ?? ''
       eventLabel = record.eventLabel ?? ''
       // Type connu et toujours actif → on le présélectionne ; sinon « Autre »
       // (le libellé snapshot reste affiché via la saisie libre).
@@ -153,7 +175,7 @@
       date = todayLocal()
       backdating = false
       period = defaultPeriodForNow()
-      site = defaultSite()
+      siteId = defaultSite()
       eventLabel = ''
       // Sans aucun type défini, on bascule directement sur la saisie libre.
       eventTypeChoice = eventTypes.length > 0 ? '' : TYPE_OTHER
@@ -196,9 +218,9 @@
         onError: (m) => (error = m),
         onSuccess: () => {
           // Mémorise le site choisi comme défaut de la prochaine saisie.
-          if (sites && site) {
+          if (sites && siteId) {
             try {
-              localStorage.setItem(lastSiteKey, site)
+              localStorage.setItem(lastSiteKey, siteId)
             } catch {
               /* localStorage indisponible : sans effet */
             }
@@ -236,14 +258,19 @@
         {#if sites}
           <div class="field">
             <Label for="freq-site">Site</Label>
-            <Select.Root type="single" name="site" bind:value={site}>
+            <Select.Root type="single" name="siteId" bind:value={siteId}>
               <Select.Trigger id="freq-site">{siteTriggerLabel}</Select.Trigger>
               <Select.Content>
-                {#each sites as s (s.value)}
-                  <Select.Item value={s.value} label={s.label} />
+                {#each sites as s (s.id)}
+                  <Select.Item value={s.id} label={s.label} />
                 {/each}
               </Select.Content>
             </Select.Root>
+            {#if unavailableRecordSite}
+              <p class="site-note">
+                Site actuel : {unavailableRecordSite} (désactivé). Il sera conservé sans nouveau choix.
+              </p>
+            {/if}
           </div>
         {/if}
 
@@ -363,6 +390,11 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+  .site-note {
+    margin: 0;
+    font-size: var(--text-small);
+    color: var(--text-muted);
   }
   /* Site + Période côte à côte ; pleine largeur si la ludo est mono-site. */
   .field-row {

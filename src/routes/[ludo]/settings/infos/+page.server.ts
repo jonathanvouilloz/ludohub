@@ -23,8 +23,8 @@ function blobToken(): string {
   return token
 }
 
-export const load: PageServerLoad = async ({ parent }) => {
-  const { ludo } = await parent()
+export const load: PageServerLoad = async (event) => {
+  const { ludo } = await requireResponsableContext(event)
   return { ludo }
 }
 

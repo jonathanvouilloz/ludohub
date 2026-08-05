@@ -16,9 +16,9 @@ import { eq } from 'drizzle-orm'
 import { neon } from '@neondatabase/serverless'
 import { drizzle } from 'drizzle-orm/neon-http'
 import { hashPassword } from 'better-auth/crypto'
-import { ludotheques, members, type MemberInsert } from '../schema.js'
+import { ludoSites, ludotheques, members, type MemberInsert } from '../schema.js'
 
-const schema = { ludotheques, members }
+const schema = { ludotheques, ludoSites, members }
 type Db = ReturnType<typeof drizzle<typeof schema>>
 
 type LudoSeed = {
@@ -31,6 +31,16 @@ type LudoSeed = {
   website?: string
   /** Nom du/de la responsable (titre Mme/M. retiré) — devient un membre « responsable ». */
   responsable: string
+  sites?: Array<{
+    slug: string
+    name: string
+    address: string
+    postalCode: string
+    city: string
+    phone?: string
+    email?: string
+    isPrimary?: boolean
+  }>
 }
 
 /** Les 12 ludothèques. Couleurs d'accent distinctes (cf. DESIGN.md / dot réseau). */
@@ -109,22 +119,34 @@ const LUDOS: LudoSeed[] = [
     responsable: 'Nolwenn Pirossetti',
   },
   {
-    name: 'Ludothèque des Pâquis',
-    slug: 'paquis',
+    name: 'Ludothèque Pâquis-Sécheron',
+    slug: 'paquis-secheron',
     color: '#1D3557',
     address: 'Rue de Berne 50, 1201 Genève',
     phone: '+41 22 731 20 09',
     email: 'lu.paquissecheron@fase.ch',
     responsable: 'Alessia Ditta',
-  },
-  {
-    name: 'Ludothèque de Sécheron',
-    slug: 'secheron',
-    color: '#457B9D',
-    address: 'Anne-Torcapel 2, 1202 Genève',
-    phone: '+41 22 731 94 65',
-    email: 'lu.paquissecheron@fase.ch',
-    responsable: 'Alessia Ditta',
+    sites: [
+      {
+        slug: 'paquis',
+        name: 'Pâquis',
+        address: 'Rue de Berne 50',
+        postalCode: '1201',
+        city: 'Genève',
+        phone: '+41 22 731 20 09',
+        email: 'lu.paquissecheron@fase.ch',
+        isPrimary: true,
+      },
+      {
+        slug: 'secheron',
+        name: 'Sécheron',
+        address: 'Anne-Torcapel 2',
+        postalCode: '1202',
+        city: 'Genève',
+        phone: '+41 22 731 94 65',
+        email: 'lu.paquissecheron@fase.ch',
+      },
+    ],
   },
   {
     name: 'Ludothèque Plainpalais-Jonction',
@@ -148,38 +170,64 @@ const LUDOS: LudoSeed[] = [
 ]
 
 async function seedLudo(db: Db, ludo: LudoSeed) {
-  const existing = await db.query.ludotheques.findFirst({
+  let existing = await db.query.ludotheques.findFirst({
     where: eq(ludotheques.slug, ludo.slug),
   })
   if (existing) {
-    console.log(`✓ Ludo « ${ludo.slug} » existe déjà (id ${existing.id}) — skip.`)
-    return
+    console.log(`✓ Ludo « ${ludo.slug} » existe déjà (id ${existing.id}) — conservée.`)
+  } else {
+    const password = `${ludo.slug}2026`
+    const passwordHash = await hashPassword(password)
+    const [created] = await db
+      .insert(ludotheques)
+      .values({
+        name: ludo.name,
+        slug: ludo.slug,
+        passwordHash,
+        color: ludo.color,
+        address: ludo.address,
+        phone: ludo.phone,
+        email: ludo.email,
+        website: ludo.website ?? null,
+        responsible: ludo.responsable,
+      })
+      .returning()
+
+    const membersList: Array<Pick<MemberInsert, 'name' | 'role' | 'isActive'>> = [
+      { name: ludo.responsable, role: 'responsable', isActive: true },
+      { name: 'Bénévole A', role: 'member', isActive: true },
+      { name: 'Bénévole B', role: 'member', isActive: true },
+    ]
+    await db.insert(members).values(membersList.map((m) => ({ ...m, ludoId: created.id })))
+    console.log(`✓ Ludo « ${ludo.slug} » créée (id ${created.id}) — mdp ${password}`)
+    existing = created
   }
 
-  const password = `${ludo.slug}2026`
-  const passwordHash = await hashPassword(password)
-  const [created] = await db
-    .insert(ludotheques)
-    .values({
-      name: ludo.name,
+  const sites = ludo.sites ?? [
+    {
       slug: ludo.slug,
-      passwordHash,
-      color: ludo.color,
-      address: ludo.address,
+      name: ludo.name,
+      address: ludo.address.replace(/,\s*\d{4}\s+.*$/, ''),
+      postalCode: ludo.address.match(/\b\d{4}\b/)?.[0] ?? '',
+      city: 'Genève',
       phone: ludo.phone,
       email: ludo.email,
-      website: ludo.website ?? null,
-      responsible: ludo.responsable,
-    })
-    .returning()
-
-  const membersList: Array<Pick<MemberInsert, 'name' | 'role' | 'isActive'>> = [
-    { name: ludo.responsable, role: 'responsable', isActive: true },
-    { name: 'Bénévole A', role: 'member', isActive: true },
-    { name: 'Bénévole B', role: 'member', isActive: true },
+      isPrimary: true,
+    },
   ]
-  await db.insert(members).values(membersList.map((m) => ({ ...m, ludoId: created.id })))
-  console.log(`✓ Ludo « ${ludo.slug} » créée (id ${created.id}) — mdp ${password}`)
+  for (const [sortOrder, site] of sites.entries()) {
+    const found = await db.query.ludoSites.findFirst({
+      where: (row, { and, eq }) => and(eq(row.ludoId, existing.id), eq(row.slug, site.slug)),
+    })
+    if (found) continue
+    await db.insert(ludoSites).values({
+      ludoId: existing.id,
+      ...site,
+      isPrimary: site.isPrimary ?? false,
+      sortOrder,
+    })
+    console.log(`  ↳ lieu « ${site.slug} » ajouté sans toucher aux autres données.`)
+  }
 }
 
 async function seed() {

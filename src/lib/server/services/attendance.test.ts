@@ -9,6 +9,10 @@ vi.mock('../db/attendance.js', () => ({
   existsForSlot: vi.fn(),
 }))
 vi.mock('../db/eventTypes.js', () => ({ getEventTypeById: vi.fn() }))
+vi.mock('./sites.js', () => ({
+  listActiveSitesByLudo: vi.fn(),
+  getSiteByIdForLudo: vi.fn(),
+}))
 
 import {
   deleteRecord,
@@ -19,6 +23,7 @@ import {
   updateRecord,
 } from '../db/attendance.js'
 import { getEventTypeById } from '../db/eventTypes.js'
+import { getSiteByIdForLudo, listActiveSitesByLudo } from './sites.js'
 import {
   AttendanceServiceError,
   deleteSession,
@@ -31,10 +36,27 @@ import {
 const LUDO = 'ludo-a'
 const MEMBER = 'member-1'
 const RECORD = 'rec-1'
-// Slug mono-site (absent de la config multi-site) → le site est ignoré (null).
-const SLUG = 'ludo-a'
-// Slug multi-site codé en dur (Pâquis-Sécheron) → le site devient obligatoire.
-const MS_SLUG = 'paquis-secheron'
+const SITE_A = {
+  id: 'site-a',
+  ludoId: LUDO,
+  slug: 'principal',
+  name: 'Site principal',
+  isActive: true,
+}
+const SITE_B = {
+  id: 'site-b',
+  ludoId: LUDO,
+  slug: 'annexe',
+  name: 'Annexe',
+  isActive: true,
+}
+const SITE_DISABLED = {
+  id: 'site-disabled',
+  ludoId: LUDO,
+  slug: 'ancienne-annexe',
+  name: 'Ancienne annexe',
+  isActive: false,
+}
 
 function input(overrides: Partial<SessionInput> = {}): SessionInput {
   return {
@@ -56,12 +78,24 @@ beforeEach(() => {
   vi.mocked(existsForSlot).mockResolvedValue(false)
   vi.mocked(insertRecord).mockResolvedValue({ id: RECORD, ludoId: LUDO } as never)
   vi.mocked(updateRecord).mockResolvedValue({ id: RECORD, ludoId: LUDO } as never)
-  vi.mocked(getRecordById).mockResolvedValue({ id: RECORD, ludoId: LUDO } as never)
+  vi.mocked(getRecordById).mockResolvedValue({
+    id: RECORD,
+    ludoId: LUDO,
+    siteId: SITE_A.id,
+    site: SITE_A.slug,
+  } as never)
+  vi.mocked(listActiveSitesByLudo).mockResolvedValue([SITE_A] as never)
+  vi.mocked(getSiteByIdForLudo).mockImplementation(
+    async (id, ludoId) =>
+      ([SITE_A, SITE_B, SITE_DISABLED].find(
+        (site) => site.id === id && site.ludoId === ludoId,
+      ) as never) ?? undefined,
+  )
 })
 
 describe('recordSession', () => {
   it('clôture une séance valide', async () => {
-    await recordSession(LUDO, MEMBER, SLUG, input())
+    await recordSession(LUDO, MEMBER, input())
     expect(insertRecord).toHaveBeenCalledWith(
       expect.objectContaining({
         ludoId: LUDO,
@@ -75,24 +109,32 @@ describe('recordSession', () => {
     )
   })
 
-  it('refuse un doublon (date, matin)', async () => {
+  it('refuse la coexistence avec une ancienne séance mono-site dont site est null', async () => {
     vi.mocked(existsForSlot).mockResolvedValue(true)
-    await expect(recordSession(LUDO, MEMBER, SLUG, input({ period: 'matin' }))).rejects.toThrow(
+    await expect(recordSession(LUDO, MEMBER, input({ period: 'matin' }))).rejects.toThrow(
       AttendanceServiceError,
+    )
+    expect(existsForSlot).toHaveBeenCalledWith(
+      LUDO,
+      '2026-06-18',
+      'matin',
+      SITE_A.id,
+      SITE_A.slug,
+      true,
     )
     expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('autorise deux événements le même jour (pas de contrôle de doublon)', async () => {
-    await recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventLabel: 'Soirée jeux' }))
-    await recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventLabel: 'Parascolaire' }))
+    await recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: 'Soirée jeux' }))
+    await recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: 'Parascolaire' }))
     expect(existsForSlot).not.toHaveBeenCalled()
     expect(insertRecord).toHaveBeenCalledTimes(2)
   })
 
   it('exige un type ou un libellé pour un événement', async () => {
     await expect(
-      recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventLabel: '  ' })),
+      recordSession(LUDO, MEMBER, input({ period: 'evenement', eventLabel: '  ' })),
     ).rejects.toThrow(/libellé/i)
   })
 
@@ -105,7 +147,6 @@ describe('recordSession', () => {
     await recordSession(
       LUDO,
       MEMBER,
-      SLUG,
       input({ period: 'evenement', eventLabel: '', eventTypeId: 'type-1' }),
     )
     expect(insertRecord).toHaveBeenCalledWith(
@@ -117,7 +158,6 @@ describe('recordSession', () => {
     await recordSession(
       LUDO,
       MEMBER,
-      SLUG,
       input({ period: 'evenement', eventLabel: 'Truc spécial', eventTypeId: null }),
     )
     expect(getEventTypeById).not.toHaveBeenCalled()
@@ -133,31 +173,31 @@ describe('recordSession', () => {
       name: 'Externe',
     } as never)
     await expect(
-      recordSession(LUDO, MEMBER, SLUG, input({ period: 'evenement', eventTypeId: 'type-x' })),
+      recordSession(LUDO, MEMBER, input({ period: 'evenement', eventTypeId: 'type-x' })),
     ).rejects.toThrow(AttendanceServiceError)
     expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('force eventLabel à null pour matin/apres_midi', async () => {
-    await recordSession(LUDO, MEMBER, SLUG, input({ period: 'apres_midi', eventLabel: 'ignoré' }))
+    await recordSession(LUDO, MEMBER, input({ period: 'apres_midi', eventLabel: 'ignoré' }))
     expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ eventLabel: null }))
   })
 
   it('refuse un compteur négatif', async () => {
-    await expect(recordSession(LUDO, MEMBER, SLUG, input({ adultsCount: -1 }))).rejects.toThrow(
+    await expect(recordSession(LUDO, MEMBER, input({ adultsCount: -1 }))).rejects.toThrow(
       AttendanceServiceError,
     )
   })
 
   it('accepte une météo/température vides (null)', async () => {
-    await recordSession(LUDO, MEMBER, SLUG, input({ weather: null, temperature: null }))
+    await recordSession(LUDO, MEMBER, input({ weather: null, temperature: null }))
     expect(insertRecord).toHaveBeenCalledWith(
       expect.objectContaining({ weather: null, temperature: null }),
     )
   })
 
   it('accepte une température négative', async () => {
-    await recordSession(LUDO, MEMBER, SLUG, input({ temperature: -4 }))
+    await recordSession(LUDO, MEMBER, input({ temperature: -4 }))
     expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ temperature: -4 }))
   })
 })
@@ -165,42 +205,104 @@ describe('recordSession', () => {
 describe('updateSession', () => {
   it('refuse une séance d’un autre ludo', async () => {
     vi.mocked(getRecordById).mockResolvedValue({ id: RECORD, ludoId: 'ludo-b' } as never)
-    await expect(updateSession(RECORD, LUDO, SLUG, input())).rejects.toThrow(
-      AttendanceServiceError,
-    )
+    await expect(updateSession(RECORD, LUDO, input())).rejects.toThrow(AttendanceServiceError)
     expect(updateRecord).not.toHaveBeenCalled()
   })
 
   it('ignore la séance courante dans le contrôle de doublon', async () => {
-    await updateSession(RECORD, LUDO, SLUG, input())
-    expect(existsForSlot).toHaveBeenCalledWith(LUDO, '2026-06-18', 'matin', null, RECORD)
+    await updateSession(RECORD, LUDO, input())
+    expect(existsForSlot).toHaveBeenCalledWith(
+      LUDO,
+      '2026-06-18',
+      'matin',
+      SITE_A.id,
+      SITE_A.slug,
+      true,
+      RECORD,
+    )
+  })
+
+  it('conserve un site désactivé quand aucun nouveau site n’est choisi', async () => {
+    vi.mocked(getRecordById).mockResolvedValue({
+      id: RECORD,
+      ludoId: LUDO,
+      siteId: SITE_DISABLED.id,
+      site: SITE_DISABLED.slug,
+    } as never)
+    vi.mocked(listActiveSitesByLudo).mockResolvedValue([SITE_A, SITE_B] as never)
+
+    await updateSession(RECORD, LUDO, input())
+
+    expect(getSiteByIdForLudo).not.toHaveBeenCalled()
+    expect(updateRecord).toHaveBeenCalledWith(
+      RECORD,
+      expect.objectContaining({ siteId: SITE_DISABLED.id, site: SITE_DISABLED.slug }),
+    )
+    expect(existsForSlot).toHaveBeenCalledWith(
+      LUDO,
+      '2026-06-18',
+      'matin',
+      SITE_DISABLED.id,
+      SITE_DISABLED.slug,
+      false,
+      RECORD,
+    )
+  })
+
+  it('refuse de sélectionner explicitement un site désactivé', async () => {
+    vi.mocked(listActiveSitesByLudo).mockResolvedValue([SITE_A, SITE_B] as never)
+    await expect(updateSession(RECORD, LUDO, input({ siteId: SITE_DISABLED.id }))).rejects.toThrow(
+      AttendanceServiceError,
+    )
+    expect(updateRecord).not.toHaveBeenCalled()
   })
 })
 
 describe('site (ludo multi-sites)', () => {
+  beforeEach(() => {
+    vi.mocked(listActiveSitesByLudo).mockResolvedValue([SITE_A, SITE_B] as never)
+  })
+
   it('exige un site sur une ludo multi-sites', async () => {
-    await expect(recordSession(LUDO, MEMBER, MS_SLUG, input({ site: null }))).rejects.toThrow(
-      /site/i,
-    )
+    await expect(recordSession(LUDO, MEMBER, input({ siteId: null }))).rejects.toThrow(/site/i)
     expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('refuse un site hors de la liste configurée', async () => {
-    await expect(
-      recordSession(LUDO, MEMBER, MS_SLUG, input({ site: 'lausanne' })),
-    ).rejects.toThrow(AttendanceServiceError)
+    await expect(recordSession(LUDO, MEMBER, input({ siteId: 'site-externe' }))).rejects.toThrow(
+      AttendanceServiceError,
+    )
     expect(insertRecord).not.toHaveBeenCalled()
   })
 
   it('enregistre le site et le passe au contrôle de doublon', async () => {
-    await recordSession(LUDO, MEMBER, MS_SLUG, input({ site: 'secheron' }))
-    expect(existsForSlot).toHaveBeenCalledWith(LUDO, '2026-06-18', 'matin', 'secheron')
-    expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ site: 'secheron' }))
+    await recordSession(LUDO, MEMBER, input({ siteId: SITE_B.id }))
+    expect(existsForSlot).toHaveBeenCalledWith(
+      LUDO,
+      '2026-06-18',
+      'matin',
+      SITE_B.id,
+      SITE_B.slug,
+      false,
+    )
+    expect(insertRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ siteId: SITE_B.id, site: SITE_B.slug }),
+    )
   })
 
-  it('force le site à null sur une ludo mono-site', async () => {
-    await recordSession(LUDO, MEMBER, SLUG, input({ site: 'secheron' }))
-    expect(insertRecord).toHaveBeenCalledWith(expect.objectContaining({ site: null }))
+  it('accepte temporairement le slug envoyé par une ancienne app', async () => {
+    await recordSession(LUDO, MEMBER, input({ site: SITE_B.slug }))
+    expect(insertRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ siteId: SITE_B.id, site: SITE_B.slug }),
+    )
+  })
+
+  it('auto-sélectionne le seul site actif', async () => {
+    vi.mocked(listActiveSitesByLudo).mockResolvedValue([SITE_A] as never)
+    await recordSession(LUDO, MEMBER, input({ site: SITE_B.slug }))
+    expect(insertRecord).toHaveBeenCalledWith(
+      expect.objectContaining({ siteId: SITE_A.id, site: SITE_A.slug }),
+    )
   })
 })
 

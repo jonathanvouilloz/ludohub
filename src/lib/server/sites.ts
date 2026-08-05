@@ -1,36 +1,23 @@
-/**
- * Configuration « en dur » des ludothèques multi-sites.
- *
- * Cas unique et volontairement codé en dur : l'équipe de la ludothèque fusionnée
- * Pâquis-Sécheron opère physiquement sur deux sites mais saisit la fréquentation
- * dans un seul espace membre. On tague donc chaque relevé par site. Aucune autre
- * ludo n'est concernée ; le jour où ce besoin se reproduirait, il suffit d'ajouter
- * une entrée ici (ou de migrer vers une vraie table).
- *
- * Module server-only : importé par le service de fréquentation et le `+page.server.ts`.
- * Le client ne l'importe jamais — la liste `sites` lui est passée via `data` du load.
- */
+import type { AttendanceRow, LudoSiteRow } from './schema.js'
 
-export type SiteOption = { value: string; label: string }
+/** Format sérialisable consommé par l'UI fréquentation. `id` est la valeur canonique. */
+export type SiteOption = { id: string; slug: string; label: string }
 
-const MULTI_SITE: Record<string, SiteOption[]> = {
-  'paquis-secheron': [
-    { value: 'paquis', label: 'Pâquis' },
-    { value: 'secheron', label: 'Sécheron' },
-  ],
-}
-
-/** Liste des sites d'une ludo, ou `null` si elle est mono-site (cas général). */
-export function getSitesForSlug(slug: string): SiteOption[] | null {
-  return MULTI_SITE[slug] ?? null
+export function toSiteOptions(sites: LudoSiteRow[]): SiteOption[] {
+  return sites.map((site) => ({ id: site.id, slug: site.slug, label: site.name }))
 }
 
 /**
- * Libellé d'affichage d'un site pour une ludo donnée.
- * `null` (séance non répartie) → `null` : l'appelant affiche « Non réparti ».
+ * Résout un relevé pendant la transition site texte → site_id.
+ * L'UUID prévaut ; le slug historique reste lisible tant que toutes les lignes
+ * et toutes les anciennes versions de l'app ne sont pas migrées.
  */
-export function siteLabel(slug: string, value: string | null): string | null {
-  if (value == null) return null
-  const sites = MULTI_SITE[slug]
-  return sites?.find((s) => s.value === value)?.label ?? value
+export function attendanceSiteOption(
+  record: Pick<AttendanceRow, 'siteId' | 'site'>,
+  sites: SiteOption[],
+): SiteOption | undefined {
+  return sites.find(
+    (candidate) =>
+      candidate.id === record.siteId || (!record.siteId && candidate.slug === record.site),
+  )
 }

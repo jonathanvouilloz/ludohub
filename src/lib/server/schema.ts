@@ -1,12 +1,16 @@
 import { relations, sql } from 'drizzle-orm'
 import {
   boolean,
+  check,
   date,
+  doublePrecision,
+  foreignKey,
   integer,
   jsonb,
   pgEnum,
   pgTable,
   text,
+  time,
   timestamp,
   unique,
   uniqueIndex,
@@ -89,6 +93,66 @@ export const ludotheques = pgTable('ludotheques', {
   responsible: text('responsible'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 })
+
+/** Lieux physiques d'un espace LudoHub (un lieu par défaut, plusieurs si nécessaire). */
+export const ludoSites = pgTable(
+  'ludo_sites',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    name: text('name').notNull(),
+    address: text('address'),
+    postalCode: text('postal_code'),
+    city: text('city'),
+    phone: text('phone'),
+    email: text('email'),
+    accessInfo: text('access_info'),
+    latitude: doublePrecision('latitude'),
+    longitude: doublePrecision('longitude'),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    isActive: boolean('is_active').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('ludo_sites_ludo_slug_unique').on(t.ludoId, t.slug),
+    unique('ludo_sites_id_ludo_id_unique').on(t.id, t.ludoId),
+    uniqueIndex('ludo_sites_one_active_primary_idx')
+      .on(t.ludoId)
+      .where(sql`${t.isPrimary} = true and ${t.isActive} = true`),
+  ],
+)
+
+/** Horaires hebdomadaires simples. Plusieurs intervalles sont permis le même jour. */
+export const siteOpeningIntervals = pgTable(
+  'site_opening_intervals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    siteId: uuid('site_id').notNull(),
+    dayOfWeek: integer('day_of_week').notNull(),
+    opensAt: time('opens_at', { precision: 0 }).notNull(),
+    closesAt: time('closes_at', { precision: 0 }).notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'site_opening_intervals_site_tenant_fk',
+    }).onDelete('cascade'),
+    unique('site_opening_intervals_slot_unique').on(t.siteId, t.dayOfWeek, t.opensAt, t.closesAt),
+    check('site_opening_intervals_day_check', sql`${t.dayOfWeek} between 1 and 7`),
+    check('site_opening_intervals_time_check', sql`${t.opensAt} < ${t.closesAt}`),
+  ],
+)
 
 export const memberRole = pgEnum('member_role', ['member', 'responsable'])
 
@@ -299,6 +363,8 @@ export const attendanceRecords = pgTable(
     // `src/lib/server/sites.ts`, ex. Pâquis-Sécheron). `null` = ludo mono-site ou
     // séance « non répartie » (historique antérieur à la distinction par site).
     site: text('site'),
+    // Référence normalisée ; `site` reste pendant la fenêtre de dual-read/write.
+    siteId: uuid('site_id'),
     // FK informatif : qui a clôturé la séance. Set null si le membre est supprimé.
     closedByMemberId: uuid('closed_by_member_id').references(() => members.id, {
       onDelete: 'set null',
@@ -315,6 +381,11 @@ export const attendanceRecords = pgTable(
     uniqueIndex('attendance_unique_slot')
       .on(t.ludoId, t.date, t.period, sql`coalesce(${t.site}, '')`)
       .where(sql`${t.period} <> 'evenement'`),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'attendance_records_site_tenant_fk',
+    }).onDelete('restrict'),
   ],
 )
 
@@ -336,6 +407,10 @@ export const eventTypes = pgTable(
 )
 
 export const attendanceRecordsRelations = relations(attendanceRecords, ({ one }) => ({
+  siteRecord: one(ludoSites, {
+    fields: [attendanceRecords.siteId],
+    references: [ludoSites.id],
+  }),
   closedBy: one(members, {
     fields: [attendanceRecords.closedByMemberId],
     references: [members.id],
@@ -343,6 +418,22 @@ export const attendanceRecordsRelations = relations(attendanceRecords, ({ one })
   eventType: one(eventTypes, {
     fields: [attendanceRecords.eventTypeId],
     references: [eventTypes.id],
+  }),
+}))
+
+export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [ludoSites.ludoId],
+    references: [ludotheques.id],
+  }),
+  openingIntervals: many(siteOpeningIntervals),
+  attendanceRecords: many(attendanceRecords),
+}))
+
+export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
+  site: one(ludoSites, {
+    fields: [siteOpeningIntervals.siteId],
+    references: [ludoSites.id],
   }),
 }))
 
@@ -864,6 +955,10 @@ export const campaignSendsRelations = relations(campaignSends, ({ one }) => ({
 
 export type LudothequeRow = typeof ludotheques.$inferSelect
 export type LudothequeInsert = typeof ludotheques.$inferInsert
+export type LudoSiteRow = typeof ludoSites.$inferSelect
+export type LudoSiteInsert = typeof ludoSites.$inferInsert
+export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect
+export type SiteOpeningIntervalInsert = typeof siteOpeningIntervals.$inferInsert
 export type MemberRow = typeof members.$inferSelect
 export type MemberInsert = typeof members.$inferInsert
 export type SeasonRow = typeof seasons.$inferSelect

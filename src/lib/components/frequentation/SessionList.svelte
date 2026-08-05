@@ -9,17 +9,21 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import { formatDateShort, formatDayWeekday } from '$lib/utils/dates.js'
-  import type { AttendanceRow } from '$lib/server/schema'
+  import type { AttendanceRow, LudoSiteRow } from '$lib/server/schema'
+
+  type AttendanceDisplayRow = AttendanceRow & {
+    siteRecord?: LudoSiteRow | null
+  }
 
   let {
     records,
     onEdit,
     sites = null,
   }: {
-    records: AttendanceRow[]
-    onEdit: (record: AttendanceRow) => void
+    records: AttendanceDisplayRow[]
+    onEdit: (record: AttendanceDisplayRow) => void
     // Sites de la ludo (multi-sites) ; `null` → pas de colonne site.
-    sites?: { value: string; label: string }[] | null
+    sites?: { id: string; slug: string; label: string }[] | null
   } = $props()
 
   const periodLabels: Record<string, string> = {
@@ -28,9 +32,13 @@
     evenement: 'Événement',
   }
 
-  function siteText(r: AttendanceRow): string {
+  function siteText(r: AttendanceDisplayRow): string {
     if (!sites) return ''
-    return sites.find((s) => s.value === r.site)?.label ?? 'Non réparti'
+    if (r.siteRecord) return r.siteRecord.name
+    const selected = sites.find(
+      (site) => site.id === r.siteId || (!r.siteId && site.slug === r.site),
+    )
+    return selected?.label ?? r.site ?? 'Non réparti'
   }
   const weatherLabels: Record<string, string> = {
     beau: 'Beau',
@@ -110,7 +118,7 @@
         <Table.Cell>{formatDateShort(r.date)}</Table.Cell>
         <Table.Cell>{periodText(r)}</Table.Cell>
         {#if sites}
-          <Table.Cell class={r.site ? '' : 'muted'}>{siteText(r)}</Table.Cell>
+          <Table.Cell class={r.siteId || r.site ? '' : 'muted'}>{siteText(r)}</Table.Cell>
         {/if}
         <Table.Cell class="num">{r.adultsCount}</Table.Cell>
         <Table.Cell class="num">{r.childrenCount}</Table.Cell>
@@ -134,7 +142,8 @@
         </ul>
       {/snippet}
       <DataCard title={formatDayWeekday(r.date)} spacedFooter notes={counts}>
-        {#snippet byline()}{#if sites}{siteText(r)} · {/if}{periodText(r)} · {weatherText(r)}{/snippet}
+        {#snippet byline()}{#if sites}{siteText(r)} ·
+          {/if}{periodText(r)} · {weatherText(r)}{/snippet}
         {#snippet actions()}{@render rowActions(r)}{/snippet}
       </DataCard>
     {/each}

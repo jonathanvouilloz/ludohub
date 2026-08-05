@@ -1,16 +1,21 @@
 <script lang="ts">
   import { page } from '$app/state'
 
-  let { children } = $props()
+  let { data, children } = $props()
 
   const slug = $derived(page.params.ludo)
   const current = $derived(page.url.pathname)
 
-  type NavItem = { label: string; href: string; disabled?: boolean }
+  type NavItem = { label: string; href: string }
   const items = $derived<NavItem[]>([
-    { label: 'Membres', href: `/${slug}/settings/membres` },
-    { label: "Types d'événement", href: `/${slug}/settings/evenements` },
-    { label: 'Infos ludothèque', href: `/${slug}/settings/infos` },
+    { label: 'Lieux et horaires', href: `/${slug}/settings/lieux-horaires` },
+    ...(data.canEditSettings
+      ? [
+          { label: 'Membres', href: `/${slug}/settings/membres` },
+          { label: "Types d'événement", href: `/${slug}/settings/evenements` },
+          { label: 'Infos ludothèque', href: `/${slug}/settings/infos` },
+        ]
+      : []),
   ])
 </script>
 
@@ -21,18 +26,14 @@
       <ul>
         {#each items as item (item.href)}
           <li>
-            {#if item.disabled}
-              <span class="nav-item nav-item--disabled">{item.label}</span>
-            {:else}
-              <a
-                href={item.href}
-                class="nav-item"
-                class:nav-item--active={current === item.href}
-                aria-current={current === item.href ? 'page' : undefined}
-              >
-                {item.label}
-              </a>
-            {/if}
+            <a
+              href={item.href}
+              class="nav-item"
+              class:nav-item--active={current === item.href}
+              aria-current={current === item.href ? 'page' : undefined}
+            >
+              {item.label}
+            </a>
           </li>
         {/each}
       </ul>
@@ -54,7 +55,6 @@
     gap: var(--space-8);
     align-items: start;
   }
-
   .sidebar-title {
     font-size: var(--text-label);
     font-weight: var(--weight-bold);
@@ -63,7 +63,6 @@
     color: var(--text-muted);
     margin: 0 0 var(--space-3);
   }
-
   nav ul {
     list-style: none;
     margin: 0;
@@ -72,7 +71,6 @@
     flex-direction: column;
     gap: var(--space-1);
   }
-
   .nav-item {
     display: block;
     padding: var(--space-2) var(--space-3);
@@ -93,15 +91,6 @@
   .nav-item--active:hover {
     background: var(--ludo-color);
   }
-  .nav-item--disabled {
-    display: block;
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--text-body);
-    color: var(--text-muted);
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
   @media (max-width: 640px) {
     .settings {
       grid-template-columns: 1fr;
