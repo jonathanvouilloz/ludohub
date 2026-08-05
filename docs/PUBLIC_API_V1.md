@@ -74,3 +74,10 @@ Le détail expose `bodyMarkdown`. LudoHub refuse le HTML brut et les schémas de
 Les listes sont bornées en base et n'exposent ni auteurs, ni clés de stockage, ni futures inscriptions. Le corps `bodyMarkdown` n'apparaît que dans le détail. `lifecycle` vaut `active` ou `archived` ; les brouillons, contenus masqués et éléments en corbeille ne sont jamais publics.
 
 Le payload indique `timeZone: "Europe/Zurich"`. Une liste ne contient qu'un aperçu des trois premières dates et aucun motif d'exception ; le détail porte le calendrier complet, borné à 366 dates et 366 exceptions. Les instants sont renvoyés en ISO-8601 : le consommateur les affiche dans ce fuseau, sans développer lui-même une récurrence. `schedule.type` vaut `one_off`, `recurring` ou `permanent`; une activité permanente n'a ni dates ni exceptions. Une RRULE récurrente est toujours bornée par `COUNT` (maximum 366) ou par `UNTIL` (au plus cinq ans après la première occurrence).
+
+## Top 3
+
+- `GET /api/public/v1/{ludo}/top-threes` retourne les sélections publiées ; `?site={slug}` et `?limit={1..50}` suivent les mêmes règles que les autres listes.
+- `GET /api/public/v1/{ludo}/top-threes/{slug}` retourne une sélection publiée et ses descriptions.
+
+Chaque sélection contient exactement trois jeux saisis directement. La liste ne projette que leur nom ; le détail ajoute la description facultative. Aucun identifiant de catalogue, membre interne, révision ou historique n'est exposé.

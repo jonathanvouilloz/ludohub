@@ -352,6 +352,83 @@ export const publicNewsSites = pgTable(
   ],
 )
 
+export type PublicTopThreeGame = { name: string; description?: string }
+
+/** Sélection éditoriale de trois jeux saisis directement, sans lien au catalogue. */
+export const publicTopThrees = pgTable(
+  'public_top_threes',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull(),
+    theme: text('theme').notNull(),
+    games: jsonb('games').$type<PublicTopThreeGame[]>().notNull(),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_top_threes_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_top_threes_ludo_slug_unique').on(t.ludoId, t.slug),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_top_threes_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_top_threes_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_top_threes_published_by_tenant_fk',
+    }),
+    check(
+      'public_top_threes_publication_state_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published', 'hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check('public_top_threes_slug_check', sql`char_length(${t.slug}) between 1 and 120`),
+    check('public_top_threes_theme_check', sql`char_length(trim(${t.theme})) between 1 and 160`),
+    check(
+      'public_top_threes_games_shape_check',
+      sql`jsonb_typeof(${t.games}) = 'array' and jsonb_array_length(${t.games}) = 3 and not jsonb_path_exists(${t.games}, '$[*] ? (@.type() != "object" || !exists(@.name) || @.name.type() != "string" || (exists(@.description) && @.description.type() != "string"))') and not jsonb_path_exists(${t.games}, '$[*].keyvalue() ? (@.key != "name" && @.key != "description")') and not jsonb_path_exists(${t.games}, '$[*] ? (!(@.name like_regex "^\\\\s*.{0,159}\\\\S\\\\s*$" flag "s") || (exists(@.description) && !(@.description like_regex "^\\\\s*.{0,1999}\\\\S\\\\s*$" flag "s")))')`,
+    ),
+    index('public_top_threes_public_published_idx').on(t.ludoId, t.status, t.publishedAt.desc()),
+  ],
+)
+
+/** Cibles explicites d'un Top 3 ; aucune ligne signifie tous les lieux actifs. */
+export const publicTopThreeSites = pgTable(
+  'public_top_three_sites',
+  {
+    topThreeId: uuid('top_three_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.topThreeId, t.siteId] }),
+    foreignKey({
+      columns: [t.topThreeId, t.ludoId],
+      foreignColumns: [publicTopThrees.id, publicTopThrees.ludoId],
+      name: 'public_top_three_sites_top_three_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_top_three_sites_site_tenant_fk',
+    }),
+  ],
+)
+
 export const publicActivityType = pgEnum('public_activity_type', [
   'one_off',
   'recurring',
@@ -612,6 +689,9 @@ export const membersRelations = relations(members, ({ many }) => ({
   authoredPublicActivities: many(publicActivities, { relationName: 'publicActivityAuthor' }),
   updatedPublicActivities: many(publicActivities, { relationName: 'publicActivityUpdater' }),
   publishedPublicActivities: many(publicActivities, { relationName: 'publicActivityPublisher' }),
+  authoredPublicTopThrees: many(publicTopThrees, { relationName: 'publicTopThreeAuthor' }),
+  updatedPublicTopThrees: many(publicTopThrees, { relationName: 'publicTopThreeUpdater' }),
+  publishedPublicTopThrees: many(publicTopThrees, { relationName: 'publicTopThreePublisher' }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -792,6 +872,7 @@ export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
   publicAnnouncementTargets: many(publicAnnouncementSites),
   publicNewsTargets: many(publicNewsSites),
   publicActivityTargets: many(publicActivitySites),
+  publicTopThreeTargets: many(publicTopThreeSites),
 }))
 
 export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
@@ -872,6 +953,37 @@ export const publicNewsSitesRelations = relations(publicNewsSites, ({ one }) => 
   }),
   site: one(ludoSites, {
     fields: [publicNewsSites.siteId, publicNewsSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+
+export const publicTopThreesRelations = relations(publicTopThrees, ({ one, many }) => ({
+  ludo: one(ludotheques, { fields: [publicTopThrees.ludoId], references: [ludotheques.id] }),
+  author: one(members, {
+    fields: [publicTopThrees.authorMemberId, publicTopThrees.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicTopThreeAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicTopThrees.updatedByMemberId, publicTopThrees.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicTopThreeUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicTopThrees.publishedByMemberId, publicTopThrees.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicTopThreePublisher',
+  }),
+  targets: many(publicTopThreeSites),
+}))
+
+export const publicTopThreeSitesRelations = relations(publicTopThreeSites, ({ one }) => ({
+  topThree: one(publicTopThrees, {
+    fields: [publicTopThreeSites.topThreeId, publicTopThreeSites.ludoId],
+    references: [publicTopThrees.id, publicTopThrees.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicTopThreeSites.siteId, publicTopThreeSites.ludoId],
     references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
@@ -1455,6 +1567,10 @@ export type PublicNewsRow = typeof publicNews.$inferSelect
 export type PublicNewsInsert = typeof publicNews.$inferInsert
 export type PublicNewsSiteRow = typeof publicNewsSites.$inferSelect
 export type PublicNewsSiteInsert = typeof publicNewsSites.$inferInsert
+export type PublicTopThreeRow = typeof publicTopThrees.$inferSelect
+export type PublicTopThreeInsert = typeof publicTopThrees.$inferInsert
+export type PublicTopThreeSiteRow = typeof publicTopThreeSites.$inferSelect
+export type PublicTopThreeSiteInsert = typeof publicTopThreeSites.$inferInsert
 export type PublicActivityRow = typeof publicActivities.$inferSelect
 export type PublicActivityInsert = typeof publicActivities.$inferInsert
 export type PublicActivityType = (typeof publicActivityType.enumValues)[number]

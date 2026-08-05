@@ -43,6 +43,13 @@
       "when": 1785951713392,
       "tag": "0005_public_activities",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785952638298,
+      "tag": "0006_public_top_threes",
+      "breakpoints": true
     }
   ]
 }

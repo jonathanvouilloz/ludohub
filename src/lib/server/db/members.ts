@@ -7,6 +7,7 @@ import {
   publicAnnouncements,
   publicActivities,
   publicNews,
+  publicTopThrees,
   type MemberInsert,
   type MemberRow,
 } from '../schema.js'
@@ -112,5 +113,15 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     ),
     columns: { id: true },
   })
-  return Boolean(activity)
+  if (activity) return true
+
+  const topThree = await db.query.publicTopThrees.findFirst({
+    where: or(
+      eq(publicTopThrees.authorMemberId, id),
+      eq(publicTopThrees.updatedByMemberId, id),
+      eq(publicTopThrees.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  return Boolean(topThree)
 }

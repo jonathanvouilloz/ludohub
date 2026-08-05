@@ -10,6 +10,8 @@ const {
   listVisibleActivities,
   listArchivedActivities,
   getVisibleActivity,
+  listVisibleTopThrees,
+  getVisibleTopThree,
 } = vi.hoisted(() => ({
   getLudoBySlug: vi.fn(),
   isPublicSiteEnabled: vi.fn(),
@@ -20,6 +22,8 @@ const {
   listVisibleActivities: vi.fn(),
   listArchivedActivities: vi.fn(),
   getVisibleActivity: vi.fn(),
+  listVisibleTopThrees: vi.fn(),
+  getVisibleTopThree: vi.fn(),
 }))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
@@ -35,6 +39,10 @@ vi.mock('./public-activities.js', () => ({
   listArchivedPublicActivitySummaries: listArchivedActivities,
   getVisiblePublicActivityBySlug: getVisibleActivity,
 }))
+vi.mock('./public-top-threes.js', () => ({
+  listVisiblePublicTopThreeSummaries: listVisibleTopThrees,
+  getVisiblePublicTopThreeBySlug: getVisibleTopThree,
+}))
 
 import {
   getPublicAnnouncementsByLudoSlug,
@@ -43,6 +51,8 @@ import {
   getArchivedPublicActivitiesByLudoSlug,
   getPublicActivitiesByLudoSlug,
   getPublicActivityDetailByLudoSlug,
+  getPublicTopThreeDetailByLudoSlug,
+  getPublicTopThreesByLudoSlug,
   getPublicSitesByLudoSlug,
 } from './public-api.js'
 
@@ -59,6 +69,46 @@ beforeEach(() => {
   listVisibleActivities.mockResolvedValue([])
   listArchivedActivities.mockResolvedValue([])
   getVisibleActivity.mockResolvedValue(undefined)
+  listVisibleTopThrees.mockResolvedValue([])
+  getVisibleTopThree.mockResolvedValue(undefined)
+})
+
+const topThreeRow = {
+  id: '80000000-0000-4000-8000-000000000001',
+  slug: 'jeux-cooperatifs',
+  theme: 'Jeux coopératifs',
+  games: [
+    { name: 'Jeu A', description: 'A' },
+    { name: 'Jeu B', description: null },
+    { name: 'Jeu C', description: 'C' },
+  ],
+  publishedAt: new Date('2026-08-05T09:00:00.000Z'),
+  targets: [],
+}
+
+describe('Top 3 publics', () => {
+  it('borne la liste en base et projette seulement les noms', async () => {
+    listVisibleTopThrees.mockResolvedValue([
+      { ...topThreeRow, games: topThreeRow.games.map(({ name }) => ({ name })) },
+    ])
+    const result = await getPublicTopThreesByLudoSlug('demo', undefined, 3)
+    expect(listVisibleTopThrees).toHaveBeenCalledWith(ludo.id, undefined, 3)
+    expect(result?.topThrees[0]).toEqual({
+      id: topThreeRow.id,
+      slug: 'jeux-cooperatifs',
+      theme: 'Jeux coopératifs',
+      games: [{ name: 'Jeu A' }, { name: 'Jeu B' }, { name: 'Jeu C' }],
+      publishedAt: '2026-08-05T09:00:00.000Z',
+    })
+  })
+
+  it('expose exactement trois descriptions dans le détail sans relation interne', async () => {
+    getVisibleTopThree.mockResolvedValue(topThreeRow)
+    const result = await getPublicTopThreeDetailByLudoSlug('demo', 'jeux-cooperatifs')
+    expect(result?.topThree.games).toHaveLength(3)
+    expect(result?.topThree.games[1]).toEqual({ name: 'Jeu B', description: null })
+    expect(result?.topThree).not.toHaveProperty('revision')
+  })
 })
 
 const activityRow = {

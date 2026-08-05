@@ -38,6 +38,7 @@
         <a class="content-link" href="/{data.ludo.slug}/site-public/activites"
           >Gérer les activités</a
         >
+        <a class="content-link" href="/{data.ludo.slug}/site-public/top-3">Gérer les Top 3</a>
       </div>
     </section>
   {:else}

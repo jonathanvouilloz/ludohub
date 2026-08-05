@@ -8,6 +8,10 @@ import {
   listArchivedPublicActivitySummaries,
   listVisiblePublicActivitySummaries,
 } from './public-activities.js'
+import {
+  getVisiblePublicTopThreeBySlug,
+  listVisiblePublicTopThreeSummaries,
+} from './public-top-threes.js'
 
 export type PublicOpeningInterval = {
   dayOfWeek: number
@@ -103,6 +107,25 @@ export type PublicActivitiesPayload = {
   site: string | null
   timeZone: 'Europe/Zurich'
   activities: PublicActivitySummaryItem[]
+}
+
+export type PublicTopThreeSummaryItem = {
+  id: string
+  slug: string
+  theme: string
+  games: Array<{ name: string }>
+  publishedAt: string
+}
+
+export type PublicTopThreeItem = Omit<PublicTopThreeSummaryItem, 'games'> & {
+  games: Array<{ name: string; description: string | null }>
+  sites: Array<{ id: string; slug: string; name: string }>
+}
+
+export type PublicTopThreesPayload = {
+  ludo: { slug: string; name: string }
+  site: string | null
+  topThrees: PublicTopThreeSummaryItem[]
 }
 
 function publicTime(value: string): string {
@@ -354,6 +377,63 @@ export async function getPublicActivityDetailByLudoSlug(
           reason: exception.reason,
         })),
       },
+    },
+  }
+}
+
+export async function getPublicTopThreesByLudoSlug(
+  slug: string,
+  siteSlug?: string,
+  limit = 20,
+): Promise<PublicTopThreesPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const rows = await listVisiblePublicTopThreeSummaries(ludo.id, resolvedSite.siteId, limit)
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    topThrees: rows.map((item) => ({
+      id: item.id,
+      slug: item.slug,
+      theme: item.theme,
+      games: item.games,
+      publishedAt: item.publishedAt!.toISOString(),
+    })),
+  }
+}
+
+export async function getPublicTopThreeDetailByLudoSlug(
+  slug: string,
+  topThreeSlug: string,
+  siteSlug?: string,
+): Promise<(Omit<PublicTopThreesPayload, 'topThrees'> & { topThree: PublicTopThreeItem }) | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const item = await getVisiblePublicTopThreeBySlug(ludo.id, topThreeSlug, resolvedSite.siteId)
+  if (!item) return null
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    topThree: {
+      id: item.id,
+      slug: item.slug,
+      theme: item.theme,
+      games: item.games.map((game) => ({
+        name: game.name,
+        description: game.description ?? null,
+      })),
+      publishedAt: item.publishedAt!.toISOString(),
+      sites: item.targets
+        .filter((target) => target.site.isActive)
+        .map((target) => ({
+          id: target.site.id,
+          slug: target.site.slug,
+          name: target.site.name,
+        })),
     },
   }
 }
