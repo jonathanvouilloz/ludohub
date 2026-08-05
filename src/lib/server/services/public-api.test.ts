@@ -15,6 +15,8 @@ const {
   listVisibleFaqs,
   listVisibleDocuments,
   getVisibleDocument,
+  listVisibleGallery,
+  listVisibleProfiles,
 } = vi.hoisted(() => ({
   getLudoBySlug: vi.fn(),
   isPublicSiteEnabled: vi.fn(),
@@ -30,6 +32,8 @@ const {
   listVisibleFaqs: vi.fn(),
   listVisibleDocuments: vi.fn(),
   getVisibleDocument: vi.fn(),
+  listVisibleGallery: vi.fn(),
+  listVisibleProfiles: vi.fn(),
 }))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
@@ -54,6 +58,8 @@ vi.mock('./public-documents.js', () => ({
   listVisiblePublicDocuments: listVisibleDocuments,
   getVisiblePublicDocumentBySlug: getVisibleDocument,
 }))
+vi.mock('./public-gallery.js', () => ({ listVisiblePublicGallery: listVisibleGallery }))
+vi.mock('./public-profiles.js', () => ({ listVisiblePublicProfiles: listVisibleProfiles }))
 
 import {
   getPublicAnnouncementsByLudoSlug,
@@ -67,6 +73,8 @@ import {
   getPublicDocumentDetailByLudoSlug,
   getPublicDocumentsByLudoSlug,
   getPublicFaqsByLudoSlug,
+  getPublicGalleryByLudoSlug,
+  getPublicProfilesByLudoSlug,
   getPublicSitesByLudoSlug,
 } from './public-api.js'
 
@@ -88,6 +96,48 @@ beforeEach(() => {
   listVisibleFaqs.mockResolvedValue([])
   listVisibleDocuments.mockResolvedValue([])
   getVisibleDocument.mockResolvedValue(undefined)
+  listVisibleGallery.mockResolvedValue([])
+  listVisibleProfiles.mockResolvedValue([])
+})
+
+describe('galerie et profils publics', () => {
+  it('projette la galerie sans clé de stockage', async () => {
+    listVisibleGallery.mockResolvedValue([
+      {
+        id: 'b0000000-0000-4000-8000-000000000001',
+        caption: 'Soirée jeux',
+        alt: 'Table de jeux',
+        sortOrder: 2,
+        imageUrl: 'https://blob.test/photo.webp',
+        imageStorageKey: 'secret',
+        publishedAt: new Date('2026-08-05T09:00:00.000Z'),
+      },
+    ])
+    const result = await getPublicGalleryByLudoSlug('demo', undefined, 10)
+    expect(listVisibleGallery).toHaveBeenCalledWith(ludo.id, undefined, 10)
+    expect(result?.images[0]).toMatchObject({ alt: 'Table de jeux', sortOrder: 2 })
+    expect(result?.images[0]).not.toHaveProperty('imageStorageKey')
+  })
+
+  it('sépare équipe et comité sans exposer le membre lié', async () => {
+    listVisibleProfiles.mockResolvedValue([
+      {
+        id: 'c0000000-0000-4000-8000-000000000001',
+        section: 'team',
+        displayName: 'Alice',
+        roleTitle: 'Ludothécaire',
+        bioMarkdown: null,
+        sortOrder: 1,
+        photoUrl: null,
+        photoAlt: null,
+        memberId: 'internal',
+      },
+    ])
+    const result = await getPublicProfilesByLudoSlug('demo', 'team', undefined, 20)
+    expect(listVisibleProfiles).toHaveBeenCalledWith(ludo.id, 'team', undefined, 20)
+    expect(result?.profiles[0]).toMatchObject({ displayName: 'Alice', photo: null })
+    expect(result?.profiles[0]).not.toHaveProperty('memberId')
+  })
 })
 
 describe('FAQ et documents publics', () => {

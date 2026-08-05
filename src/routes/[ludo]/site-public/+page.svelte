@@ -43,6 +43,8 @@
         <a class="content-link" href="/{data.ludo.slug}/site-public/documents"
           >Gérer les documents</a
         >
+        <a class="content-link" href="/{data.ludo.slug}/site-public/galerie">Gérer la galerie</a>
+        <a class="content-link" href="/{data.ludo.slug}/site-public/profils">Gérer les profils</a>
       </div>
     </section>
   {:else}

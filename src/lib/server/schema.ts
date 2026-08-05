@@ -616,6 +616,185 @@ export const publicDocumentSites = pgTable(
   ],
 )
 
+/** Image autonome de galerie publique, sans notion d'album. */
+export const publicGalleryImages = pgTable(
+  'public_gallery_images',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    caption: text('caption'),
+    alt: text('alt'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    imageUrl: text('image_url'),
+    imageStorageKey: text('image_storage_key'),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_gallery_images_id_ludo_id_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_gallery_images_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_gallery_images_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_gallery_images_published_by_tenant_fk',
+    }),
+    check(
+      'public_gallery_images_publication_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published','hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null and ${t.imageStorageKey} is not null and ${t.alt} is not null)`,
+    ),
+    check(
+      'public_gallery_images_caption_check',
+      sql`${t.caption} is null or char_length(trim(${t.caption})) between 1 and 500`,
+    ),
+    check(
+      'public_gallery_images_alt_check',
+      sql`${t.alt} is null or char_length(trim(${t.alt})) between 1 and 300`,
+    ),
+    check('public_gallery_images_sort_check', sql`${t.sortOrder} between 0 and 1000000`),
+    check(
+      'public_gallery_images_file_check',
+      sql`(${t.imageUrl} is null and ${t.imageStorageKey} is null) or (${t.imageUrl} is not null and char_length(trim(${t.imageUrl})) between 1 and 2000 and ${t.imageStorageKey} is not null and char_length(trim(${t.imageStorageKey})) between 1 and 1000)`,
+    ),
+    index('public_gallery_images_public_order_idx').on(t.ludoId, t.status, t.sortOrder, t.id),
+  ],
+)
+
+export const publicGalleryImageSites = pgTable(
+  'public_gallery_image_sites',
+  {
+    imageId: uuid('image_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.imageId, t.siteId] }),
+    foreignKey({
+      columns: [t.imageId, t.ludoId],
+      foreignColumns: [publicGalleryImages.id, publicGalleryImages.ludoId],
+      name: 'public_gallery_image_sites_image_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_gallery_image_sites_site_tenant_fk',
+    }),
+  ],
+)
+
+export const publicProfileSection = pgEnum('public_profile_section', ['team', 'committee'])
+
+/** Profil public éditorial ; le membre lié reste une référence interne optionnelle. */
+export const publicProfiles = pgTable(
+  'public_profiles',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    memberId: uuid('member_id'),
+    section: publicProfileSection('section').notNull(),
+    displayName: text('display_name').notNull(),
+    roleTitle: text('role_title'),
+    bioMarkdown: text('bio_markdown'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    photoUrl: text('photo_url'),
+    photoStorageKey: text('photo_storage_key'),
+    photoAlt: text('photo_alt'),
+    status: publicContentStatus('status').notNull().default('draft'),
+    revision: integer('revision').notNull().default(1),
+    authorMemberId: uuid('author_member_id').notNull(),
+    updatedByMemberId: uuid('updated_by_member_id').notNull(),
+    publishedByMemberId: uuid('published_by_member_id'),
+    publishedAt: timestamp('published_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_profiles_id_ludo_id_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.memberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_profiles_member_tenant_fk',
+    }).onDelete('restrict'),
+    foreignKey({
+      columns: [t.authorMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_profiles_author_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_profiles_updated_by_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_profiles_published_by_tenant_fk',
+    }),
+    check(
+      'public_profiles_publication_check',
+      sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published','hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
+    ),
+    check(
+      'public_profiles_display_name_check',
+      sql`char_length(trim(${t.displayName})) between 1 and 160`,
+    ),
+    check(
+      'public_profiles_role_check',
+      sql`${t.roleTitle} is null or char_length(trim(${t.roleTitle})) between 1 and 200`,
+    ),
+    check(
+      'public_profiles_bio_check',
+      sql`${t.bioMarkdown} is null or char_length(trim(${t.bioMarkdown})) between 1 and 10000`,
+    ),
+    check('public_profiles_sort_check', sql`${t.sortOrder} between 0 and 1000000`),
+    check(
+      'public_profiles_photo_check',
+      sql`(${t.photoUrl} is null and ${t.photoStorageKey} is null and ${t.photoAlt} is null) or (${t.photoUrl} is not null and char_length(trim(${t.photoUrl})) between 1 and 2000 and ${t.photoStorageKey} is not null and char_length(trim(${t.photoStorageKey})) between 1 and 1000 and ${t.photoAlt} is not null and char_length(trim(${t.photoAlt})) between 1 and 300)`,
+    ),
+    index('public_profiles_public_order_idx').on(t.ludoId, t.status, t.section, t.sortOrder, t.id),
+  ],
+)
+
+export const publicProfileSites = pgTable(
+  'public_profile_sites',
+  {
+    profileId: uuid('profile_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.profileId, t.siteId] }),
+    foreignKey({
+      columns: [t.profileId, t.ludoId],
+      foreignColumns: [publicProfiles.id, publicProfiles.ludoId],
+      name: 'public_profile_sites_profile_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'public_profile_sites_site_tenant_fk',
+    }),
+  ],
+)
+
 export const publicActivityType = pgEnum('public_activity_type', [
   'one_off',
   'recurring',
@@ -885,6 +1064,19 @@ export const membersRelations = relations(members, ({ many }) => ({
   authoredPublicDocuments: many(publicDocuments, { relationName: 'publicDocumentAuthor' }),
   updatedPublicDocuments: many(publicDocuments, { relationName: 'publicDocumentUpdater' }),
   publishedPublicDocuments: many(publicDocuments, { relationName: 'publicDocumentPublisher' }),
+  authoredPublicGalleryImages: many(publicGalleryImages, {
+    relationName: 'publicGalleryImageAuthor',
+  }),
+  updatedPublicGalleryImages: many(publicGalleryImages, {
+    relationName: 'publicGalleryImageUpdater',
+  }),
+  publishedPublicGalleryImages: many(publicGalleryImages, {
+    relationName: 'publicGalleryImagePublisher',
+  }),
+  linkedPublicProfiles: many(publicProfiles, { relationName: 'publicProfileMember' }),
+  authoredPublicProfiles: many(publicProfiles, { relationName: 'publicProfileAuthor' }),
+  updatedPublicProfiles: many(publicProfiles, { relationName: 'publicProfileUpdater' }),
+  publishedPublicProfiles: many(publicProfiles, { relationName: 'publicProfilePublisher' }),
 }))
 
 export const seasonsRelations = relations(seasons, ({ many }) => ({
@@ -1068,6 +1260,8 @@ export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
   publicTopThreeTargets: many(publicTopThreeSites),
   publicFaqTargets: many(publicFaqSites),
   publicDocumentTargets: many(publicDocumentSites),
+  publicGalleryImageTargets: many(publicGalleryImageSites),
+  publicProfileTargets: many(publicProfileSites),
 }))
 
 export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
@@ -1241,6 +1435,68 @@ export const publicDocumentSitesRelations = relations(publicDocumentSites, ({ on
   }),
   site: one(ludoSites, {
     fields: [publicDocumentSites.siteId, publicDocumentSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+
+export const publicGalleryImagesRelations = relations(publicGalleryImages, ({ one, many }) => ({
+  author: one(members, {
+    fields: [publicGalleryImages.authorMemberId, publicGalleryImages.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicGalleryImageAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicGalleryImages.updatedByMemberId, publicGalleryImages.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicGalleryImageUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicGalleryImages.publishedByMemberId, publicGalleryImages.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicGalleryImagePublisher',
+  }),
+  targets: many(publicGalleryImageSites),
+}))
+export const publicGalleryImageSitesRelations = relations(publicGalleryImageSites, ({ one }) => ({
+  image: one(publicGalleryImages, {
+    fields: [publicGalleryImageSites.imageId, publicGalleryImageSites.ludoId],
+    references: [publicGalleryImages.id, publicGalleryImages.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicGalleryImageSites.siteId, publicGalleryImageSites.ludoId],
+    references: [ludoSites.id, ludoSites.ludoId],
+  }),
+}))
+export const publicProfilesRelations = relations(publicProfiles, ({ one, many }) => ({
+  member: one(members, {
+    fields: [publicProfiles.memberId, publicProfiles.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicProfileMember',
+  }),
+  author: one(members, {
+    fields: [publicProfiles.authorMemberId, publicProfiles.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicProfileAuthor',
+  }),
+  updatedBy: one(members, {
+    fields: [publicProfiles.updatedByMemberId, publicProfiles.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicProfileUpdater',
+  }),
+  publishedBy: one(members, {
+    fields: [publicProfiles.publishedByMemberId, publicProfiles.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicProfilePublisher',
+  }),
+  targets: many(publicProfileSites),
+}))
+export const publicProfileSitesRelations = relations(publicProfileSites, ({ one }) => ({
+  profile: one(publicProfiles, {
+    fields: [publicProfileSites.profileId, publicProfileSites.ludoId],
+    references: [publicProfiles.id, publicProfiles.ludoId],
+  }),
+  site: one(ludoSites, {
+    fields: [publicProfileSites.siteId, publicProfileSites.ludoId],
     references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
@@ -1833,6 +2089,11 @@ export type PublicFaqInsert = typeof publicFaqs.$inferInsert
 export type PublicDocumentKind = (typeof publicDocumentKind.enumValues)[number]
 export type PublicDocumentRow = typeof publicDocuments.$inferSelect
 export type PublicDocumentInsert = typeof publicDocuments.$inferInsert
+export type PublicGalleryImageRow = typeof publicGalleryImages.$inferSelect
+export type PublicGalleryImageInsert = typeof publicGalleryImages.$inferInsert
+export type PublicProfileSection = (typeof publicProfileSection.enumValues)[number]
+export type PublicProfileRow = typeof publicProfiles.$inferSelect
+export type PublicProfileInsert = typeof publicProfiles.$inferInsert
 export type PublicActivityRow = typeof publicActivities.$inferSelect
 export type PublicActivityInsert = typeof publicActivities.$inferInsert
 export type PublicActivityType = (typeof publicActivityType.enumValues)[number]

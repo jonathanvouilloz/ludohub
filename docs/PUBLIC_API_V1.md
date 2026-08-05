@@ -92,3 +92,11 @@ Chaque sélection contient exactement trois jeux saisis directement. La liste ne
 - `GET /api/public/v1/{ludo}/documents/{slug}` retourne le détail et le texte Markdown éventuel.
 
 Un document est de type `mission`, `statutes`, `annual_report` ou `other`. L'année est présente uniquement pour un rapport annuel. Le contenu comporte un texte, un PDF public ou les deux. L'objet PDF expose uniquement `{ url, fileName }`; la clé de stockage, les auteurs internes et la révision restent privés.
+
+## Galerie
+
+`GET /api/public/v1/{ludo}/gallery` retourne une galerie simple, sans albums, dans l'ordre manuel. `?site={slug}` filtre un lieu actif et `?limit={1..100}` vaut 50 par défaut. Chaque entrée expose uniquement l'image publique, son texte alternatif, sa légende et son ordre.
+
+## Équipe et comité
+
+`GET /api/public/v1/{ludo}/profiles` retourne les profils publics ordonnés. `?section=team|committee` sélectionne une section ; `?site={slug}` et `?limit={1..200}` complètent le filtre. Le lien facultatif vers un membre LudoHub, les auteurs et les clés de stockage ne sont jamais exposés.

@@ -14,6 +14,8 @@ import {
 } from './public-top-threes.js'
 import { listVisiblePublicFaqs } from './public-faqs.js'
 import { getVisiblePublicDocumentBySlug, listVisiblePublicDocuments } from './public-documents.js'
+import { listVisiblePublicGallery } from './public-gallery.js'
+import { listVisiblePublicProfiles } from './public-profiles.js'
 
 export type PublicOpeningInterval = {
   dayOfWeek: number
@@ -164,6 +166,38 @@ export type PublicDocumentsPayload = {
   ludo: { slug: string; name: string }
   site: string | null
   documents: PublicDocumentSummaryItem[]
+}
+
+export type PublicGalleryItem = {
+  id: string
+  caption: string | null
+  alt: string
+  sortOrder: number
+  imageUrl: string
+  publishedAt: string
+}
+
+export type PublicGalleryPayload = {
+  ludo: { slug: string; name: string }
+  site: string | null
+  images: PublicGalleryItem[]
+}
+
+export type PublicProfileItem = {
+  id: string
+  section: 'team' | 'committee'
+  displayName: string
+  roleTitle: string | null
+  bioMarkdown: string | null
+  sortOrder: number
+  photo: { url: string; alt: string } | null
+}
+
+export type PublicProfilesPayload = {
+  ludo: { slug: string; name: string }
+  site: string | null
+  section: 'team' | 'committee' | null
+  profiles: PublicProfileItem[]
 }
 
 function publicTime(value: string): string {
@@ -556,5 +590,59 @@ export async function getPublicDocumentDetailByLudoSlug(
           name: target.site.name,
         })),
     },
+  }
+}
+
+export async function getPublicGalleryByLudoSlug(
+  slug: string,
+  siteSlug?: string,
+  limit = 50,
+): Promise<PublicGalleryPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const rows = await listVisiblePublicGallery(ludo.id, resolvedSite.siteId, limit)
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    images: rows.map((item) => ({
+      id: item.id,
+      caption: item.caption,
+      alt: item.alt!,
+      sortOrder: item.sortOrder,
+      imageUrl: item.imageUrl!,
+      publishedAt: item.publishedAt!.toISOString(),
+    })),
+  }
+}
+
+export async function getPublicProfilesByLudoSlug(
+  slug: string,
+  section?: 'team' | 'committee',
+  siteSlug?: string,
+  limit = 100,
+): Promise<PublicProfilesPayload | null> {
+  const ludo = await getLudoBySlug(slug)
+  if (!ludo || !(await isPublicSiteEnabled(ludo.id))) return null
+  const resolvedSite = await resolvePublicSiteId(ludo.id, siteSlug)
+  if (!resolvedSite) return null
+  const rows = await listVisiblePublicProfiles(ludo.id, section, resolvedSite.siteId, limit)
+  return {
+    ludo: { slug: ludo.slug, name: ludo.name },
+    site: siteSlug ?? null,
+    section: section ?? null,
+    profiles: rows.map((profile) => ({
+      id: profile.id,
+      section: profile.section,
+      displayName: profile.displayName,
+      roleTitle: profile.roleTitle,
+      bioMarkdown: profile.bioMarkdown,
+      sortOrder: profile.sortOrder,
+      photo:
+        profile.photoUrl && profile.photoAlt
+          ? { url: profile.photoUrl, alt: profile.photoAlt }
+          : null,
+    })),
   }
 }

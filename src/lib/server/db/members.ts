@@ -10,6 +10,8 @@ import {
   publicTopThrees,
   publicFaqs,
   publicDocuments,
+  publicGalleryImages,
+  publicProfiles,
   type MemberInsert,
   type MemberRow,
 } from '../schema.js'
@@ -145,5 +147,24 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     ),
     columns: { id: true },
   })
-  return Boolean(document)
+  if (document) return true
+  const gallery = await db.query.publicGalleryImages.findFirst({
+    where: or(
+      eq(publicGalleryImages.authorMemberId, id),
+      eq(publicGalleryImages.updatedByMemberId, id),
+      eq(publicGalleryImages.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  if (gallery) return true
+  const profile = await db.query.publicProfiles.findFirst({
+    where: or(
+      eq(publicProfiles.memberId, id),
+      eq(publicProfiles.authorMemberId, id),
+      eq(publicProfiles.updatedByMemberId, id),
+      eq(publicProfiles.publishedByMemberId, id),
+    ),
+    columns: { id: true },
+  })
+  return Boolean(profile)
 }
