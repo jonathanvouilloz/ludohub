@@ -16,6 +16,15 @@
   let editing = $state<EditableActivity | null>(null)
   let pendingId = $state<string | null>(null)
   let imagePendingId = $state<string | null>(null)
+  let registrationPendingId = $state<string | null>(null)
+  const registrationLabels = {
+    received: 'Reçue',
+    waitlisted: "Liste d'attente",
+    confirmed: 'Confirmée',
+    declined: 'Refusée',
+    cancelled: 'Annulée par l’équipe',
+    archived: 'Archivée',
+  } as const
 
   function openCreate() {
     editing = null
@@ -103,6 +112,41 @@
           </div>
 
           <p class="summary">{item.summary}</p>
+          {#if data.canManageRegistrations && item.lifecycle === 'active'}
+            <form
+              class="registration-settings"
+              method="POST"
+              action="?/registrationSettings"
+              use:enhance={toastEnhance({
+                success: "Réglages d'inscription mis à jour.",
+                onPending: (value) => (registrationPendingId = value ? item.id : null),
+              })}
+            >
+              <input type="hidden" name="id" value={item.id} />
+              <input type="hidden" name="revision" value={item.revision} />
+              <label class="toggle">
+                <input type="checkbox" name="enabled" checked={item.registrationEnabled} />
+                Accepter les inscriptions
+              </label>
+              <label>
+                <span>Capacité indicative</span>
+                <input
+                  type="number"
+                  name="capacity"
+                  min="1"
+                  max="10000"
+                  value={item.registrationCapacity ?? ''}
+                  placeholder="Sans limite"
+                />
+              </label>
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                disabled={registrationPendingId === item.id}>Enregistrer</Button
+              >
+            </form>
+          {/if}
           {#if item.imageUrl}<img
               class="cover"
               src={item.imageUrl}
@@ -307,6 +351,114 @@
     </div>
   {/if}
 
+  {#if data.canManageRegistrations}
+    <section class="registrations" aria-labelledby="registrations-title">
+      <header class="registrations-head">
+        <div>
+          <p class="eyebrow">Gestion interne</p>
+          <h2 id="registrations-title">Inscriptions reçues</h2>
+          <p class="intro">Les coordonnées sont privées et visibles uniquement ici.</p>
+        </div>
+        <form method="GET" class="registration-filters">
+          <label>
+            <span>Activité</span>
+            <select name="registrationActivity">
+              <option value="">Toutes</option>
+              {#each data.activities as activity}
+                <option
+                  value={activity.id}
+                  selected={data.registrationFilters.activityId === activity.id}
+                  >{activity.title}</option
+                >
+              {/each}
+            </select>
+          </label>
+          <label>
+            <span>Statut</span>
+            <select name="registrationStatus">
+              <option value="">Tous</option>
+              {#each Object.entries(registrationLabels) as [value, label]}
+                <option {value} selected={data.registrationFilters.status === value}>{label}</option
+                >
+              {/each}
+            </select>
+          </label>
+          <Button type="submit" size="sm" variant="outline">Filtrer</Button>
+        </form>
+      </header>
+
+      {#if data.registrations.length === 0}
+        <p class="empty-registrations">Aucune inscription pour ces filtres.</p>
+      {:else}
+        <div class="registration-list">
+          {#each data.registrations as registration (registration.id)}
+            <article class="registration-card">
+              <details>
+                <summary>
+                  <span>
+                    <strong>{registration.activity.title}</strong>
+                    <small
+                      >{registration.participantCount} participant{registration.participantCount > 1
+                        ? 's'
+                        : ''} · {new Date(registration.createdAt).toLocaleString('fr-CH')}</small
+                    >
+                  </span>
+                  <Badge variant={registration.status === 'waitlisted' ? 'warning' : 'secondary'}
+                    >{registrationLabels[registration.status]}</Badge
+                  >
+                </summary>
+                <div class="registration-detail">
+                  <dl>
+                    <div>
+                      <dt>Nom</dt>
+                      <dd>{registration.contactName}</dd>
+                    </div>
+                    <div>
+                      <dt>E-mail</dt>
+                      <dd><a href={`mailto:${registration.email}`}>{registration.email}</a></dd>
+                    </div>
+                    {#if registration.phone}
+                      <div>
+                        <dt>Téléphone</dt>
+                        <dd><a href={`tel:${registration.phone}`}>{registration.phone}</a></dd>
+                      </div>
+                    {/if}
+                  </dl>
+                  {#if registration.message}
+                    <p class="registration-message">{registration.message}</p>
+                  {/if}
+                </div>
+              </details>
+              <form
+                class="status-form"
+                method="POST"
+                action="?/registrationStatus"
+                use:enhance={toastEnhance({
+                  success: "Statut de l'inscription mis à jour.",
+                  onPending: (value) => (registrationPendingId = value ? registration.id : null),
+                })}
+              >
+                <input type="hidden" name="id" value={registration.id} />
+                <input type="hidden" name="revision" value={registration.revision} />
+                <label>
+                  <span>Nouveau statut</span>
+                  <select name="status" disabled={registrationPendingId === registration.id}>
+                    {#each Object.entries(registrationLabels) as [value, label]}
+                      <option {value} selected={registration.status === value}>{label}</option>
+                    {/each}
+                  </select>
+                </label>
+                <Button type="submit" size="sm" disabled={registrationPendingId === registration.id}
+                  >Appliquer</Button
+                >
+              </form>
+            </article>
+          {/each}
+        </div>
+      {/if}
+    </section>
+  {/if}
+
   <ActivityDialog bind:open={dialogOpen} activity={editing} sites={data.sites} />
 </main>
 
@@ -409,6 +561,105 @@
     padding-top: var(--space-3);
     border-top: 1px solid var(--border);
   }
+  .registration-settings,
+  .registration-filters,
+  .status-form {
+    display: flex;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .registration-settings {
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    background: var(--bg-muted);
+  }
+  .registration-settings label,
+  .registration-filters label,
+  .status-form label {
+    display: grid;
+    gap: var(--space-1);
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+  .registration-settings .toggle {
+    display: flex;
+    align-items: center;
+  }
+  .registration-settings input[type='number'],
+  .registration-filters select,
+  .status-form select {
+    min-height: 40px;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-main);
+  }
+  .registrations {
+    display: grid;
+    gap: var(--space-4);
+    margin-top: var(--space-8);
+    padding-top: var(--space-6);
+    border-top: 1px solid var(--border);
+  }
+  .registrations-head,
+  .registration-card summary,
+  .registration-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+  .registration-list {
+    display: grid;
+    gap: var(--space-3);
+  }
+  .registration-card {
+    align-items: flex-end;
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+  }
+  .registration-card details {
+    flex: 1;
+  }
+  .registration-card summary {
+    cursor: pointer;
+  }
+  .registration-card summary span {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .registration-card small,
+  .empty-registrations {
+    color: var(--text-muted);
+  }
+  .registration-detail {
+    display: grid;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+  }
+  .registration-detail dl {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-5);
+    margin: 0;
+  }
+  .registration-detail dt {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+  .registration-detail dd {
+    margin: 0;
+  }
+  .registration-message {
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--bg-muted);
+    white-space: pre-wrap;
+  }
   .controls form,
   .lifecycle form,
   .feature {
@@ -462,6 +713,14 @@
     .lifecycle,
     .image-editor,
     .image-editor form:first-child {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .registrations-head,
+    .registration-card,
+    .registration-filters,
+    .status-form,
+    .registration-settings {
       align-items: stretch;
       flex-direction: column;
     }

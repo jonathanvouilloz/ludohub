@@ -14,6 +14,7 @@ import {
   publicProfiles,
   publicDirectoryEntries,
   publicContactMessages,
+  publicActivityRegistrations,
   type MemberInsert,
   type MemberRow,
 } from '../schema.js'
@@ -182,5 +183,10 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
     where: eq(publicContactMessages.handledByMemberId, id),
     columns: { id: true },
   })
-  return Boolean(contact)
+  if (contact) return true
+  const registration = await db.query.publicActivityRegistrations.findFirst({
+    where: eq(publicActivityRegistrations.handledByMemberId, id),
+    columns: { id: true },
+  })
+  return Boolean(registration)
 }

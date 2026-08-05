@@ -43,6 +43,8 @@ const publicColumns = {
   imageAlt: true,
   lifecycle: true,
   featuredRank: true,
+  registrationEnabled: true,
+  registrationCapacity: true,
   publishedAt: true,
 } as const
 

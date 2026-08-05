@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('$lib/server/ludo-context.js', () => ({ requireLudoContext: vi.fn() }))
+vi.mock('$lib/server/ludo-context.js', () => ({
+  requireLudoContext: vi.fn(),
+  requireResponsableContext: vi.fn(),
+}))
 vi.mock('$lib/server/db/sites.js', () => ({ listSiteRowsWithOpeningHours: vi.fn() }))
 vi.mock('$lib/server/services/events.js', () => ({ emitAuditEvent: vi.fn() }))
 vi.mock('$lib/server/media/blob-storage.js', () => {
@@ -35,8 +38,24 @@ vi.mock('$lib/server/services/public-activities.js', () => {
     clearPublicActivityImage: vi.fn(),
   }
 })
+vi.mock('$lib/server/services/public-activity-registrations.js', () => {
+  class PublicActivityRegistrationServiceError extends Error {
+    constructor(
+      message: string,
+      public readonly code: 'invalid' | 'not_found' | 'conflict' = 'invalid',
+    ) {
+      super(message)
+    }
+  }
+  return {
+    PublicActivityRegistrationServiceError,
+    listPublicActivityRegistrationsForManagement: vi.fn(),
+    transitionPublicActivityRegistration: vi.fn(),
+    updatePublicActivityRegistrationSettings: vi.fn(),
+  }
+})
 
-import { requireLudoContext } from '$lib/server/ludo-context.js'
+import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import { deletePublicSiteMedia, uploadPublicSiteMedia } from '$lib/server/media/blob-storage.js'
@@ -57,6 +76,11 @@ import {
   updatePublicActivity,
 } from '$lib/server/services/public-activities.js'
 import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
+import {
+  listPublicActivityRegistrationsForManagement,
+  transitionPublicActivityRegistration,
+  updatePublicActivityRegistrationSettings,
+} from '$lib/server/services/public-activity-registrations.js'
 import { actions, load } from './+page.server.js'
 
 const LUDO_ID = '11111111-1111-4111-8111-111111111111'
@@ -84,6 +108,7 @@ function event(fields: Array<[string, string | File]> = []) {
     locals: {},
     cookies: {},
     request: new Request('http://local.test', { method: 'POST', body: data }),
+    url: new URL('http://local.test'),
   }
 }
 
@@ -106,13 +131,26 @@ beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(requireLudoContext).mockResolvedValue({
     ludo: { id: LUDO_ID },
-    member: { id: MEMBER_ID, isActive: true },
+    member: { id: MEMBER_ID, isActive: true, role: 'responsable' },
+  } as never)
+  vi.mocked(requireResponsableContext).mockResolvedValue({
+    ludo: { id: LUDO_ID },
+    member: { id: MEMBER_ID, isActive: true, role: 'responsable' },
   } as never)
   vi.mocked(isPublicSiteEnabled).mockResolvedValue(true)
   vi.mocked(listPublicActivitiesForManagement).mockResolvedValue([activity] as never)
   vi.mocked(listSiteRowsWithOpeningHours).mockResolvedValue([
     { id: SITE_ID, isActive: true },
   ] as never)
+  vi.mocked(listPublicActivityRegistrationsForManagement).mockResolvedValue([])
+  vi.mocked(updatePublicActivityRegistrationSettings).mockResolvedValue({
+    activity,
+    changed: true,
+  } as never)
+  vi.mocked(transitionPublicActivityRegistration).mockResolvedValue({
+    registration: { id: '55555555-5555-4555-8555-555555555555' },
+    changed: true,
+  } as never)
   vi.mocked(createPublicActivity).mockResolvedValue(activity as never)
   vi.mocked(updatePublicActivity).mockResolvedValue(activity as never)
   vi.mocked(getPublicActivity).mockResolvedValue(activity as never)
@@ -158,6 +196,64 @@ beforeEach(() => {
 })
 
 describe('gestion des activités publiques', () => {
+  it('charge les inscriptions filtrées uniquement pour un responsable', async () => {
+    const value = event()
+    value.url = new URL(
+      `http://local.test?registrationStatus=waitlisted&registrationActivity=${ACTIVITY_ID}`,
+    )
+    const result = (await load(value as never)) as Record<string, unknown>
+    expect(result.canManageRegistrations).toBe(true)
+    expect(listPublicActivityRegistrationsForManagement).toHaveBeenCalledWith(
+      LUDO_ID,
+      'waitlisted',
+      ACTIVITY_ID,
+    )
+  })
+
+  it('ne charge aucune donnée personnelle pour un membre non responsable', async () => {
+    vi.mocked(requireLudoContext).mockResolvedValueOnce({
+      ludo: { id: LUDO_ID },
+      member: { id: MEMBER_ID, isActive: true, role: 'member' },
+    } as never)
+    const result = (await load(event() as never)) as Record<string, unknown>
+    expect(result.canManageRegistrations).toBe(false)
+    expect(result.registrations).toEqual([])
+    expect(listPublicActivityRegistrationsForManagement).not.toHaveBeenCalled()
+  })
+
+  it('réserve réglages et transitions au contexte responsable avec CAS', async () => {
+    await actions.registrationSettings!(
+      event([
+        ['id', ACTIVITY_ID],
+        ['revision', '4'],
+        ['enabled', 'on'],
+        ['capacity', '18'],
+      ]) as never,
+    )
+    expect(requireResponsableContext).toHaveBeenCalled()
+    expect(updatePublicActivityRegistrationSettings).toHaveBeenCalledWith(
+      ACTIVITY_ID,
+      LUDO_ID,
+      MEMBER_ID,
+      { enabled: true, capacity: 18 },
+      4,
+    )
+
+    await actions.registrationStatus!(
+      event([
+        ['id', '55555555-5555-4555-8555-555555555555'],
+        ['revision', '2'],
+        ['status', 'confirmed'],
+      ]) as never,
+    )
+    expect(transitionPublicActivityRegistration).toHaveBeenCalledWith(
+      '55555555-5555-4555-8555-555555555555',
+      LUDO_ID,
+      'confirmed',
+      MEMBER_ID,
+      2,
+    )
+  })
   it('charge les activités et tous les lieux du tenant', async () => {
     await expect(load(event() as never)).resolves.toMatchObject({ activities: [activity] })
     expect(listPublicActivitiesForManagement).toHaveBeenCalledWith(LUDO_ID)

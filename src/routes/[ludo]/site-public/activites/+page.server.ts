@@ -1,5 +1,5 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit'
-import { requireLudoContext } from '$lib/server/ludo-context.js'
+import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
 import { parseZurichDateTimeLocal, ZurichDateTimeError } from '$lib/server/zurich-datetime.js'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import {
@@ -33,6 +33,13 @@ import {
   updatePublicActivity,
 } from '$lib/server/services/public-activities.js'
 import { isPublicSiteEnabled, PublicSiteServiceError } from '$lib/server/services/public-site.js'
+import {
+  listPublicActivityRegistrationsForManagement,
+  PublicActivityRegistrationServiceError,
+  transitionPublicActivityRegistration,
+  updatePublicActivityRegistrationSettings,
+} from '$lib/server/services/public-activity-registrations.js'
+import type { PublicActivityRegistrationStatus } from '$lib/server/schema.js'
 import type { Actions, PageServerLoad } from './$types'
 
 async function requireActivityContext(event: RequestEvent) {
@@ -155,10 +162,16 @@ async function run(action: () => Promise<unknown>) {
   } catch (cause) {
     if (
       cause instanceof PublicActivityServiceError ||
+      cause instanceof PublicActivityRegistrationServiceError ||
       cause instanceof PublicSiteServiceError ||
       cause instanceof MediaStorageError
     ) {
-      return fail(400, { error: cause.message })
+      return fail(
+        cause instanceof PublicActivityRegistrationServiceError && cause.code === 'conflict'
+          ? 409
+          : 400,
+        { error: cause.message },
+      )
     }
     if (cause instanceof MediaCompensationError) return fail(500, { error: cause.message })
     throw cause
@@ -211,15 +224,83 @@ async function cleanupStoredImage(input: {
 }
 
 export const load: PageServerLoad = async (event) => {
-  const { ludo } = await requireActivityContext(event)
+  const { ludo, member } = await requireActivityContext(event)
+  const canManageRegistrations = member.role === 'responsable'
+  const requestedStatus = event.url?.searchParams.get('registrationStatus') ?? ''
+  const status = [
+    'received',
+    'waitlisted',
+    'confirmed',
+    'declined',
+    'cancelled',
+    'archived',
+  ].includes(requestedStatus)
+    ? (requestedStatus as PublicActivityRegistrationStatus)
+    : undefined
+  const activityId = event.url?.searchParams.get('registrationActivity') || undefined
   const [activities, sites] = await Promise.all([
     listPublicActivitiesForManagement(ludo.id),
     listSiteRowsWithOpeningHours(ludo.id),
   ])
-  return { activities, sites }
+  const registrations = canManageRegistrations
+    ? await listPublicActivityRegistrationsForManagement(ludo.id, status, activityId)
+    : []
+  return {
+    activities,
+    sites,
+    registrations,
+    canManageRegistrations,
+    registrationFilters: { status: status ?? '', activityId: activityId ?? '' },
+  }
 }
 
 export const actions: Actions = {
+  registrationSettings: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    if (!(await isPublicSiteEnabled(ludo.id))) throw error(404, 'Module indisponible')
+    const data = await event.request.formData()
+    return run(async () => {
+      const rawCapacity = String(data.get('capacity') ?? '').trim()
+      await updatePublicActivityRegistrationSettings(
+        String(data.get('id') ?? ''),
+        ludo.id,
+        member.id,
+        {
+          enabled: data.get('enabled') === 'on',
+          capacity: rawCapacity === '' ? null : Number(rawCapacity),
+        },
+        parseRevision(data),
+      )
+      return { success: true }
+    })
+  },
+
+  registrationStatus: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    if (!(await isPublicSiteEnabled(ludo.id))) throw error(404, 'Module indisponible')
+    const data = await event.request.formData()
+    return run(async () => {
+      const status = data.get('status')
+      if (
+        status !== 'received' &&
+        status !== 'waitlisted' &&
+        status !== 'confirmed' &&
+        status !== 'declined' &&
+        status !== 'cancelled' &&
+        status !== 'archived'
+      )
+        throw new PublicActivityRegistrationServiceError("Statut d'inscription invalide.")
+      await transitionPublicActivityRegistration(
+        String(data.get('id') ?? ''),
+        ludo.id,
+        status,
+        member.id,
+        parseRevision(data),
+      )
+      return { success: true }
+    })
+  },
+
   create: async (event) => {
     const { ludo, member } = await requireActivityContext(event)
     const data = await event.request.formData()

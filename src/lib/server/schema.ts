@@ -974,6 +974,8 @@ export const publicActivities = pgTable(
     status: publicContentStatus('status').notNull().default('draft'),
     lifecycle: publicActivityLifecycle('lifecycle').notNull().default('active'),
     featuredRank: integer('featured_rank'),
+    registrationEnabled: boolean('registration_enabled').notNull().default(false),
+    registrationCapacity: integer('registration_capacity'),
     revision: integer('revision').notNull().default(1),
     authorMemberId: uuid('author_member_id').notNull(),
     updatedByMemberId: uuid('updated_by_member_id').notNull(),
@@ -1020,6 +1022,10 @@ export const publicActivities = pgTable(
     check(
       'public_activities_featured_rank_check',
       sql`${t.featuredRank} is null or (${t.featuredRank} between 1 and 3 and ${t.status} = 'published' and ${t.lifecycle} = 'active')`,
+    ),
+    check(
+      'public_activities_registration_capacity_check',
+      sql`${t.registrationCapacity} is null or ${t.registrationCapacity} between 1 and 10000`,
     ),
     check('public_activities_slug_check', sql`char_length(${t.slug}) between 1 and 120`),
     check('public_activities_title_check', sql`char_length(trim(${t.title})) between 1 and 180`),
@@ -1099,6 +1105,152 @@ export const publicActivityExceptions = pgTable(
       'public_activity_exceptions_reason_check',
       sql`${t.reason} is null or char_length(trim(${t.reason})) between 1 and 500`,
     ),
+  ],
+)
+
+export const publicActivityRegistrationStatus = pgEnum('public_activity_registration_status', [
+  'received',
+  'waitlisted',
+  'confirmed',
+  'declined',
+  'cancelled',
+  'archived',
+])
+
+/** Inscriptions publiques privées : aucune projection publique ne doit exposer ces PII. */
+export const publicActivityRegistrations = pgTable(
+  'public_activity_registrations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    activityId: uuid('activity_id').notNull(),
+    idempotencyKeyHash: text('idempotency_key_hash').notNull(),
+    requestFingerprint: text('request_fingerprint').notNull(),
+    contactName: text('contact_name').notNull(),
+    email: text('email').notNull(),
+    phone: text('phone'),
+    participantCount: integer('participant_count').notNull(),
+    message: text('message'),
+    status: publicActivityRegistrationStatus('status').notNull().default('received'),
+    receiptStatus: publicActivityRegistrationStatus('receipt_status').notNull().default('received'),
+    revision: integer('revision').notNull().default(1),
+    handledByMemberId: uuid('handled_by_member_id'),
+    handledAt: timestamp('handled_at'),
+    archivedAt: timestamp('archived_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_activity_registrations_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_activity_registrations_ludo_idempotency_unique').on(
+      t.ludoId,
+      t.idempotencyKeyHash,
+    ),
+    foreignKey({
+      columns: [t.activityId, t.ludoId],
+      foreignColumns: [publicActivities.id, publicActivities.ludoId],
+      name: 'public_activity_registrations_activity_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.handledByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_activity_registrations_handler_tenant_fk',
+    }),
+    check(
+      'public_activity_registrations_hash_check',
+      sql`char_length(${t.idempotencyKeyHash}) = 64`,
+    ),
+    check(
+      'public_activity_registrations_fingerprint_check',
+      sql`char_length(${t.requestFingerprint}) = 64`,
+    ),
+    check(
+      'public_activity_registrations_name_check',
+      sql`char_length(trim(${t.contactName})) between 1 and 160`,
+    ),
+    check(
+      'public_activity_registrations_email_check',
+      sql`char_length(trim(${t.email})) between 3 and 320`,
+    ),
+    check(
+      'public_activity_registrations_phone_check',
+      sql`${t.phone} is null or char_length(trim(${t.phone})) between 3 and 50`,
+    ),
+    check(
+      'public_activity_registrations_participant_count_check',
+      sql`${t.participantCount} between 1 and 50`,
+    ),
+    check(
+      'public_activity_registrations_message_check',
+      sql`${t.message} is null or char_length(trim(${t.message})) between 1 and 2000`,
+    ),
+    check(
+      'public_activity_registrations_handling_check',
+      sql`(${t.handledByMemberId} is null and ${t.handledAt} is null) or (${t.handledByMemberId} is not null and ${t.handledAt} is not null)`,
+    ),
+    check(
+      'public_activity_registrations_archive_check',
+      sql`(${t.status} = 'archived' and ${t.archivedAt} is not null and ${t.handledByMemberId} is not null) or (${t.status} <> 'archived' and ${t.archivedAt} is null)`,
+    ),
+    check(
+      'public_activity_registrations_receipt_status_check',
+      sql`${t.receiptStatus} in ('received', 'waitlisted')`,
+    ),
+    index('public_activity_registrations_management_idx').on(
+      t.ludoId,
+      t.activityId,
+      t.status,
+      t.createdAt.desc(),
+    ),
+  ],
+)
+
+export const publicActivityRegistrationOutboxStatus = pgEnum(
+  'public_activity_registration_outbox_status',
+  ['pending', 'sent', 'failed', 'cancelled'],
+)
+
+/** File interne uniquement ; aucun worker d'envoi n'est activé dans ce lot. */
+export const publicActivityRegistrationOutbox = pgTable(
+  'public_activity_registration_outbox',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    registrationId: uuid('registration_id').notNull(),
+    kind: text('kind').notNull().default('receipt'),
+    recipientEmail: text('recipient_email').notNull(),
+    status: publicActivityRegistrationOutboxStatus('status').notNull().default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    lastErrorCode: text('last_error_code'),
+    sentAt: timestamp('sent_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_activity_registration_outbox_registration_kind_unique').on(
+      t.registrationId,
+      t.kind,
+    ),
+    foreignKey({
+      columns: [t.registrationId, t.ludoId],
+      foreignColumns: [publicActivityRegistrations.id, publicActivityRegistrations.ludoId],
+      name: 'public_activity_registration_outbox_registration_tenant_fk',
+    }).onDelete('cascade'),
+    check('public_activity_registration_outbox_kind_check', sql`${t.kind} = 'receipt'`),
+    check(
+      'public_activity_registration_outbox_recipient_check',
+      sql`char_length(trim(${t.recipientEmail})) between 3 and 320`,
+    ),
+    check('public_activity_registration_outbox_attempts_check', sql`${t.attempts} >= 0`),
+    check(
+      'public_activity_registration_outbox_state_check',
+      sql`(${t.status} = 'sent' and ${t.sentAt} is not null) or (${t.status} <> 'sent' and ${t.sentAt} is null)`,
+    ),
+    index('public_activity_registration_outbox_pending_idx').on(t.status, t.createdAt),
   ],
 )
 
@@ -1234,6 +1386,9 @@ export const membersRelations = relations(members, ({ many }) => ({
   }),
   handledPublicContactMessages: many(publicContactMessages, {
     relationName: 'publicContactHandler',
+  }),
+  handledPublicActivityRegistrations: many(publicActivityRegistrations, {
+    relationName: 'publicActivityRegistrationHandler',
   }),
 }))
 
@@ -1706,6 +1861,7 @@ export const publicActivitiesRelations = relations(publicActivities, ({ one, man
   targets: many(publicActivitySites),
   dates: many(publicActivityDates),
   exceptions: many(publicActivityExceptions),
+  registrations: many(publicActivityRegistrations),
 }))
 
 export const publicActivitySitesRelations = relations(publicActivitySites, ({ one }) => ({
@@ -1732,6 +1888,35 @@ export const publicActivityExceptionsRelations = relations(publicActivityExcepti
     references: [publicActivities.id, publicActivities.ludoId],
   }),
 }))
+
+export const publicActivityRegistrationsRelations = relations(
+  publicActivityRegistrations,
+  ({ one, many }) => ({
+    activity: one(publicActivities, {
+      fields: [publicActivityRegistrations.activityId, publicActivityRegistrations.ludoId],
+      references: [publicActivities.id, publicActivities.ludoId],
+    }),
+    handledBy: one(members, {
+      fields: [publicActivityRegistrations.handledByMemberId, publicActivityRegistrations.ludoId],
+      references: [members.id, members.ludoId],
+      relationName: 'publicActivityRegistrationHandler',
+    }),
+    outbox: many(publicActivityRegistrationOutbox),
+  }),
+)
+
+export const publicActivityRegistrationOutboxRelations = relations(
+  publicActivityRegistrationOutbox,
+  ({ one }) => ({
+    registration: one(publicActivityRegistrations, {
+      fields: [
+        publicActivityRegistrationOutbox.registrationId,
+        publicActivityRegistrationOutbox.ludoId,
+      ],
+      references: [publicActivityRegistrations.id, publicActivityRegistrations.ludoId],
+    }),
+  }),
+)
 
 export const eventTypesRelations = relations(eventTypes, ({ one, many }) => ({
   ludo: one(ludotheques, {
@@ -2289,6 +2474,16 @@ export type PublicActivityLifecycle = (typeof publicActivityLifecycle.enumValues
 export type PublicActivitySiteRow = typeof publicActivitySites.$inferSelect
 export type PublicActivityDateRow = typeof publicActivityDates.$inferSelect
 export type PublicActivityExceptionRow = typeof publicActivityExceptions.$inferSelect
+export type PublicActivityRegistrationStatus =
+  (typeof publicActivityRegistrationStatus.enumValues)[number]
+export type PublicActivityRegistrationRow = typeof publicActivityRegistrations.$inferSelect
+export type PublicActivityRegistrationInsert = typeof publicActivityRegistrations.$inferInsert
+export type PublicActivityRegistrationOutboxStatus =
+  (typeof publicActivityRegistrationOutboxStatus.enumValues)[number]
+export type PublicActivityRegistrationOutboxRow =
+  typeof publicActivityRegistrationOutbox.$inferSelect
+export type PublicActivityRegistrationOutboxInsert =
+  typeof publicActivityRegistrationOutbox.$inferInsert
 export type LudoSiteRow = typeof ludoSites.$inferSelect
 export type LudoSiteInsert = typeof ludoSites.$inferInsert
 export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect

@@ -18,6 +18,7 @@ const {
   listVisibleGallery,
   listVisibleProfiles,
   listPublishedDirectory,
+  getRegistrationAvailability,
 } = vi.hoisted(() => ({
   getLudoBySlug: vi.fn(),
   isPublicSiteEnabled: vi.fn(),
@@ -36,6 +37,7 @@ const {
   listVisibleGallery: vi.fn(),
   listVisibleProfiles: vi.fn(),
   listPublishedDirectory: vi.fn(),
+  getRegistrationAvailability: vi.fn(),
 }))
 
 vi.mock('../db/ludotheques.js', () => ({ getLudoBySlug }))
@@ -64,6 +66,9 @@ vi.mock('./public-gallery.js', () => ({ listVisiblePublicGallery: listVisibleGal
 vi.mock('./public-profiles.js', () => ({ listVisiblePublicProfiles: listVisibleProfiles }))
 vi.mock('./public-directory.js', () => ({
   listPublishedPublicDirectory: listPublishedDirectory,
+}))
+vi.mock('./public-activity-registrations.js', () => ({
+  getPublicActivityRegistrationAvailability: getRegistrationAvailability,
 }))
 
 import {
@@ -97,6 +102,12 @@ beforeEach(() => {
   listVisibleActivities.mockResolvedValue([])
   listArchivedActivities.mockResolvedValue([])
   getVisibleActivity.mockResolvedValue(undefined)
+  getRegistrationAvailability.mockResolvedValue({
+    enabled: false,
+    capacity: null,
+    isAtCapacity: false,
+    fullMessage: null,
+  })
   listVisibleTopThrees.mockResolvedValue([])
   getVisibleTopThree.mockResolvedValue(undefined)
   listVisibleFaqs.mockResolvedValue([])
@@ -302,9 +313,27 @@ describe('activités publiques', () => {
       id: activityRow.id,
       bodyMarkdown: '**Bienvenue**',
       image: null,
+      registration: {
+        enabled: false,
+        capacity: null,
+        isAtCapacity: false,
+        fullMessage: null,
+      },
     })
     expect(result?.activity).not.toHaveProperty('imageStorageKey')
     expect(getVisibleActivity).toHaveBeenCalledWith(ludo.id, 'soiree-jeux', undefined)
+  })
+
+  it('désactive toujours la projection d’inscription d’une activité archivée', async () => {
+    getVisibleActivity.mockResolvedValue({ ...activityRow, lifecycle: 'archived' })
+    const result = await getPublicActivityDetailByLudoSlug('demo', 'soiree-jeux')
+    expect(result?.activity.registration).toEqual({
+      enabled: false,
+      capacity: null,
+      isAtCapacity: false,
+      fullMessage: null,
+    })
+    expect(getRegistrationAvailability).not.toHaveBeenCalled()
   })
 })
 

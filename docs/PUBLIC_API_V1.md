@@ -75,6 +75,40 @@ Les listes sont bornées en base et n'exposent ni auteurs, ni clés de stockage,
 
 Le payload indique `timeZone: "Europe/Zurich"`. Une liste ne contient qu'un aperçu des trois premières dates et aucun motif d'exception ; le détail porte le calendrier complet, borné à 366 dates et 366 exceptions. Les instants sont renvoyés en ISO-8601 : le consommateur les affiche dans ce fuseau, sans développer lui-même une récurrence. `schedule.type` vaut `one_off`, `recurring` ou `permanent`; une activité permanente n'a ni dates ni exceptions. Une RRULE récurrente est toujours bornée par `COUNT` (maximum 366) ou par `UNTIL` (au plus cinq ans après la première occurrence).
 
+Le détail contient aussi la projection non personnelle `registration` :
+
+```json
+{
+  "enabled": true,
+  "capacity": 20,
+  "isAtCapacity": true,
+  "fullMessage": "Nous vous contacterons si une place se libère."
+}
+```
+
+`capacity` est indicative et peut être `null`. `fullMessage` est `null` sauf lorsque `isAtCapacity` vaut `true`; dans ce cas sa phrase est stable. Aucune inscription, coordonnée ni jauge exacte d'occupation n'est exposée. Une activité archivée peut rester consultable, mais son endpoint d'inscription n'accepte jamais de nouvelle demande.
+
+### Inscription à une activité
+
+L'écriture est séparée de l'API de lecture : `POST /api/public/registrations/v1/{ludo}/activities/{slug}`. Elle ne crée aucun compte. Le JSON contient `contactName`, `email` et `participantCount` (entier de 1 à 50); `phone` et `message` sont facultatifs. L'en-tête `Idempotency-Key` est obligatoire (16 à 200 caractères ASCII visibles).
+
+Une première soumission répond `201`, un rejeu reconnu répond `200` :
+
+```json
+{
+  "accepted": true,
+  "receiptId": "uuid",
+  "status": "received",
+  "message": "Votre inscription a bien été reçue."
+}
+```
+
+`status` vaut uniquement `received` ou `waitlisted` dans cette réponse. Ce statut de reçu est immuable : un rejeu exact renvoie la décision initiale même si l'équipe a ensuite confirmé, refusé ou archivé la demande, ou si l'activité/le module a depuis été désactivé. La clé est liée à une empreinte SHA-256 du slug d'activité normalisé et du formulaire nettoyé; la réutiliser pour une autre activité ou un payload différent produit `409`. Lorsque la capacité indicative est atteinte, le formulaire reste accessible, la demande est enregistrée avec `waitlisted` et `message` vaut exactement `Nous vous contacterons si une place se libère.` Les états qui réservent une place dans le calcul sont exclusivement `received` et `confirmed`; `waitlisted`, `declined`, `cancelled` et `archived` n'en réservent pas.
+
+La décision de capacité est sérialisée par activité dans une transaction Neon en deux instructions : acquisition d'un verrou advisory tenant-scopé, puis nouveau snapshot `READ COMMITTED` qui compte les places et écrit inscription + outbox. Les tests unitaires vérifient l'ordre, la séparation des statements et la propagation d'un échec au batch transactionnel; la concurrence réelle reste à couvrir par un test d'intégration sur PostgreSQL/Neon.
+
+La route impose la même défense que le contact : corps maximal de 16 Kio, honeypot `website`, quota global par empreinte de source de 5 requêtes par 10 minutes, CORS et absence de cache. Le reçu e-mail est placé dans un outbox interne `pending` à l'adresse fournie; ce lot ne contient aucun worker d'envoi et n'invente aucun destinataire. Il n'existe ni endpoint public de lecture ni annulation autonome. Les données personnelles restent confinées à la gestion interne tenant-scopée et n'apparaissent ni dans les audits ni dans les logs.
+
 ## Top 3
 
 - `GET /api/public/v1/{ludo}/top-threes` retourne les sélections publiées ; `?site={slug}` et `?limit={1..50}` suivent les mêmes règles que les autres listes.

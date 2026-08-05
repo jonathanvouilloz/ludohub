@@ -17,6 +17,7 @@ import { getVisiblePublicDocumentBySlug, listVisiblePublicDocuments } from './pu
 import { listVisiblePublicGallery } from './public-gallery.js'
 import { listVisiblePublicProfiles } from './public-profiles.js'
 import { listPublishedPublicDirectory } from './public-directory.js'
+import { getPublicActivityRegistrationAvailability } from './public-activity-registrations.js'
 
 export type PublicOpeningInterval = {
   dayOfWeek: number
@@ -105,6 +106,12 @@ export type PublicActivitySummaryItem = {
 export type PublicActivityItem = Omit<PublicActivitySummaryItem, 'schedule'> & {
   bodyMarkdown: string
   schedule: PublicActivitySchedule
+  registration: {
+    enabled: boolean
+    capacity: number | null
+    isAtCapacity: boolean
+    fullMessage: string | null
+  }
 }
 
 export type PublicActivitiesPayload = {
@@ -449,6 +456,10 @@ export async function getPublicActivityDetailByLudoSlug(
   if (!resolvedSite) return null
   const activity = await getVisiblePublicActivityBySlug(ludo.id, activitySlug, resolvedSite.siteId)
   if (!activity) return null
+  const registration =
+    activity.lifecycle === 'active'
+      ? await getPublicActivityRegistrationAvailability(activity.id, ludo.id)
+      : { enabled: false, capacity: null, isAtCapacity: false, fullMessage: null }
   return {
     ludo: { slug: ludo.slug, name: ludo.name },
     site: siteSlug ?? null,
@@ -479,6 +490,7 @@ export async function getPublicActivityDetailByLudoSlug(
           reason: exception.reason,
         })),
       },
+      registration,
     },
   }
 }
