@@ -10,10 +10,12 @@ vi.mock('../db/notifications.js', () => ({
 import { insertActivity } from '../db/activity_log.js'
 import { getActiveResponsables } from '../db/members.js'
 import { createNotifications, hasUnreadNotification } from '../db/notifications.js'
-import { emitEvent } from './events.js'
+import { emitAuditEvent, emitEvent } from './events.js'
 
 const LUDO_A = 'ludo-a'
 const LUDO_B = 'ludo-b'
+const ENTITY_ID = '11111111-1111-4111-8111-111111111111'
+const NEWS_ID = '22222222-2222-4222-8222-222222222222'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -28,7 +30,7 @@ describe('emitEvent — audit', () => {
       actorLudoId: LUDO_A,
       actorMemberId: 'm-a',
       entityType: 'theme',
-      entityId: 't1',
+      entityId: ENTITY_ID,
       title: 'x',
       recipientLudoId: LUDO_B,
       metadata: { loanId: 'l1' },
@@ -38,9 +40,46 @@ describe('emitEvent — audit', () => {
       memberId: 'm-a',
       action: 'theme_request',
       entityType: 'theme',
-      entityId: 't1',
+      entityId: ENTITY_ID,
       metadata: { loanId: 'l1' },
     })
+  })
+
+  it('accepte une action éditoriale sans créer de notification', async () => {
+    await emitAuditEvent({
+      action: 'public_news.published',
+      actorLudoId: LUDO_A,
+      actorMemberId: 'm-a',
+      entityType: 'public_news',
+      entityId: NEWS_ID,
+      metadata: { fromStatus: 'draft', toStatus: 'published' },
+    })
+
+    expect(insertActivity).toHaveBeenCalledWith({
+      ludoId: LUDO_A,
+      memberId: 'm-a',
+      action: 'public_news.published',
+      entityType: 'public_news',
+      entityId: NEWS_ID,
+      metadata: { fromStatus: 'draft', toStatus: 'published' },
+    })
+    expect(createNotifications).not.toHaveBeenCalled()
+  })
+
+  it('refuse explicitement un identifiant non UUID', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    await emitAuditEvent({
+      action: 'public_news.published',
+      actorLudoId: LUDO_A,
+      entityType: 'public_news',
+      entityId: 'news-1',
+    })
+    expect(insertActivity).not.toHaveBeenCalled()
+    expect(console.error).toHaveBeenCalledWith(
+      '[events] emitAuditEvent failed',
+      { action: 'public_news.published', entityId: 'news-1' },
+      expect.any(Error),
+    )
   })
 })
 
@@ -50,7 +89,7 @@ describe('emitEvent — fan-out notifications', () => {
       type: 'theme_request',
       actorLudoId: LUDO_A,
       entityType: 'theme',
-      entityId: 't1',
+      entityId: ENTITY_ID,
       title: 'Nouvelle demande',
       body: 'corps',
       recipientLudoId: LUDO_B,
@@ -62,7 +101,7 @@ describe('emitEvent — fan-out notifications', () => {
         type: 'theme_request',
         severity: 'action_required',
         entityType: 'theme',
-        entityId: 't1',
+        entityId: ENTITY_ID,
         title: 'Nouvelle demande',
         body: 'corps',
       },
@@ -74,7 +113,7 @@ describe('emitEvent — fan-out notifications', () => {
       type: 'theme_request_confirmed',
       actorLudoId: LUDO_B,
       entityType: 'theme',
-      entityId: 't1',
+      entityId: ENTITY_ID,
       title: 'Accepté',
       recipientLudoId: LUDO_A,
     })
@@ -90,7 +129,7 @@ describe('emitEvent — fan-out notifications', () => {
       actorLudoId: LUDO_A,
       actorMemberId: 'm-simple',
       entityType: 'absence',
-      entityId: 'a1',
+      entityId: ENTITY_ID,
       title: 'Demande',
       recipientResponsablesOf: LUDO_A,
     })
@@ -106,7 +145,7 @@ describe('emitEvent — fan-out notifications', () => {
       actorLudoId: LUDO_A,
       actorMemberId: 'm-resp',
       entityType: 'absence',
-      entityId: 'a1',
+      entityId: ENTITY_ID,
       title: 'Demande',
       recipientResponsablesOf: LUDO_A,
     })
@@ -121,7 +160,7 @@ describe('emitEvent — fan-out notifications', () => {
       type: 'theme_request',
       actorLudoId: LUDO_A,
       entityType: 'theme',
-      entityId: 't1',
+      entityId: ENTITY_ID,
       title: 'x',
       recipientLudoId: LUDO_B,
     })
@@ -138,7 +177,7 @@ describe('emitEvent — robustesse', () => {
         type: 'theme_request',
         actorLudoId: LUDO_A,
         entityType: 'theme',
-        entityId: 't1',
+        entityId: ENTITY_ID,
         title: 'x',
         recipientLudoId: LUDO_B,
       }),

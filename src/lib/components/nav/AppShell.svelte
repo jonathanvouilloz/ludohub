@@ -11,11 +11,13 @@
     ludo,
     member,
     notifCount = 0,
+    publicSiteEnabled = false,
     children,
   }: {
     ludo: LudothequeRow
     member: MemberRow
     notifCount?: number
+    publicSiteEnabled?: boolean
     children: Snippet
   } = $props()
 
@@ -48,7 +50,7 @@
   {@render children()}
 {:else}
   <div class="app-shell">
-    <AppSidebar {ludo} {member} {notifCount} />
+    <AppSidebar {ludo} {member} {notifCount} {publicSiteEnabled} />
     <main class="app-shell__content">
       {#if loadingHeavy}
         <PageSkeleton />
@@ -59,7 +61,7 @@
   </div>
 
   <BottomTabBar {ludo} {notifCount} onMore={() => (sheetOpen = true)} />
-  <MoreSheet {ludo} {member} {notifCount} bind:open={sheetOpen} />
+  <MoreSheet {ludo} {member} {notifCount} {publicSiteEnabled} bind:open={sheetOpen} />
 {/if}
 
 <style>

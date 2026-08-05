@@ -4,17 +4,27 @@
   import LogOutIcon from '@lucide/svelte/icons/log-out'
   import NavItem from './NavItem.svelte'
   import LudoBadge from './LudoBadge.svelte'
-  import { buildNavConfig } from './nav-config'
+  import { buildNavConfig, isNavDestinationVisible } from './nav-config'
 
   let {
     ludo,
     member,
     notifCount = 0,
-  }: { ludo: LudothequeRow; member: MemberRow; notifCount?: number } = $props()
+    publicSiteEnabled = false,
+  }: {
+    ludo: LudothequeRow
+    member: MemberRow
+    notifCount?: number
+    publicSiteEnabled?: boolean
+  } = $props()
 
   const items = $derived(
-    buildNavConfig(ludo.slug).filter(
-      (d) => d.zones.includes('sidebar') && (!d.responsableOnly || isResponsable(member)),
+    buildNavConfig(ludo.slug).filter((destination) =>
+      isNavDestinationVisible(destination, {
+        zone: 'sidebar',
+        responsable: isResponsable(member),
+        publicSiteEnabled,
+      }),
     ),
   )
 </script>

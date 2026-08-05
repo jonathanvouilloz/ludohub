@@ -6,18 +6,29 @@
   import XIcon from '@lucide/svelte/icons/x'
   import NavItem from './NavItem.svelte'
   import LudoBadge from './LudoBadge.svelte'
-  import { buildNavConfig } from './nav-config'
+  import { buildNavConfig, isNavDestinationVisible } from './nav-config'
 
   let {
     ludo,
     member,
     notifCount = 0,
+    publicSiteEnabled = false,
     open = $bindable(false),
-  }: { ludo: LudothequeRow; member: MemberRow; notifCount?: number; open?: boolean } = $props()
+  }: {
+    ludo: LudothequeRow
+    member: MemberRow
+    notifCount?: number
+    publicSiteEnabled?: boolean
+    open?: boolean
+  } = $props()
 
   const items = $derived(
-    buildNavConfig(ludo.slug).filter(
-      (d) => d.zones.includes('sheet') && (!d.responsableOnly || isResponsable(member)),
+    buildNavConfig(ludo.slug).filter((destination) =>
+      isNavDestinationVisible(destination, {
+        zone: 'sheet',
+        responsable: isResponsable(member),
+        publicSiteEnabled,
+      }),
     ),
   )
 

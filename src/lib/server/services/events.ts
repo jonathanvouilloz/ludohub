@@ -13,6 +13,16 @@ import type { NotificationInsert, NotificationSeverity, NotificationType } from 
  */
 
 type Recipient = { ludoId: string; memberId: string | null }
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+export type AuditEvent = {
+  action: string
+  actorLudoId: string
+  actorMemberId?: string | null
+  entityType: string
+  entityId: string
+  metadata?: Record<string, unknown>
+}
 
 export type DomainEvent = {
   type: NotificationType
@@ -62,19 +72,44 @@ async function resolveRecipients(event: DomainEvent): Promise<Recipient[]> {
   return []
 }
 
-export async function emitEvent(event: DomainEvent): Promise<void> {
+/**
+ * Écrit une trace d'audit sans créer de notification. Les domaines éditoriaux
+ * l'utilisent pour journaliser leurs transitions sans détourner NotificationType.
+ */
+export async function emitAuditEvent(event: AuditEvent): Promise<void> {
   try {
-    // 1. Audit (acteur) — peuple `activity_log` pour 11-ADMIN.
+    if (!UUID_PATTERN.test(event.entityId)) {
+      throw new Error(`Identifiant d'audit non UUID : ${event.entityId}`)
+    }
     await insertActivity({
       ludoId: event.actorLudoId,
       memberId: event.actorMemberId ?? null,
-      action: event.type,
+      action: event.action,
       entityType: event.entityType,
       entityId: event.entityId,
       metadata: event.metadata ?? null,
     })
+  } catch (err) {
+    console.error(
+      '[events] emitAuditEvent failed',
+      { action: event.action, entityId: event.entityId },
+      err,
+    )
+  }
+}
 
-    // 2. Fan-out notifications par destinataire.
+export async function emitEvent(event: DomainEvent): Promise<void> {
+  await emitAuditEvent({
+    action: event.type,
+    actorLudoId: event.actorLudoId,
+    actorMemberId: event.actorMemberId,
+    entityType: event.entityType,
+    entityId: event.entityId,
+    metadata: event.metadata,
+  })
+
+  try {
+    // Fan-out notifications par destinataire.
     const severity = SEVERITY[event.type]
     const recipients = await resolveRecipients(event)
     const rows: NotificationInsert[] = []

@@ -154,18 +154,38 @@ export const siteOpeningIntervals = pgTable(
   ],
 )
 
-export const memberRole = pgEnum('member_role', ['member', 'responsable'])
+// Statut commun aux futurs contenus éditoriaux publics. Les tables de domaine
+// restent séparées ; seul leur cycle de publication est mutualisé.
+export const publicContentStatus = pgEnum('public_content_status', ['draft', 'published', 'hidden'])
 
-export const members = pgTable('members', {
+/** Activation du module public, une ligne au plus par espace LudoHub. */
+export const publicSiteSettings = pgTable('public_site_settings', {
   id: uuid('id').defaultRandom().primaryKey(),
   ludoId: uuid('ludo_id')
     .notNull()
+    .unique()
     .references(() => ludotheques.id, { onDelete: 'cascade' }),
-  name: text('name').notNull(),
-  role: memberRole('role').notNull().default('member'),
-  isActive: boolean('is_active').notNull().default(true),
+  enabled: boolean('enabled').notNull().default(false),
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
 })
+
+export const memberRole = pgEnum('member_role', ['member', 'responsable'])
+
+export const members = pgTable(
+  'members',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    role: memberRole('role').notNull().default('member'),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [unique('members_id_ludo_id_unique').on(t.id, t.ludoId)],
+)
 
 // ─── Planning ────────────────────────────────────────────────────────────────
 
@@ -434,6 +454,13 @@ export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ 
   site: one(ludoSites, {
     fields: [siteOpeningIntervals.siteId],
     references: [ludoSites.id],
+  }),
+}))
+
+export const publicSiteSettingsRelations = relations(publicSiteSettings, ({ one }) => ({
+  ludo: one(ludotheques, {
+    fields: [publicSiteSettings.ludoId],
+    references: [ludotheques.id],
   }),
 }))
 
@@ -955,6 +982,9 @@ export const campaignSendsRelations = relations(campaignSends, ({ one }) => ({
 
 export type LudothequeRow = typeof ludotheques.$inferSelect
 export type LudothequeInsert = typeof ludotheques.$inferInsert
+export type PublicSiteSettingsRow = typeof publicSiteSettings.$inferSelect
+export type PublicSiteSettingsInsert = typeof publicSiteSettings.$inferInsert
+export type PublicContentStatus = (typeof publicContentStatus.enumValues)[number]
 export type LudoSiteRow = typeof ludoSites.$inferSelect
 export type LudoSiteInsert = typeof ludoSites.$inferInsert
 export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect

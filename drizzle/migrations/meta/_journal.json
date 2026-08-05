@@ -15,6 +15,13 @@
       "when": 1785939479936,
       "tag": "0001_far_wither",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785941827965,
+      "tag": "0002_smiling_sir_ram",
+      "breakpoints": true
     }
   ]
 }

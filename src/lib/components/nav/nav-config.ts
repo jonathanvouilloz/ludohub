@@ -12,6 +12,7 @@ import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
 import MailIcon from '@lucide/svelte/icons/mail'
 import CircleHelpIcon from '@lucide/svelte/icons/circle-help'
 import MapPinIcon from '@lucide/svelte/icons/map-pin'
+import Globe2Icon from '@lucide/svelte/icons/globe-2'
 
 /** Zone(s) du shell où une destination apparaît. */
 export type NavZone = 'sidebar' | 'tabbar' | 'sheet'
@@ -25,8 +26,21 @@ export type NavDest = {
   zones: NavZone[]
   /** Réservé aux responsables (masqué pour les membres simples). */
   responsableOnly?: boolean
+  /** Capacité Site public requise, sauf pour un responsable qui doit pouvoir l'activer. */
+  publicSiteOnly?: boolean
   /** Clé de badge dynamique alimentée par le shell (compteur de notifs). */
   badgeKey?: 'notifications'
+}
+
+export function isNavDestinationVisible(
+  destination: NavDest,
+  context: { zone: NavZone; responsable: boolean; publicSiteEnabled: boolean },
+): boolean {
+  return (
+    destination.zones.includes(context.zone) &&
+    (!destination.responsableOnly || context.responsable) &&
+    (!destination.publicSiteOnly || context.publicSiteEnabled || context.responsable)
+  )
 }
 
 /**
@@ -100,6 +114,14 @@ export function buildNavConfig(slug: string): NavDest[] {
       icon: MapPinIcon,
       match: (p) => p.startsWith(`${base}/settings/lieux-horaires`),
       zones: ['sidebar', 'sheet'],
+    },
+    {
+      label: 'Site public',
+      href: `${base}/site-public`,
+      icon: Globe2Icon,
+      match: (p) => p.startsWith(`${base}/site-public`),
+      zones: ['sidebar', 'sheet'],
+      publicSiteOnly: true,
     },
     {
       label: 'Newsletter',
