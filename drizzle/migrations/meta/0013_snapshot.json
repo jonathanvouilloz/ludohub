@@ -7019,7 +7019,7 @@
         },
         "public_top_threes_games_shape_check": {
           "name": "public_top_threes_games_shape_check",
-          "value": "jsonb_typeof(\"public_top_threes\".\"games\") = 'array' and jsonb_array_length(\"public_top_threes\".\"games\") = 3 and not jsonb_path_exists(\"public_top_threes\".\"games\", '$[*] ? (@.type() != \"object\" || !exists(@.name) || @.name.type() != \"string\" || (exists(@.description) && @.description.type() != \"string\"))') and not jsonb_path_exists(\"public_top_threes\".\"games\", '$[*].keyvalue() ? (@.key != \"name\" && @.key != \"description\")') and not jsonb_path_exists(\"public_top_threes\".\"games\", '$[*] ? (!(@.name like_regex \"^\\\\s*.{0,159}\\\\S\\\\s*$\" flag \"s\") || (exists(@.description) && !(@.description like_regex \"^\\\\s*.{0,1999}\\\\S\\\\s*$\" flag \"s\")))')"
+          "value": "jsonb_typeof(\"public_top_threes\".\"games\") = 'array' and jsonb_array_length(\"public_top_threes\".\"games\") = 3 and not jsonb_path_exists(\"public_top_threes\".\"games\", '$[*] ? (@.type() != \"object\" || !exists(@.name) || @.name.type() != \"string\" || (exists(@.description) && @.description.type() != \"string\"))') and not jsonb_path_exists(\"public_top_threes\".\"games\", '$[*].keyvalue() ? (@.key != \"name\" && @.key != \"description\")') and not jsonb_path_exists(\"public_top_threes\".\"games\", '$[*] ? (!(@.name like_regex \"^\\\\s*.{0,159}\\\\S\\\\s*$\" flag \"s\") || (exists(@.description) && !(@.description like_regex \"^\\\\s*.*\\\\S\\\\s*$\" flag \"s\")))')"
         },
         "public_top_threes_homepage_published_check": {
           "name": "public_top_threes_homepage_published_check",

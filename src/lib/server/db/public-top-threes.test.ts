@@ -184,7 +184,7 @@ describe('public-top-threes DB', () => {
     const checkSql = new PgDialect().sqlToQuery(constraint!.value).sql
     expect(checkSql).toContain('jsonb_array_length')
     expect(checkSql).toContain('like_regex "^\\\\s*.{0,159}\\\\S\\\\s*$" flag "s"')
-    expect(checkSql).toContain('like_regex "^\\\\s*.{0,1999}\\\\S\\\\s*$" flag "s"')
+    expect(checkSql).toContain('like_regex "^\\\\s*.*\\\\S\\\\s*$" flag "s"')
   })
 
   it('garantit une seule sélection accueil publiée par tenant', () => {

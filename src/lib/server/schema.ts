@@ -401,7 +401,7 @@ export const publicTopThrees = pgTable(
     check('public_top_threes_theme_check', sql`char_length(trim(${t.theme})) between 1 and 160`),
     check(
       'public_top_threes_games_shape_check',
-      sql`jsonb_typeof(${t.games}) = 'array' and jsonb_array_length(${t.games}) = 3 and not jsonb_path_exists(${t.games}, '$[*] ? (@.type() != "object" || !exists(@.name) || @.name.type() != "string" || (exists(@.description) && @.description.type() != "string"))') and not jsonb_path_exists(${t.games}, '$[*].keyvalue() ? (@.key != "name" && @.key != "description")') and not jsonb_path_exists(${t.games}, '$[*] ? (!(@.name like_regex "^\\\\s*.{0,159}\\\\S\\\\s*$" flag "s") || (exists(@.description) && !(@.description like_regex "^\\\\s*.{0,1999}\\\\S\\\\s*$" flag "s")))')`,
+      sql`jsonb_typeof(${t.games}) = 'array' and jsonb_array_length(${t.games}) = 3 and not jsonb_path_exists(${t.games}, '$[*] ? (@.type() != "object" || !exists(@.name) || @.name.type() != "string" || (exists(@.description) && @.description.type() != "string"))') and not jsonb_path_exists(${t.games}, '$[*].keyvalue() ? (@.key != "name" && @.key != "description")') and not jsonb_path_exists(${t.games}, '$[*] ? (!(@.name like_regex "^\\\\s*.{0,159}\\\\S\\\\s*$" flag "s") || (exists(@.description) && !(@.description like_regex "^\\\\s*.*\\\\S\\\\s*$" flag "s")))')`,
     ),
     check(
       'public_top_threes_homepage_published_check',
