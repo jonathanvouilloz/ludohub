@@ -42,3 +42,17 @@ conservé contient toujours les valeurs nécessaires à l'ancienne application.
 
 `db:push` n'est pas utilisé dans ce processus et le script de données n'est jamais lancé
 automatiquement en production.
+# Purge des adhésions familiales
+
+Le job `GET /api/internal/cron/family-membership-purge` supprime chaque jour les demandes déjà traitées arrivées à leur échéance de conservation. Il exige `Authorization: Bearer $CRON_SECRET`, traite au maximum 1 000 familles par invocation et peut être relancé sans double comptage. `vercel.json` le planifie à 02:17 UTC. Avant toute activation d’un déploiement, définir un `CRON_SECRET` long et aléatoire dans l’environnement concerné ; aucune planification de production n’est activée par la migration locale seule.
+
+## Lot 8 — Procédure de migration
+
+Les migrations `0012_high_snowbird.sql` et `0013_luxuriant_dracula.sql` sont exclusivement additives : elles créent les tables, types, contraintes et index de l’adhésion familiale, sans `DROP` ni modification de données existantes. Elles n’ont été appliquées à aucune base dans ce lot local.
+
+1. Créer une branche Neon isolée et vérifier que ses variables Preview ne pointent pas vers la production.
+2. Avant application, contrôler la présence de `ludotheques`, `members`, `ludo_sites` et de leurs clés composites attendues, puis prendre un point de restauration de la branche.
+3. Appliquer les migrations sur cette branche de test, lancer les contrôles de contraintes tenant, publication/version, soumission, traitement, paiement et purge, puis exécuter la suite applicative complète.
+4. Vérifier après migration que les nouvelles tables `family_*`, les enums et contraintes attendus ainsi que les index de gestion/purge existent, qu’aucune ligne métier antérieure n’a changé et qu’aucune table familiale ne contient encore de données.
+5. En cas de migration partielle, restaurer la branche au point précédent plutôt que de supprimer manuellement des objets. En cas de rollback applicatif après migration réussie, redéployer la version applicative précédente et laisser les nouvelles tables inutilisées : leur présence est compatible et évite toute suppression irréversible.
+6. La production reste hors périmètre tant que la branche test, la sauvegarde, `CRON_SECRET`, les origines CORS et le déploiement Preview n’ont pas été validés explicitement.

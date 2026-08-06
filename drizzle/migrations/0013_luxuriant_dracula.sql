@@ -1,0 +1,2 @@
+ALTER TABLE "family_registration_submissions" ADD CONSTRAINT "family_registration_submissions_receipt_tenant_fk" FOREIGN KEY ("id","ludo_id") REFERENCES "public"."family_submission_receipts"("receipt_id","ludo_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "family_submission_receipts" ADD CONSTRAINT "family_submission_receipts_receipt_ludo_unique" UNIQUE("receipt_id","ludo_id");

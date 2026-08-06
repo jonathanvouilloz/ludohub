@@ -132,6 +132,14 @@ export function buildNavConfig(slug: string): NavDest[] {
       responsableOnly: true,
     },
     {
+      label: 'Adhésions',
+      href: `${base}/adhesions`,
+      icon: ClipboardListIcon,
+      match: (p) => p.startsWith(`${base}/adhesions`),
+      zones: ['sidebar', 'sheet'],
+      responsableOnly: true,
+    },
+    {
       label: 'Équipe',
       href: `${base}/settings/membres`,
       icon: UsersIcon,

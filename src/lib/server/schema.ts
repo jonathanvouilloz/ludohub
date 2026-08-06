@@ -1254,6 +1254,313 @@ export const publicActivityRegistrationOutbox = pgTable(
   ],
 )
 
+// ─── Adhésion familiale publique ───────────────────────────────────────────
+
+export const familyRegistrationSubmissionStatus = pgEnum('family_registration_submission_status', [
+  'new',
+  'processed',
+])
+export const familyRegistrationPaymentMethod = pgEnum('family_registration_payment_method', [
+  'twint',
+  'cash',
+])
+export const familyRegistrationGender = pgEnum('family_registration_gender', [
+  'female',
+  'male',
+  'other',
+  'unspecified',
+])
+export const familyRegistrationDocumentKind = pgEnum('family_registration_document_kind', [
+  'rules',
+  'contract',
+  'privacy',
+  'other',
+])
+
+/** Brouillon éditable. Une publication crée toujours une ligne de version immuable. */
+export const familyRegistrationForms = pgTable(
+  'family_registration_forms',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    slug: text('slug').notNull().default('adhesion-famille'),
+    title: text('title').notNull(),
+    intro: text('intro'),
+    consentLabel: text('consent_label'),
+    annualFeeCents: integer('annual_fee_cents').notNull().default(3000),
+    currency: text('currency').notNull().default('CHF'),
+    allowsTwint: boolean('allows_twint').notNull().default(true),
+    allowsCash: boolean('allows_cash').notNull().default(true),
+    enabled: boolean('enabled').notNull().default(false),
+    maxMembers: integer('max_members').notNull().default(20),
+    retentionDays: integer('retention_days').notNull().default(30),
+    revision: integer('revision').notNull().default(1),
+    updatedByMemberId: uuid('updated_by_member_id'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('family_registration_forms_id_ludo_unique').on(t.id, t.ludoId),
+    unique('family_registration_forms_ludo_slug_unique').on(t.ludoId, t.slug),
+    foreignKey({
+      columns: [t.updatedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'family_registration_forms_updater_tenant_fk',
+    }),
+    check('family_registration_forms_max_members_check', sql`${t.maxMembers} between 1 and 50`),
+    check('family_registration_forms_retention_check', sql`${t.retentionDays} between 1 and 365`),
+    check('family_registration_forms_fee_check', sql`${t.annualFeeCents} between 0 and 1000000`),
+    check('family_registration_forms_currency_check', sql`${t.currency} = 'CHF'`),
+    check('family_registration_forms_payment_methods_check', sql`${t.allowsTwint} or ${t.allowsCash}`),
+  ],
+)
+
+export const familyRegistrationDocuments = pgTable(
+  'family_registration_documents',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    formId: uuid('form_id').notNull(),
+    slug: text('slug').notNull(),
+    title: text('title').notNull(),
+    kind: familyRegistrationDocumentKind('kind').notNull().default('other'),
+    requiredAcceptance: boolean('required_acceptance').notNull().default(true),
+    sortOrder: integer('sort_order').notNull().default(0),
+    revision: integer('revision').notNull().default(1),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('family_registration_documents_id_ludo_unique').on(t.id, t.ludoId),
+    unique('family_registration_documents_form_slug_unique').on(t.formId, t.slug),
+    foreignKey({
+      columns: [t.formId, t.ludoId],
+      foreignColumns: [familyRegistrationForms.id, familyRegistrationForms.ludoId],
+      name: 'family_registration_documents_form_tenant_fk',
+    }).onDelete('cascade'),
+  ],
+)
+
+/** Contenu légal versionné et hashé; aucune ligne publiée n'est mise à jour. */
+export const familyRegistrationDocumentVersions = pgTable(
+  'family_registration_document_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    documentId: uuid('document_id').notNull(),
+    version: integer('version').notNull(),
+    title: text('title').notNull(),
+    kind: familyRegistrationDocumentKind('kind').notNull(),
+    requiredAcceptance: boolean('required_acceptance').notNull(),
+    contentMarkdown: text('content_markdown').notNull(),
+    sha256: text('sha256').notNull(),
+    createdByMemberId: uuid('created_by_member_id').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('family_registration_document_versions_id_ludo_unique').on(t.id, t.ludoId),
+    unique('family_registration_document_versions_document_version_unique').on(
+      t.documentId,
+      t.version,
+    ),
+    foreignKey({
+      columns: [t.documentId, t.ludoId],
+      foreignColumns: [familyRegistrationDocuments.id, familyRegistrationDocuments.ludoId],
+      name: 'family_registration_document_versions_document_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.createdByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'family_registration_document_versions_author_tenant_fk',
+    }),
+    check('family_registration_document_versions_version_check', sql`${t.version} >= 1`),
+    check('family_registration_document_versions_hash_check', sql`char_length(${t.sha256}) = 64`),
+  ],
+)
+
+export const familyRegistrationFormVersions = pgTable(
+  'family_registration_form_versions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    formId: uuid('form_id').notNull(),
+    version: integer('version').notNull(),
+    title: text('title').notNull(),
+    intro: text('intro'),
+    consentLabel: text('consent_label').notNull(),
+    maxMembers: integer('max_members').notNull(),
+    retentionDays: integer('retention_days').notNull(),
+    annualFeeCents: integer('annual_fee_cents').notNull(),
+    currency: text('currency').notNull(),
+    allowsTwint: boolean('allows_twint').notNull(),
+    allowsCash: boolean('allows_cash').notNull(),
+    publishedByMemberId: uuid('published_by_member_id').notNull(),
+    publishedAt: timestamp('published_at').notNull(),
+  },
+  (t) => [
+    unique('family_registration_form_versions_id_ludo_unique').on(t.id, t.ludoId),
+    unique('family_registration_form_versions_id_ludo_form_unique').on(t.id, t.ludoId, t.formId),
+    unique('family_registration_form_versions_form_version_unique').on(t.formId, t.version),
+    foreignKey({
+      columns: [t.formId, t.ludoId],
+      foreignColumns: [familyRegistrationForms.id, familyRegistrationForms.ludoId],
+      name: 'family_registration_form_versions_form_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.publishedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'family_registration_form_versions_publisher_tenant_fk',
+    }),
+    check('family_registration_form_versions_max_members_check', sql`${t.maxMembers} between 1 and 50`),
+    check('family_registration_form_versions_retention_check', sql`${t.retentionDays} between 1 and 365`),
+    check('family_registration_form_versions_fee_check', sql`${t.annualFeeCents} between 0 and 1000000`),
+    check('family_registration_form_versions_currency_check', sql`${t.currency} = 'CHF'`),
+    check('family_registration_form_versions_payment_methods_check', sql`${t.allowsTwint} or ${t.allowsCash}`),
+  ],
+)
+
+export const familyRegistrationFormVersionDocuments = pgTable(
+  'family_registration_form_version_documents',
+  {
+    formVersionId: uuid('form_version_id').notNull(),
+    documentVersionId: uuid('document_version_id').notNull(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.formVersionId, t.documentVersionId] }),
+    foreignKey({
+      columns: [t.formVersionId, t.ludoId],
+      foreignColumns: [familyRegistrationFormVersions.id, familyRegistrationFormVersions.ludoId],
+      name: 'family_registration_version_documents_form_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.documentVersionId, t.ludoId],
+      foreignColumns: [
+        familyRegistrationDocumentVersions.id,
+        familyRegistrationDocumentVersions.ludoId,
+      ],
+      name: 'family_registration_version_documents_document_tenant_fk',
+    }),
+  ],
+)
+
+/** Ledger non-PII durable : permet un rejeu exact même après purge de la famille. */
+export const familySubmissionReceipts = pgTable(
+  'family_submission_receipts',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    idempotencyKeyHash: text('idempotency_key_hash').notNull(),
+    requestFingerprint: text('request_fingerprint').notNull(),
+    receiptId: uuid('receipt_id').notNull(),
+    submittedAt: timestamp('submitted_at').notNull(),
+    purgedAt: timestamp('purged_at'),
+  },
+  (t) => [
+    unique('family_submission_receipts_ludo_key_unique').on(t.ludoId, t.idempotencyKeyHash),
+    unique('family_submission_receipts_ludo_receipt_unique').on(t.ludoId, t.receiptId),
+    unique('family_submission_receipts_receipt_ludo_unique').on(t.receiptId, t.ludoId),
+    check('family_submission_receipts_key_hash_check', sql`char_length(${t.idempotencyKeyHash}) = 64`),
+    check('family_submission_receipts_fingerprint_check', sql`char_length(${t.requestFingerprint}) = 64`),
+  ],
+)
+
+export const familyRegistrationSubmissions = pgTable(
+  'family_registration_submissions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    formId: uuid('form_id').notNull(),
+    formVersionId: uuid('form_version_id').notNull(),
+    siteId: uuid('site_id').notNull(),
+    gender: familyRegistrationGender('gender').notNull().default('unspecified'),
+    firstName: text('first_name').notNull(),
+    lastName: text('last_name').notNull(),
+    birthDate: date('birth_date'),
+    address: text('address').notNull(),
+    postalCode: text('postal_code').notNull(),
+    city: text('city').notNull(),
+    phone: text('phone').notNull(),
+    secondaryPhone: text('secondary_phone'),
+    email: text('email').notNull(),
+    consentAccepted: boolean('consent_accepted').notNull(),
+    consentFullName: text('consent_full_name').notNull(),
+    consentAcceptedOn: date('consent_accepted_on').notNull(),
+    consentAcceptedAt: timestamp('consent_accepted_at').notNull(),
+    consentLabelSnapshot: text('consent_label_snapshot').notNull(),
+    consentDocumentsSnapshot: jsonb('consent_documents_snapshot').notNull(),
+    status: familyRegistrationSubmissionStatus('status').notNull().default('new'),
+    paymentMethod: familyRegistrationPaymentMethod('payment_method'),
+    paymentRecordedAt: timestamp('payment_recorded_at'),
+    paymentRecordedByMemberId: uuid('payment_recorded_by_member_id'),
+    revision: integer('revision').notNull().default(1),
+    processedByMemberId: uuid('processed_by_member_id'),
+    processedAt: timestamp('processed_at'),
+    purgeAt: timestamp('purge_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('family_registration_submissions_id_ludo_unique').on(t.id, t.ludoId),
+    foreignKey({ columns: [t.id, t.ludoId], foreignColumns: [familySubmissionReceipts.receiptId, familySubmissionReceipts.ludoId], name: 'family_registration_submissions_receipt_tenant_fk' }),
+    foreignKey({ columns: [t.formId, t.ludoId], foreignColumns: [familyRegistrationForms.id, familyRegistrationForms.ludoId], name: 'family_registration_submissions_form_tenant_fk' }),
+    foreignKey({ columns: [t.formVersionId, t.ludoId, t.formId], foreignColumns: [familyRegistrationFormVersions.id, familyRegistrationFormVersions.ludoId, familyRegistrationFormVersions.formId], name: 'family_registration_submissions_version_form_tenant_fk' }),
+    foreignKey({ columns: [t.siteId, t.ludoId], foreignColumns: [ludoSites.id, ludoSites.ludoId], name: 'family_registration_submissions_site_tenant_fk' }),
+    foreignKey({ columns: [t.processedByMemberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'family_registration_submissions_processor_tenant_fk' }),
+    foreignKey({ columns: [t.paymentRecordedByMemberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'family_registration_submissions_payment_recorder_tenant_fk' }),
+    check('family_registration_submissions_consent_check', sql`${t.consentAccepted} = true`),
+    check('family_registration_submissions_process_check', sql`(${t.status} = 'new' and ${t.processedAt} is null and ${t.purgeAt} is null and ${t.processedByMemberId} is null) or (${t.status} = 'processed' and ${t.processedAt} is not null and ${t.purgeAt} is not null and ${t.processedByMemberId} is not null)`),
+    check('family_registration_submissions_payment_check', sql`(${t.paymentMethod} is null and ${t.paymentRecordedAt} is null and ${t.paymentRecordedByMemberId} is null) or (${t.paymentMethod} is not null and ${t.paymentRecordedAt} is not null and ${t.paymentRecordedByMemberId} is not null)`),
+    index('family_registration_submissions_management_idx').on(t.ludoId, t.status, t.createdAt.desc()),
+    index('family_registration_submissions_purge_idx').on(t.status, t.purgeAt),
+  ],
+)
+
+export const familyRegistrationSubmissionMembers = pgTable(
+  'family_registration_submission_members',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull(),
+    submissionId: uuid('submission_id').notNull(),
+    gender: familyRegistrationGender('gender').notNull().default('unspecified'),
+    firstName: text('first_name').notNull(),
+    lastName: text('last_name').notNull(),
+    birthDate: date('birth_date'),
+    sortOrder: integer('sort_order').notNull(),
+  },
+  (t) => [
+    foreignKey({ columns: [t.submissionId, t.ludoId], foreignColumns: [familyRegistrationSubmissions.id, familyRegistrationSubmissions.ludoId], name: 'family_registration_submission_members_submission_tenant_fk' }).onDelete('cascade'),
+    unique('family_registration_submission_members_submission_order_unique').on(t.submissionId, t.sortOrder),
+  ],
+)
+
+/** Agrégat journalier non-PII; aucune ligne ne reste reliée à une famille purgée. */
+export const familyProcessingDailyStats = pgTable(
+  'family_processing_daily_stats',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    siteId: uuid('site_id').notNull(),
+    processedOn: date('processed_on').notNull(),
+    submissionsCount: integer('submissions_count').notNull().default(0),
+    personsCount: integer('persons_count').notNull().default(0),
+    twintCount: integer('twint_count').notNull().default(0),
+    cashCount: integer('cash_count').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('family_processing_daily_stats_ludo_site_date_unique').on(
+      t.ludoId,
+      t.siteId,
+      t.processedOn,
+    ),
+    foreignKey({ columns: [t.siteId, t.ludoId], foreignColumns: [ludoSites.id, ludoSites.ludoId], name: 'family_processing_daily_stats_site_tenant_fk' }),
+    check('family_processing_daily_stats_counts_check', sql`${t.submissionsCount} >= 0 and ${t.personsCount} >= 0 and ${t.twintCount} >= 0 and ${t.cashCount} >= 0`),
+  ],
+)
+
 // ─── Planning ────────────────────────────────────────────────────────────────
 
 export const seasons = pgTable('seasons', {
@@ -2484,6 +2791,23 @@ export type PublicActivityRegistrationOutboxRow =
   typeof publicActivityRegistrationOutbox.$inferSelect
 export type PublicActivityRegistrationOutboxInsert =
   typeof publicActivityRegistrationOutbox.$inferInsert
+export type FamilyRegistrationSubmissionStatus =
+  (typeof familyRegistrationSubmissionStatus.enumValues)[number]
+export type FamilyRegistrationPaymentMethod =
+  (typeof familyRegistrationPaymentMethod.enumValues)[number]
+export type FamilyRegistrationGender = (typeof familyRegistrationGender.enumValues)[number]
+export type FamilyRegistrationDocumentKind =
+  (typeof familyRegistrationDocumentKind.enumValues)[number]
+export type FamilyRegistrationFormRow = typeof familyRegistrationForms.$inferSelect
+export type FamilyRegistrationFormVersionRow = typeof familyRegistrationFormVersions.$inferSelect
+export type FamilyRegistrationDocumentRow = typeof familyRegistrationDocuments.$inferSelect
+export type FamilyRegistrationDocumentVersionRow =
+  typeof familyRegistrationDocumentVersions.$inferSelect
+export type FamilySubmissionReceiptRow = typeof familySubmissionReceipts.$inferSelect
+export type FamilyRegistrationSubmissionRow = typeof familyRegistrationSubmissions.$inferSelect
+export type FamilyRegistrationSubmissionMemberRow =
+  typeof familyRegistrationSubmissionMembers.$inferSelect
+export type FamilyProcessingDailyStatRow = typeof familyProcessingDailyStats.$inferSelect
 export type LudoSiteRow = typeof ludoSites.$inferSelect
 export type LudoSiteInsert = typeof ludoSites.$inferInsert
 export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect

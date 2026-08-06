@@ -34,3 +34,12 @@ describe('navigation Site public', () => {
     ).toBe(true)
   })
 })
+
+describe('navigation adhésions', () => {
+  const memberships = buildNavConfig('demo').find((destination) => destination.href === '/demo/adhesions')!
+  it('est découvrable par les responsables uniquement', () => {
+    expect(isNavDestinationVisible(memberships, { zone: 'sidebar', responsable: true, publicSiteEnabled: false })).toBe(true)
+    expect(isNavDestinationVisible(memberships, { zone: 'sidebar', responsable: false, publicSiteEnabled: true })).toBe(false)
+    expect(memberships.match('/demo/adhesions?id=receipt')).toBe(true)
+  })
+})

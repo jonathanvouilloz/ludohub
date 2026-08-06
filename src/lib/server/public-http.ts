@@ -16,7 +16,9 @@ function configuredOrigins(): Set<string> {
 export function publicCorsHeaders(request: Request): Headers | null {
   const origin = request.headers.get('origin')
   if (!origin) return new Headers({ Vary: 'Origin' })
-  if (!configuredOrigins().has(origin)) return null
+  // Le formulaire hébergé par LudoHub est toujours autorisé sur sa propre origine.
+  // Les intégrations externes restent limitées à l'allowlist explicite.
+  if (origin !== new URL(request.url).origin && !configuredOrigins().has(origin)) return null
 
   return new Headers({
     'Access-Control-Allow-Origin': origin,

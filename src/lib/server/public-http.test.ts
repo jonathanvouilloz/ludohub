@@ -23,6 +23,11 @@ describe('publicCorsHeaders', () => {
     expect(publicCorsHeaders(request)).toBeNull()
   })
 
+  it('autorise strictement la même origine sans wildcard ni configuration', () => {
+    const request = new Request('https://api.test/resource', { headers: { origin: 'https://api.test' } })
+    expect(publicCorsHeaders(request)?.get('access-control-allow-origin')).toBe('https://api.test')
+  })
+
   it('retourne le CORS uniquement pour une origine explicitement autorisée', () => {
     privateEnv.PUBLIC_API_ALLOWED_ORIGINS = 'https://site.test, https://preview.test'
     const request = new Request('https://api.test', { headers: { origin: 'https://site.test' } })

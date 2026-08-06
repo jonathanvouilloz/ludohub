@@ -85,6 +85,20 @@
       "when": 1785966391003,
       "tag": "0011_activity_registrations",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786001397219,
+      "tag": "0012_high_snowbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1786001492932,
+      "tag": "0013_luxuriant_dracula",
+      "breakpoints": true
     }
   ]
 }
