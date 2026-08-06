@@ -1,27 +1,39 @@
-import { betterAuth } from 'better-auth'
+import { betterAuth } from 'better-auth/minimal'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { env } from '$env/dynamic/private'
 import { env as publicEnv } from '$env/dynamic/public'
 import { db } from './db/index.js'
 import { user, session, account, verification } from './schema.js'
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: 'pg',
-    schema: { user, session, account, verification },
-  }),
-  session: {
-    // 30 jours
-    expiresIn: 60 * 60 * 24 * 30,
-    cookieCache: {
-      enabled: true,
-      maxAge: 60 * 5,
+const createAuth = () =>
+  betterAuth({
+    telemetry: { enabled: false },
+    database: drizzleAdapter(db, {
+      provider: 'pg',
+      schema: { user, session, account, verification },
+    }),
+    session: {
+      // 30 jours
+      expiresIn: 60 * 60 * 24 * 30,
+      cookieCache: {
+        enabled: true,
+        maxAge: 60 * 5,
+      },
     },
-  },
-  secret: env.BETTER_AUTH_SECRET,
-  baseURL: publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173',
-  trustedOrigins: [publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173'],
-  // Le flow d'auth custom (ludo password → member selection) est implémenté
-  // dans la feature 02-AUTH via des routes SvelteKit dédiées.
-  // Better Auth gère uniquement la persistance des sessions ici.
-})
+    secret: env.BETTER_AUTH_SECRET,
+    baseURL: publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173',
+    trustedOrigins: [publicEnv.PUBLIC_APP_URL ?? 'http://localhost:5173'],
+    // Le flow d'auth custom (ludo password → member selection) est implémenté
+    // dans la feature 02-AUTH via des routes SvelteKit dédiées.
+    // Better Auth gère uniquement la persistance des sessions ici.
+  })
+
+export type Auth = ReturnType<typeof createAuth>
+
+let auth: Auth | undefined
+
+/** Better Auth n'est construit que lorsqu'une route /api/auth le sollicite. */
+export const getAuth = (): Auth => {
+  auth ??= createAuth()
+  return auth
+}

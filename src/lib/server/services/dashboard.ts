@@ -149,7 +149,7 @@ export async function getDashboardData(
   const mineOpen = feed.filter((f) => f.isMine).length
 
   // ─── Rappels « à faire » ──────────────────────────────────────────────────
-  const base = `/${ludo.slug}`
+  const base = ludo.slug
   const reminders: Reminder[] = []
 
   if (notifCount > 0) {
@@ -168,7 +168,7 @@ export async function getDashboardData(
       module: 'absences',
       tone: 'warn',
       label: `${pendingAbsences.length} demande${pendingAbsences.length > 1 ? 's' : ''} d'absence à valider`,
-      href: `${base}/absences`,
+      href: `/${base}/absences`,
       count: pendingAbsences.length,
     })
   }
@@ -178,7 +178,7 @@ export async function getDashboardData(
       module: 'supplies',
       tone: 'warn',
       label: `${suppliesPending} demande${suppliesPending > 1 ? 's' : ''} de matériel en attente`,
-      href: `${base}/supplies`,
+      href: `/${base}/supplies`,
       count: suppliesPending,
     })
   }
@@ -188,7 +188,7 @@ export async function getDashboardData(
       module: 'themes',
       tone: 'warn',
       label: `${checkupMissingItems} objet${checkupMissingItems > 1 ? 's' : ''} à traiter en installation`,
-      href: `${base}/themes`,
+      href: `/${base}/themes`,
       count: checkupMissingItems,
     })
   }
@@ -200,7 +200,7 @@ export async function getDashboardData(
       module: 'planning',
       tone: 'info',
       label: `Votre prochain samedi : ${formatDayWeekday(myNextSaturday.date)} (${when})`,
-      href: `${base}/planning`,
+      href: `/${base}/planning`,
     })
   }
   if (feed.length > 0) {

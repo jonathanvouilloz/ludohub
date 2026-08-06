@@ -36,10 +36,42 @@ describe('navigation Site public', () => {
 })
 
 describe('navigation adhésions', () => {
-  const memberships = buildNavConfig('demo').find((destination) => destination.href === '/demo/adhesions')!
+  const memberships = buildNavConfig('demo').find(
+    (destination) => destination.href === '/demo/adhesions',
+  )!
   it('est découvrable par les responsables uniquement', () => {
-    expect(isNavDestinationVisible(memberships, { zone: 'sidebar', responsable: true, publicSiteEnabled: false })).toBe(true)
-    expect(isNavDestinationVisible(memberships, { zone: 'sidebar', responsable: false, publicSiteEnabled: true })).toBe(false)
+    expect(
+      isNavDestinationVisible(memberships, {
+        zone: 'sidebar',
+        responsable: true,
+        publicSiteEnabled: false,
+      }),
+    ).toBe(true)
+    expect(
+      isNavDestinationVisible(memberships, {
+        zone: 'sidebar',
+        responsable: false,
+        publicSiteEnabled: true,
+      }),
+    ).toBe(false)
     expect(memberships.match('/demo/adhesions?id=receipt')).toBe(true)
+  })
+})
+
+describe('URLs tenant de navigation', () => {
+  it('conserve des URLs absolues sans stocker une base dynamique absolue', () => {
+    const destinations = buildNavConfig('ma-ludo')
+
+    expect(destinations.find((destination) => destination.label === 'Accueil')?.href).toBe(
+      '/ma-ludo',
+    )
+    expect(destinations.find((destination) => destination.label === 'Planning')?.href).toBe(
+      '/ma-ludo/planning',
+    )
+    expect(
+      destinations
+        .find((destination) => destination.label === 'Absences')
+        ?.match('/ma-ludo/absences'),
+    ).toBe(true)
   })
 })

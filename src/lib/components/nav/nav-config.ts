@@ -49,48 +49,48 @@ export function isNavDestinationVisible(
  * l'appelant (depuis l'URL `[ludo]` ou la session pour `/reseau/*`).
  */
 export function buildNavConfig(slug: string): NavDest[] {
-  const base = `/${slug}`
+  const base = slug
   return [
     {
       label: 'Accueil',
-      href: base,
+      href: `/${base}`,
       icon: HouseIcon,
-      match: (p) => p === base,
+      match: (p) => p === `/${base}`,
       zones: ['sidebar', 'tabbar'],
     },
     {
       label: 'Planning',
-      href: `${base}/planning`,
+      href: `/${base}/planning`,
       icon: CalendarDaysIcon,
-      match: (p) => p.startsWith(`${base}/planning`),
+      match: (p) => p.startsWith(`/${base}/planning`),
       zones: ['sidebar', 'sheet'],
     },
     {
       label: 'Matériel',
-      href: `${base}/supplies`,
+      href: `/${base}/supplies`,
       icon: PackageIcon,
-      match: (p) => p.startsWith(`${base}/supplies`),
+      match: (p) => p.startsWith(`/${base}/supplies`),
       zones: ['sidebar', 'tabbar'],
     },
     {
       label: 'Jeux',
-      href: `${base}/games`,
+      href: `/${base}/games`,
       icon: DicesIcon,
-      match: (p) => p.startsWith(`${base}/games`),
+      match: (p) => p.startsWith(`/${base}/games`),
       zones: ['sidebar', 'tabbar'],
     },
     {
       label: 'Fréquentation',
-      href: `${base}/frequentation`,
+      href: `/${base}/frequentation`,
       icon: ClipboardListIcon,
-      match: (p) => p.startsWith(`${base}/frequentation`),
+      match: (p) => p.startsWith(`/${base}/frequentation`),
       zones: ['sidebar', 'sheet'],
     },
     {
       label: 'Thèmes',
-      href: `${base}/themes`,
+      href: `/${base}/themes`,
       icon: BoxesIcon,
-      match: (p) => p.startsWith(`${base}/themes`),
+      match: (p) => p.startsWith(`/${base}/themes`),
       zones: ['sidebar', 'sheet'],
     },
     {
@@ -110,51 +110,51 @@ export function buildNavConfig(slug: string): NavDest[] {
     },
     {
       label: 'Lieux et horaires',
-      href: `${base}/settings/lieux-horaires`,
+      href: `/${base}/settings/lieux-horaires`,
       icon: MapPinIcon,
-      match: (p) => p.startsWith(`${base}/settings/lieux-horaires`),
+      match: (p) => p.startsWith(`/${base}/settings/lieux-horaires`),
       zones: ['sidebar', 'sheet'],
     },
     {
       label: 'Site public',
-      href: `${base}/site-public`,
+      href: `/${base}/site-public`,
       icon: Globe2Icon,
-      match: (p) => p.startsWith(`${base}/site-public`),
+      match: (p) => p.startsWith(`/${base}/site-public`),
       zones: ['sidebar', 'sheet'],
       publicSiteOnly: true,
     },
     {
       label: 'Newsletter',
-      href: `${base}/newsletter`,
+      href: `/${base}/newsletter`,
       icon: MailIcon,
-      match: (p) => p.startsWith(`${base}/newsletter`),
+      match: (p) => p.startsWith(`/${base}/newsletter`),
       zones: ['sidebar', 'sheet'],
       responsableOnly: true,
     },
     {
       label: 'Adhésions',
-      href: `${base}/adhesions`,
+      href: `/${base}/adhesions`,
       icon: ClipboardListIcon,
-      match: (p) => p.startsWith(`${base}/adhesions`),
+      match: (p) => p.startsWith(`/${base}/adhesions`),
       zones: ['sidebar', 'sheet'],
       responsableOnly: true,
     },
     {
       label: 'Équipe',
-      href: `${base}/settings/membres`,
+      href: `/${base}/settings/membres`,
       icon: UsersIcon,
       match: (p) =>
-        p.startsWith(`${base}/settings/membres`) ||
-        p.startsWith(`${base}/settings/evenements`) ||
-        p.startsWith(`${base}/settings/infos`),
+        p.startsWith(`/${base}/settings/membres`) ||
+        p.startsWith(`/${base}/settings/evenements`) ||
+        p.startsWith(`/${base}/settings/infos`),
       zones: ['sidebar', 'sheet'],
       responsableOnly: true,
     },
     {
       label: 'Absences',
-      href: `${base}/absences`,
+      href: `/${base}/absences`,
       icon: CalendarOffIcon,
-      match: (p) => p.startsWith(`${base}/absences`),
+      match: (p) => p.startsWith(`/${base}/absences`),
       zones: ['sidebar', 'sheet'],
     },
     {
