@@ -1563,6 +1563,54 @@ export const familyProcessingDailyStats = pgTable(
 
 // ─── Planning ────────────────────────────────────────────────────────────────
 
+export const extensionDeviceAuthorizationStatus = pgEnum('extension_device_authorization_status', ['pending', 'approved', 'denied', 'consumed'])
+export const extensionRefreshTokenStatus = pgEnum('extension_refresh_token_status', ['active', 'used', 'revoked'])
+
+export const extensionDeviceAuthorizations = pgTable('extension_device_authorizations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  deviceCodeHash: text('device_code_hash').notNull().unique(),
+  userCodeHmac: text('user_code_hmac').notNull().unique(),
+  codeChallenge: text('code_challenge').notNull(), clientName: text('client_name').notNull(),
+  status: extensionDeviceAuthorizationStatus('status').notNull().default('pending'),
+  ludoId: uuid('ludo_id'), memberId: uuid('member_id'), passwordVersion: text('password_version'),
+  intervalSeconds: integer('interval_seconds').notNull().default(5), pollCount: integer('poll_count').notNull().default(0),
+  lastPolledAt: timestamp('last_polled_at'), expiresAt: timestamp('expires_at').notNull(),
+  approvedAt: timestamp('approved_at'), consumedAt: timestamp('consumed_at'), createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ columns: [t.memberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'extension_device_authorizations_member_tenant_fk' }),
+  check('extension_device_authorizations_pkce_check', sql`char_length(${t.codeChallenge}) = 43`),
+  check('extension_device_authorizations_poll_check', sql`${t.intervalSeconds} between 5 and 30 and ${t.pollCount} between 0 and 240`),
+  check('extension_device_authorizations_approval_check', sql`(${t.status} in ('pending','denied') and ${t.ludoId} is null and ${t.memberId} is null and ${t.passwordVersion} is null and ${t.approvedAt} is null) or (${t.status} in ('approved','consumed') and ${t.ludoId} is not null and ${t.memberId} is not null and ${t.passwordVersion} is not null and ${t.approvedAt} is not null)`),
+  check('extension_device_authorizations_consumed_check', sql`(${t.status} = 'consumed' and ${t.consumedAt} is not null) or (${t.status} <> 'consumed' and ${t.consumedAt} is null)`),
+  index('extension_device_authorizations_expiry_idx').on(t.status, t.expiresAt),
+])
+
+export const extensionSessions = pgTable('extension_sessions', {
+  id: uuid('id').defaultRandom().primaryKey(), ludoId: uuid('ludo_id').notNull(), memberId: uuid('member_id').notNull(),
+  label: text('label').notNull(), passwordVersion: text('password_version').notNull(),
+  accessTokenHash: text('access_token_hash').notNull().unique(), accessExpiresAt: timestamp('access_expires_at').notNull(),
+  refreshExpiresAt: timestamp('refresh_expires_at').notNull(), revokedAt: timestamp('revoked_at'),
+  revokedByMemberId: uuid('revoked_by_member_id'), lastUsedAt: timestamp('last_used_at'), createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  unique('extension_sessions_id_ludo_unique').on(t.id, t.ludoId),
+  foreignKey({ columns: [t.memberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'extension_sessions_member_tenant_fk' }),
+  foreignKey({ columns: [t.revokedByMemberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'extension_sessions_revoker_tenant_fk' }),
+  index('extension_sessions_member_idx').on(t.ludoId, t.memberId, t.revokedAt),
+])
+
+export const extensionRefreshTokens = pgTable('extension_refresh_tokens', {
+  id: uuid('id').defaultRandom().primaryKey(), sessionId: uuid('session_id').notNull(), ludoId: uuid('ludo_id').notNull(),
+  tokenHash: text('token_hash').notNull().unique(), generation: integer('generation').notNull(),
+  status: extensionRefreshTokenStatus('status').notNull().default('active'), expiresAt: timestamp('expires_at').notNull(),
+  usedAt: timestamp('used_at'), createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => [
+  foreignKey({ columns: [t.sessionId, t.ludoId], foreignColumns: [extensionSessions.id, extensionSessions.ludoId], name: 'extension_refresh_tokens_session_tenant_fk' }).onDelete('cascade'),
+  unique('extension_refresh_tokens_session_generation_unique').on(t.sessionId, t.generation),
+  check('extension_refresh_tokens_generation_check', sql`${t.generation} >= 0`),
+  check('extension_refresh_tokens_used_check', sql`(${t.status} = 'active' and ${t.usedAt} is null) or (${t.status} <> 'active' and ${t.usedAt} is not null)`),
+  index('extension_refresh_tokens_expiry_idx').on(t.status, t.expiresAt),
+])
+
 export const seasons = pgTable('seasons', {
   id: uuid('id').defaultRandom().primaryKey(),
   ludoId: uuid('ludo_id')
@@ -2808,6 +2856,9 @@ export type FamilyRegistrationSubmissionRow = typeof familyRegistrationSubmissio
 export type FamilyRegistrationSubmissionMemberRow =
   typeof familyRegistrationSubmissionMembers.$inferSelect
 export type FamilyProcessingDailyStatRow = typeof familyProcessingDailyStats.$inferSelect
+export type ExtensionDeviceAuthorizationRow = typeof extensionDeviceAuthorizations.$inferSelect
+export type ExtensionSessionRow = typeof extensionSessions.$inferSelect
+export type ExtensionRefreshTokenRow = typeof extensionRefreshTokens.$inferSelect
 export type LudoSiteRow = typeof ludoSites.$inferSelect
 export type LudoSiteInsert = typeof ludoSites.$inferInsert
 export type SiteOpeningIntervalRow = typeof siteOpeningIntervals.$inferSelect

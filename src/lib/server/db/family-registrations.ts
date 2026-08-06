@@ -2,8 +2,10 @@ import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   familyRegistrationForms as forms,
+  familyRegistrationFormVersions as formVersions,
   familyRegistrationSubmissionMembers as submissionMembers,
   familyRegistrationSubmissions as submissions,
+  ludoSites,
   type FamilyRegistrationGender,
   type FamilyRegistrationDocumentKind,
   type FamilyRegistrationPaymentMethod,
@@ -397,7 +399,8 @@ export function listFamilySubmissionRows(
   return db
     .select({
       id: submissions.id,
-      siteId: submissions.siteId,
+      siteSlug: ludoSites.slug,
+      siteName: ludoSites.name,
       firstName: submissions.firstName,
       lastName: submissions.lastName,
       email: submissions.email,
@@ -410,6 +413,10 @@ export function listFamilySubmissionRows(
       createdAt: submissions.createdAt,
     })
     .from(submissions)
+    .innerJoin(
+      ludoSites,
+      and(eq(ludoSites.id, submissions.siteId), eq(ludoSites.ludoId, submissions.ludoId)),
+    )
     .where(and(eq(submissions.ludoId, ludoId), status ? eq(submissions.status, status) : undefined))
     .orderBy(desc(submissions.createdAt), asc(submissions.id))
     .limit(limit)
@@ -420,7 +427,13 @@ export async function getFamilySubmissionRowForLudo(id: string, ludoId: string) 
     .select({
       id: submissions.id,
       siteId: submissions.siteId,
+      siteSlug: ludoSites.slug,
+      siteName: ludoSites.name,
       formVersionId: submissions.formVersionId,
+      annualFeeCents: formVersions.annualFeeCents,
+      currency: formVersions.currency,
+      allowsTwint: formVersions.allowsTwint,
+      allowsCash: formVersions.allowsCash,
       gender: submissions.gender,
       firstName: submissions.firstName,
       lastName: submissions.lastName,
@@ -445,6 +458,17 @@ export async function getFamilySubmissionRowForLudo(id: string, ludoId: string) 
       createdAt: submissions.createdAt,
     })
     .from(submissions)
+    .innerJoin(
+      ludoSites,
+      and(eq(ludoSites.id, submissions.siteId), eq(ludoSites.ludoId, submissions.ludoId)),
+    )
+    .innerJoin(
+      formVersions,
+      and(
+        eq(formVersions.id, submissions.formVersionId),
+        eq(formVersions.ludoId, submissions.ludoId),
+      ),
+    )
     .where(and(eq(submissions.id, id), eq(submissions.ludoId, ludoId)))
   if (!submission) return undefined
   const members = await db
