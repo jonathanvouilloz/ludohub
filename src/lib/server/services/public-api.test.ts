@@ -307,12 +307,35 @@ describe('activités publiques', () => {
   })
 
   it('retourne le détail courant ou archivé sans champ interne', async () => {
-    getVisibleActivity.mockResolvedValue(activityRow)
+    getVisibleActivity.mockResolvedValue({
+      ...activityRow,
+      assets: [
+        {
+          id: 'asset-image',
+          kind: 'support_image',
+          url: 'https://blob.test/activity.webp',
+          downloadUrl: null,
+          fileName: null,
+          sizeBytes: 1200,
+          alt: 'Une table de jeux',
+          caption: 'Pendant l’activité',
+          credit: null,
+          sortOrder: 0,
+        },
+      ],
+    })
     const result = await getPublicActivityDetailByLudoSlug('demo', 'soiree-jeux')
     expect(result?.activity).toMatchObject({
       id: activityRow.id,
       bodyMarkdown: '**Bienvenue**',
       image: null,
+      supportImage: {
+        url: 'https://blob.test/activity.webp',
+        alt: 'Une table de jeux',
+        caption: 'Pendant l’activité',
+        credit: null,
+      },
+      attachments: [],
       registration: {
         enabled: false,
         capacity: null,
@@ -371,7 +394,23 @@ describe('actualités publiques', () => {
   })
 
   it('retourne un détail par slug sans exposer les relations internes', async () => {
-    getVisibleNews.mockResolvedValue(newsRow)
+    getVisibleNews.mockResolvedValue({
+      ...newsRow,
+      assets: [
+        {
+          id: 'asset-pdf',
+          kind: 'pdf_attachment',
+          url: 'https://blob.test/programme.pdf',
+          downloadUrl: 'https://blob.test/programme.pdf?download=1',
+          fileName: 'programme.pdf',
+          sizeBytes: 4096,
+          alt: null,
+          caption: 'Programme',
+          credit: null,
+          sortOrder: 0,
+        },
+      ],
+    })
     const result = await getPublicNewsDetailByLudoSlug('demo', 'nouvelle')
     expect(result?.news).toEqual(
       expect.objectContaining({
@@ -379,6 +418,17 @@ describe('actualités publiques', () => {
         slug: 'nouvelle',
         bodyMarkdown: '**Contenu**',
         sites: [],
+        supportImage: null,
+        attachments: [
+          {
+            id: 'asset-pdf',
+            title: 'Programme',
+            fileName: 'programme.pdf',
+            viewUrl: 'https://blob.test/programme.pdf',
+            downloadUrl: 'https://blob.test/programme.pdf?download=1',
+            sizeBytes: 4096,
+          },
+        ],
       }),
     )
     expect(getVisibleNews).toHaveBeenCalledWith(ludo.id, 'nouvelle', undefined)

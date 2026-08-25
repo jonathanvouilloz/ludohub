@@ -70,9 +70,27 @@ export type PublicNewsSummaryItem = {
   publishedAt: string
 }
 
+export type PublicSupportImage = {
+  url: string
+  alt: string
+  caption: string | null
+  credit: string | null
+}
+
+export type PublicPdfAttachment = {
+  id: string
+  title: string
+  fileName: string
+  viewUrl: string
+  downloadUrl: string
+  sizeBytes: number
+}
+
 export type PublicNewsItem = PublicNewsSummaryItem & {
   bodyMarkdown: string
   sites: Array<{ id: string; slug: string; name: string }>
+  supportImage: PublicSupportImage | null
+  attachments: PublicPdfAttachment[]
 }
 
 export type PublicNewsPayload = {
@@ -105,6 +123,8 @@ export type PublicActivitySummaryItem = {
 
 export type PublicActivityItem = Omit<PublicActivitySummaryItem, 'schedule'> & {
   bodyMarkdown: string
+  supportImage: PublicSupportImage | null
+  attachments: PublicPdfAttachment[]
   schedule: PublicActivitySchedule
   registration: {
     enabled: boolean
@@ -337,7 +357,51 @@ function publicNewsDetailItem(
     sites: news.targets
       .filter((target) => target.site.isActive)
       .map((target) => ({ id: target.site.id, slug: target.site.slug, name: target.site.name })),
+    supportImage: publicSupportImage(news.assets ?? []),
+    attachments: publicPdfAttachments(news.assets ?? []),
   }
+}
+
+type EditorialAsset = {
+  id: string
+  kind: 'support_image' | 'pdf_attachment'
+  url: string
+  downloadUrl: string | null
+  fileName: string | null
+  sizeBytes: number
+  alt: string | null
+  caption: string | null
+  credit: string | null
+  sortOrder: number
+}
+
+function publicSupportImage(assets: EditorialAsset[]): PublicSupportImage | null {
+  const image = assets.find((asset) => asset.kind === 'support_image')
+  return image?.alt
+    ? {
+        url: image.url,
+        alt: image.alt,
+        caption: image.caption,
+        credit: image.credit,
+      }
+    : null
+}
+
+function publicPdfAttachments(assets: EditorialAsset[]): PublicPdfAttachment[] {
+  return assets
+    .filter(
+      (asset) =>
+        asset.kind === 'pdf_attachment' && asset.downloadUrl && asset.fileName && asset.caption,
+    )
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id))
+    .map((asset) => ({
+      id: asset.id,
+      title: asset.caption!,
+      fileName: asset.fileName!,
+      viewUrl: asset.url,
+      downloadUrl: asset.downloadUrl!,
+      sizeBytes: asset.sizeBytes,
+    }))
 }
 
 async function resolvePublicSiteId(ludoId: string, siteSlug?: string) {
@@ -478,6 +542,8 @@ export async function getPublicActivityDetailByLudoSlug(
       featuredRank: activity.featuredRank,
       publishedAt: activity.publishedAt!.toISOString(),
       bodyMarkdown: activity.body,
+      supportImage: publicSupportImage(activity.assets ?? []),
+      attachments: publicPdfAttachments(activity.assets ?? []),
       schedule: {
         type: activity.type,
         recurrenceRule: activity.recurrenceRule,

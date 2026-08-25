@@ -953,6 +953,11 @@ export const publicActivityLifecycle = pgEnum('public_activity_lifecycle', [
   'trashed',
 ])
 
+export const publicEditorialAssetKind = pgEnum('public_editorial_asset_kind', [
+  'support_image',
+  'pdf_attachment',
+])
+
 /** Activité publique avec publication et cycle d'archivage séparés. */
 export const publicActivities = pgTable(
   'public_activities',
@@ -1105,6 +1110,80 @@ export const publicActivityExceptions = pgTable(
       'public_activity_exceptions_reason_check',
       sql`${t.reason} is null or char_length(trim(${t.reason})) between 1 and 500`,
     ),
+  ],
+)
+
+/** Média complémentaire d'une actualité ou activité : une image d'appoint ou un PDF. */
+export const publicEditorialAssets = pgTable(
+  'public_editorial_assets',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    newsId: uuid('news_id'),
+    activityId: uuid('activity_id'),
+    kind: publicEditorialAssetKind('kind').notNull(),
+    url: text('url').notNull(),
+    downloadUrl: text('download_url'),
+    storageKey: text('storage_key').notNull(),
+    mimeType: text('mime_type').notNull(),
+    fileName: text('file_name'),
+    sizeBytes: integer('size_bytes').notNull(),
+    alt: text('alt'),
+    caption: text('caption'),
+    credit: text('credit'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdByMemberId: uuid('created_by_member_id').notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_editorial_assets_id_ludo_id_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.newsId, t.ludoId],
+      foreignColumns: [publicNews.id, publicNews.ludoId],
+      name: 'public_editorial_assets_news_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.activityId, t.ludoId],
+      foreignColumns: [publicActivities.id, publicActivities.ludoId],
+      name: 'public_editorial_assets_activity_tenant_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [t.createdByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'public_editorial_assets_author_tenant_fk',
+    }),
+    check(
+      'public_editorial_assets_owner_check',
+      sql`(${t.newsId} is not null and ${t.activityId} is null) or (${t.newsId} is null and ${t.activityId} is not null)`,
+    ),
+    check(
+      'public_editorial_assets_file_check',
+      sql`char_length(trim(${t.url})) between 1 and 2000 and char_length(trim(${t.storageKey})) between 1 and 1000 and char_length(trim(${t.mimeType})) between 1 and 100 and ${t.sizeBytes} between 1 and 15728640`,
+    ),
+    check(
+      'public_editorial_assets_kind_check',
+      sql`(${t.kind} = 'support_image' and ${t.mimeType} in ('image/jpeg','image/png','image/webp') and ${t.alt} is not null and char_length(trim(${t.alt})) between 1 and 300 and ${t.fileName} is null and ${t.downloadUrl} is null) or (${t.kind} = 'pdf_attachment' and ${t.mimeType} = 'application/pdf' and ${t.fileName} is not null and char_length(trim(${t.fileName})) between 1 and 300 and ${t.downloadUrl} is not null and char_length(trim(${t.downloadUrl})) between 1 and 2000 and ${t.alt} is null)`,
+    ),
+    check(
+      'public_editorial_assets_caption_check',
+      sql`${t.caption} is null or char_length(trim(${t.caption})) between 1 and 500`,
+    ),
+    check(
+      'public_editorial_assets_credit_check',
+      sql`${t.credit} is null or char_length(trim(${t.credit})) between 1 and 200`,
+    ),
+    check('public_editorial_assets_sort_check', sql`${t.sortOrder} between 0 and 1000000`),
+    uniqueIndex('public_editorial_assets_news_support_unique')
+      .on(t.newsId)
+      .where(sql`${t.newsId} is not null and ${t.kind} = 'support_image'`),
+    uniqueIndex('public_editorial_assets_activity_support_unique')
+      .on(t.activityId)
+      .where(sql`${t.activityId} is not null and ${t.kind} = 'support_image'`),
+    index('public_editorial_assets_news_order_idx').on(t.newsId, t.kind, t.sortOrder, t.id),
+    index('public_editorial_assets_activity_order_idx').on(t.activityId, t.kind, t.sortOrder, t.id),
   ],
 )
 
@@ -1282,7 +1361,9 @@ export const familyRegistrationForms = pgTable(
   'family_registration_forms',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     slug: text('slug').notNull().default('adhesion-famille'),
     title: text('title').notNull(),
     intro: text('intro'),
@@ -1311,7 +1392,10 @@ export const familyRegistrationForms = pgTable(
     check('family_registration_forms_retention_check', sql`${t.retentionDays} between 1 and 365`),
     check('family_registration_forms_fee_check', sql`${t.annualFeeCents} between 0 and 1000000`),
     check('family_registration_forms_currency_check', sql`${t.currency} = 'CHF'`),
-    check('family_registration_forms_payment_methods_check', sql`${t.allowsTwint} or ${t.allowsCash}`),
+    check(
+      'family_registration_forms_payment_methods_check',
+      sql`${t.allowsTwint} or ${t.allowsCash}`,
+    ),
   ],
 )
 
@@ -1319,7 +1403,9 @@ export const familyRegistrationDocuments = pgTable(
   'family_registration_documents',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     formId: uuid('form_id').notNull(),
     slug: text('slug').notNull(),
     title: text('title').notNull(),
@@ -1346,7 +1432,9 @@ export const familyRegistrationDocumentVersions = pgTable(
   'family_registration_document_versions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     documentId: uuid('document_id').notNull(),
     version: integer('version').notNull(),
     title: text('title').notNull(),
@@ -1382,7 +1470,9 @@ export const familyRegistrationFormVersions = pgTable(
   'family_registration_form_versions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     formId: uuid('form_id').notNull(),
     version: integer('version').notNull(),
     title: text('title').notNull(),
@@ -1411,11 +1501,23 @@ export const familyRegistrationFormVersions = pgTable(
       foreignColumns: [members.id, members.ludoId],
       name: 'family_registration_form_versions_publisher_tenant_fk',
     }),
-    check('family_registration_form_versions_max_members_check', sql`${t.maxMembers} between 1 and 50`),
-    check('family_registration_form_versions_retention_check', sql`${t.retentionDays} between 1 and 365`),
-    check('family_registration_form_versions_fee_check', sql`${t.annualFeeCents} between 0 and 1000000`),
+    check(
+      'family_registration_form_versions_max_members_check',
+      sql`${t.maxMembers} between 1 and 50`,
+    ),
+    check(
+      'family_registration_form_versions_retention_check',
+      sql`${t.retentionDays} between 1 and 365`,
+    ),
+    check(
+      'family_registration_form_versions_fee_check',
+      sql`${t.annualFeeCents} between 0 and 1000000`,
+    ),
     check('family_registration_form_versions_currency_check', sql`${t.currency} = 'CHF'`),
-    check('family_registration_form_versions_payment_methods_check', sql`${t.allowsTwint} or ${t.allowsCash}`),
+    check(
+      'family_registration_form_versions_payment_methods_check',
+      sql`${t.allowsTwint} or ${t.allowsCash}`,
+    ),
   ],
 )
 
@@ -1424,7 +1526,9 @@ export const familyRegistrationFormVersionDocuments = pgTable(
   {
     formVersionId: uuid('form_version_id').notNull(),
     documentVersionId: uuid('document_version_id').notNull(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     sortOrder: integer('sort_order').notNull().default(0),
   },
   (t) => [
@@ -1450,7 +1554,9 @@ export const familySubmissionReceipts = pgTable(
   'family_submission_receipts',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     idempotencyKeyHash: text('idempotency_key_hash').notNull(),
     requestFingerprint: text('request_fingerprint').notNull(),
     receiptId: uuid('receipt_id').notNull(),
@@ -1461,8 +1567,14 @@ export const familySubmissionReceipts = pgTable(
     unique('family_submission_receipts_ludo_key_unique').on(t.ludoId, t.idempotencyKeyHash),
     unique('family_submission_receipts_ludo_receipt_unique').on(t.ludoId, t.receiptId),
     unique('family_submission_receipts_receipt_ludo_unique').on(t.receiptId, t.ludoId),
-    check('family_submission_receipts_key_hash_check', sql`char_length(${t.idempotencyKeyHash}) = 64`),
-    check('family_submission_receipts_fingerprint_check', sql`char_length(${t.requestFingerprint}) = 64`),
+    check(
+      'family_submission_receipts_key_hash_check',
+      sql`char_length(${t.idempotencyKeyHash}) = 64`,
+    ),
+    check(
+      'family_submission_receipts_fingerprint_check',
+      sql`char_length(${t.requestFingerprint}) = 64`,
+    ),
   ],
 )
 
@@ -1470,7 +1582,9 @@ export const familyRegistrationSubmissions = pgTable(
   'family_registration_submissions',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     formId: uuid('form_id').notNull(),
     formVersionId: uuid('form_version_id').notNull(),
     siteId: uuid('site_id').notNull(),
@@ -1503,16 +1617,54 @@ export const familyRegistrationSubmissions = pgTable(
   },
   (t) => [
     unique('family_registration_submissions_id_ludo_unique').on(t.id, t.ludoId),
-    foreignKey({ columns: [t.id, t.ludoId], foreignColumns: [familySubmissionReceipts.receiptId, familySubmissionReceipts.ludoId], name: 'family_registration_submissions_receipt_tenant_fk' }),
-    foreignKey({ columns: [t.formId, t.ludoId], foreignColumns: [familyRegistrationForms.id, familyRegistrationForms.ludoId], name: 'family_registration_submissions_form_tenant_fk' }),
-    foreignKey({ columns: [t.formVersionId, t.ludoId, t.formId], foreignColumns: [familyRegistrationFormVersions.id, familyRegistrationFormVersions.ludoId, familyRegistrationFormVersions.formId], name: 'family_registration_submissions_version_form_tenant_fk' }),
-    foreignKey({ columns: [t.siteId, t.ludoId], foreignColumns: [ludoSites.id, ludoSites.ludoId], name: 'family_registration_submissions_site_tenant_fk' }),
-    foreignKey({ columns: [t.processedByMemberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'family_registration_submissions_processor_tenant_fk' }),
-    foreignKey({ columns: [t.paymentRecordedByMemberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'family_registration_submissions_payment_recorder_tenant_fk' }),
+    foreignKey({
+      columns: [t.id, t.ludoId],
+      foreignColumns: [familySubmissionReceipts.receiptId, familySubmissionReceipts.ludoId],
+      name: 'family_registration_submissions_receipt_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.formId, t.ludoId],
+      foreignColumns: [familyRegistrationForms.id, familyRegistrationForms.ludoId],
+      name: 'family_registration_submissions_form_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.formVersionId, t.ludoId, t.formId],
+      foreignColumns: [
+        familyRegistrationFormVersions.id,
+        familyRegistrationFormVersions.ludoId,
+        familyRegistrationFormVersions.formId,
+      ],
+      name: 'family_registration_submissions_version_form_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'family_registration_submissions_site_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.processedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'family_registration_submissions_processor_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.paymentRecordedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'family_registration_submissions_payment_recorder_tenant_fk',
+    }),
     check('family_registration_submissions_consent_check', sql`${t.consentAccepted} = true`),
-    check('family_registration_submissions_process_check', sql`(${t.status} = 'new' and ${t.processedAt} is null and ${t.purgeAt} is null and ${t.processedByMemberId} is null) or (${t.status} = 'processed' and ${t.processedAt} is not null and ${t.purgeAt} is not null and ${t.processedByMemberId} is not null)`),
-    check('family_registration_submissions_payment_check', sql`(${t.paymentMethod} is null and ${t.paymentRecordedAt} is null and ${t.paymentRecordedByMemberId} is null) or (${t.paymentMethod} is not null and ${t.paymentRecordedAt} is not null and ${t.paymentRecordedByMemberId} is not null)`),
-    index('family_registration_submissions_management_idx').on(t.ludoId, t.status, t.createdAt.desc()),
+    check(
+      'family_registration_submissions_process_check',
+      sql`(${t.status} = 'new' and ${t.processedAt} is null and ${t.purgeAt} is null and ${t.processedByMemberId} is null) or (${t.status} = 'processed' and ${t.processedAt} is not null and ${t.purgeAt} is not null and ${t.processedByMemberId} is not null)`,
+    ),
+    check(
+      'family_registration_submissions_payment_check',
+      sql`(${t.paymentMethod} is null and ${t.paymentRecordedAt} is null and ${t.paymentRecordedByMemberId} is null) or (${t.paymentMethod} is not null and ${t.paymentRecordedAt} is not null and ${t.paymentRecordedByMemberId} is not null)`,
+    ),
+    index('family_registration_submissions_management_idx').on(
+      t.ludoId,
+      t.status,
+      t.createdAt.desc(),
+    ),
     index('family_registration_submissions_purge_idx').on(t.status, t.purgeAt),
   ],
 )
@@ -1530,8 +1682,15 @@ export const familyRegistrationSubmissionMembers = pgTable(
     sortOrder: integer('sort_order').notNull(),
   },
   (t) => [
-    foreignKey({ columns: [t.submissionId, t.ludoId], foreignColumns: [familyRegistrationSubmissions.id, familyRegistrationSubmissions.ludoId], name: 'family_registration_submission_members_submission_tenant_fk' }).onDelete('cascade'),
-    unique('family_registration_submission_members_submission_order_unique').on(t.submissionId, t.sortOrder),
+    foreignKey({
+      columns: [t.submissionId, t.ludoId],
+      foreignColumns: [familyRegistrationSubmissions.id, familyRegistrationSubmissions.ludoId],
+      name: 'family_registration_submission_members_submission_tenant_fk',
+    }).onDelete('cascade'),
+    unique('family_registration_submission_members_submission_order_unique').on(
+      t.submissionId,
+      t.sortOrder,
+    ),
   ],
 )
 
@@ -1540,7 +1699,9 @@ export const familyProcessingDailyStats = pgTable(
   'family_processing_daily_stats',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    ludoId: uuid('ludo_id').notNull().references(() => ludotheques.id, { onDelete: 'cascade' }),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
     siteId: uuid('site_id').notNull(),
     processedOn: date('processed_on').notNull(),
     submissionsCount: integer('submissions_count').notNull().default(0),
@@ -1556,60 +1717,135 @@ export const familyProcessingDailyStats = pgTable(
       t.siteId,
       t.processedOn,
     ),
-    foreignKey({ columns: [t.siteId, t.ludoId], foreignColumns: [ludoSites.id, ludoSites.ludoId], name: 'family_processing_daily_stats_site_tenant_fk' }),
-    check('family_processing_daily_stats_counts_check', sql`${t.submissionsCount} >= 0 and ${t.personsCount} >= 0 and ${t.twintCount} >= 0 and ${t.cashCount} >= 0`),
+    foreignKey({
+      columns: [t.siteId, t.ludoId],
+      foreignColumns: [ludoSites.id, ludoSites.ludoId],
+      name: 'family_processing_daily_stats_site_tenant_fk',
+    }),
+    check(
+      'family_processing_daily_stats_counts_check',
+      sql`${t.submissionsCount} >= 0 and ${t.personsCount} >= 0 and ${t.twintCount} >= 0 and ${t.cashCount} >= 0`,
+    ),
   ],
 )
 
 // ─── Planning ────────────────────────────────────────────────────────────────
 
-export const extensionDeviceAuthorizationStatus = pgEnum('extension_device_authorization_status', ['pending', 'approved', 'denied', 'consumed'])
-export const extensionRefreshTokenStatus = pgEnum('extension_refresh_token_status', ['active', 'used', 'revoked'])
-
-export const extensionDeviceAuthorizations = pgTable('extension_device_authorizations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  deviceCodeHash: text('device_code_hash').notNull().unique(),
-  userCodeHmac: text('user_code_hmac').notNull().unique(),
-  codeChallenge: text('code_challenge').notNull(), clientName: text('client_name').notNull(),
-  status: extensionDeviceAuthorizationStatus('status').notNull().default('pending'),
-  ludoId: uuid('ludo_id'), memberId: uuid('member_id'), passwordVersion: text('password_version'),
-  intervalSeconds: integer('interval_seconds').notNull().default(5), pollCount: integer('poll_count').notNull().default(0),
-  lastPolledAt: timestamp('last_polled_at'), expiresAt: timestamp('expires_at').notNull(),
-  approvedAt: timestamp('approved_at'), consumedAt: timestamp('consumed_at'), createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (t) => [
-  foreignKey({ columns: [t.memberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'extension_device_authorizations_member_tenant_fk' }),
-  check('extension_device_authorizations_pkce_check', sql`char_length(${t.codeChallenge}) = 43`),
-  check('extension_device_authorizations_poll_check', sql`${t.intervalSeconds} between 5 and 30 and ${t.pollCount} between 0 and 240`),
-  check('extension_device_authorizations_approval_check', sql`(${t.status} in ('pending','denied') and ${t.ludoId} is null and ${t.memberId} is null and ${t.passwordVersion} is null and ${t.approvedAt} is null) or (${t.status} in ('approved','consumed') and ${t.ludoId} is not null and ${t.memberId} is not null and ${t.passwordVersion} is not null and ${t.approvedAt} is not null)`),
-  check('extension_device_authorizations_consumed_check', sql`(${t.status} = 'consumed' and ${t.consumedAt} is not null) or (${t.status} <> 'consumed' and ${t.consumedAt} is null)`),
-  index('extension_device_authorizations_expiry_idx').on(t.status, t.expiresAt),
+export const extensionDeviceAuthorizationStatus = pgEnum('extension_device_authorization_status', [
+  'pending',
+  'approved',
+  'denied',
+  'consumed',
+])
+export const extensionRefreshTokenStatus = pgEnum('extension_refresh_token_status', [
+  'active',
+  'used',
+  'revoked',
 ])
 
-export const extensionSessions = pgTable('extension_sessions', {
-  id: uuid('id').defaultRandom().primaryKey(), ludoId: uuid('ludo_id').notNull(), memberId: uuid('member_id').notNull(),
-  label: text('label').notNull(), passwordVersion: text('password_version').notNull(),
-  accessTokenHash: text('access_token_hash').notNull().unique(), accessExpiresAt: timestamp('access_expires_at').notNull(),
-  refreshExpiresAt: timestamp('refresh_expires_at').notNull(), revokedAt: timestamp('revoked_at'),
-  revokedByMemberId: uuid('revoked_by_member_id'), lastUsedAt: timestamp('last_used_at'), createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (t) => [
-  unique('extension_sessions_id_ludo_unique').on(t.id, t.ludoId),
-  foreignKey({ columns: [t.memberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'extension_sessions_member_tenant_fk' }),
-  foreignKey({ columns: [t.revokedByMemberId, t.ludoId], foreignColumns: [members.id, members.ludoId], name: 'extension_sessions_revoker_tenant_fk' }),
-  index('extension_sessions_member_idx').on(t.ludoId, t.memberId, t.revokedAt),
-])
+export const extensionDeviceAuthorizations = pgTable(
+  'extension_device_authorizations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    deviceCodeHash: text('device_code_hash').notNull().unique(),
+    userCodeHmac: text('user_code_hmac').notNull().unique(),
+    codeChallenge: text('code_challenge').notNull(),
+    clientName: text('client_name').notNull(),
+    status: extensionDeviceAuthorizationStatus('status').notNull().default('pending'),
+    ludoId: uuid('ludo_id'),
+    memberId: uuid('member_id'),
+    passwordVersion: text('password_version'),
+    intervalSeconds: integer('interval_seconds').notNull().default(5),
+    pollCount: integer('poll_count').notNull().default(0),
+    lastPolledAt: timestamp('last_polled_at'),
+    expiresAt: timestamp('expires_at').notNull(),
+    approvedAt: timestamp('approved_at'),
+    consumedAt: timestamp('consumed_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.memberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'extension_device_authorizations_member_tenant_fk',
+    }),
+    check('extension_device_authorizations_pkce_check', sql`char_length(${t.codeChallenge}) = 43`),
+    check(
+      'extension_device_authorizations_poll_check',
+      sql`${t.intervalSeconds} between 5 and 30 and ${t.pollCount} between 0 and 240`,
+    ),
+    check(
+      'extension_device_authorizations_approval_check',
+      sql`(${t.status} in ('pending','denied') and ${t.ludoId} is null and ${t.memberId} is null and ${t.passwordVersion} is null and ${t.approvedAt} is null) or (${t.status} in ('approved','consumed') and ${t.ludoId} is not null and ${t.memberId} is not null and ${t.passwordVersion} is not null and ${t.approvedAt} is not null)`,
+    ),
+    check(
+      'extension_device_authorizations_consumed_check',
+      sql`(${t.status} = 'consumed' and ${t.consumedAt} is not null) or (${t.status} <> 'consumed' and ${t.consumedAt} is null)`,
+    ),
+    index('extension_device_authorizations_expiry_idx').on(t.status, t.expiresAt),
+  ],
+)
 
-export const extensionRefreshTokens = pgTable('extension_refresh_tokens', {
-  id: uuid('id').defaultRandom().primaryKey(), sessionId: uuid('session_id').notNull(), ludoId: uuid('ludo_id').notNull(),
-  tokenHash: text('token_hash').notNull().unique(), generation: integer('generation').notNull(),
-  status: extensionRefreshTokenStatus('status').notNull().default('active'), expiresAt: timestamp('expires_at').notNull(),
-  usedAt: timestamp('used_at'), createdAt: timestamp('created_at').notNull().defaultNow(),
-}, (t) => [
-  foreignKey({ columns: [t.sessionId, t.ludoId], foreignColumns: [extensionSessions.id, extensionSessions.ludoId], name: 'extension_refresh_tokens_session_tenant_fk' }).onDelete('cascade'),
-  unique('extension_refresh_tokens_session_generation_unique').on(t.sessionId, t.generation),
-  check('extension_refresh_tokens_generation_check', sql`${t.generation} >= 0`),
-  check('extension_refresh_tokens_used_check', sql`(${t.status} = 'active' and ${t.usedAt} is null) or (${t.status} <> 'active' and ${t.usedAt} is not null)`),
-  index('extension_refresh_tokens_expiry_idx').on(t.status, t.expiresAt),
-])
+export const extensionSessions = pgTable(
+  'extension_sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id').notNull(),
+    memberId: uuid('member_id').notNull(),
+    label: text('label').notNull(),
+    passwordVersion: text('password_version').notNull(),
+    accessTokenHash: text('access_token_hash').notNull().unique(),
+    accessExpiresAt: timestamp('access_expires_at').notNull(),
+    refreshExpiresAt: timestamp('refresh_expires_at').notNull(),
+    revokedAt: timestamp('revoked_at'),
+    revokedByMemberId: uuid('revoked_by_member_id'),
+    lastUsedAt: timestamp('last_used_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('extension_sessions_id_ludo_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.memberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'extension_sessions_member_tenant_fk',
+    }),
+    foreignKey({
+      columns: [t.revokedByMemberId, t.ludoId],
+      foreignColumns: [members.id, members.ludoId],
+      name: 'extension_sessions_revoker_tenant_fk',
+    }),
+    index('extension_sessions_member_idx').on(t.ludoId, t.memberId, t.revokedAt),
+  ],
+)
+
+export const extensionRefreshTokens = pgTable(
+  'extension_refresh_tokens',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    sessionId: uuid('session_id').notNull(),
+    ludoId: uuid('ludo_id').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    generation: integer('generation').notNull(),
+    status: extensionRefreshTokenStatus('status').notNull().default('active'),
+    expiresAt: timestamp('expires_at').notNull(),
+    usedAt: timestamp('used_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.sessionId, t.ludoId],
+      foreignColumns: [extensionSessions.id, extensionSessions.ludoId],
+      name: 'extension_refresh_tokens_session_tenant_fk',
+    }).onDelete('cascade'),
+    unique('extension_refresh_tokens_session_generation_unique').on(t.sessionId, t.generation),
+    check('extension_refresh_tokens_generation_check', sql`${t.generation} >= 0`),
+    check(
+      'extension_refresh_tokens_used_check',
+      sql`(${t.status} = 'active' and ${t.usedAt} is null) or (${t.status} <> 'active' and ${t.usedAt} is not null)`,
+    ),
+    index('extension_refresh_tokens_expiry_idx').on(t.status, t.expiresAt),
+  ],
+)
 
 export const seasons = pgTable('seasons', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -2001,6 +2237,7 @@ export const publicNewsRelations = relations(publicNews, ({ one, many }) => ({
     relationName: 'publicNewsPublisher',
   }),
   targets: many(publicNewsSites),
+  assets: many(publicEditorialAssets),
 }))
 
 export const publicNewsSitesRelations = relations(publicNewsSites, ({ one }) => ({
@@ -2216,7 +2453,28 @@ export const publicActivitiesRelations = relations(publicActivities, ({ one, man
   targets: many(publicActivitySites),
   dates: many(publicActivityDates),
   exceptions: many(publicActivityExceptions),
+  assets: many(publicEditorialAssets),
   registrations: many(publicActivityRegistrations),
+}))
+
+export const publicEditorialAssetsRelations = relations(publicEditorialAssets, ({ one }) => ({
+  ludo: one(ludotheques, {
+    fields: [publicEditorialAssets.ludoId],
+    references: [ludotheques.id],
+  }),
+  news: one(publicNews, {
+    fields: [publicEditorialAssets.newsId, publicEditorialAssets.ludoId],
+    references: [publicNews.id, publicNews.ludoId],
+  }),
+  activity: one(publicActivities, {
+    fields: [publicEditorialAssets.activityId, publicEditorialAssets.ludoId],
+    references: [publicActivities.id, publicActivities.ludoId],
+  }),
+  createdBy: one(members, {
+    fields: [publicEditorialAssets.createdByMemberId, publicEditorialAssets.ludoId],
+    references: [members.id, members.ludoId],
+    relationName: 'publicEditorialAssetAuthor',
+  }),
 }))
 
 export const publicActivitySitesRelations = relations(publicActivitySites, ({ one }) => ({
@@ -2824,6 +3082,9 @@ export type PublicContactMessageRow = typeof publicContactMessages.$inferSelect
 export type PublicContactMessageInsert = typeof publicContactMessages.$inferInsert
 export type PublicActivityRow = typeof publicActivities.$inferSelect
 export type PublicActivityInsert = typeof publicActivities.$inferInsert
+export type PublicEditorialAssetKind = (typeof publicEditorialAssetKind.enumValues)[number]
+export type PublicEditorialAssetRow = typeof publicEditorialAssets.$inferSelect
+export type PublicEditorialAssetInsert = typeof publicEditorialAssets.$inferInsert
 export type PublicActivityType = (typeof publicActivityType.enumValues)[number]
 export type PublicActivityLifecycle = (typeof publicActivityLifecycle.enumValues)[number]
 export type PublicActivitySiteRow = typeof publicActivitySites.$inferSelect

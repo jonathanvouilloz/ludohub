@@ -11,6 +11,12 @@ import { MediaCompensationError, uploadAndRegisterMedia } from '$lib/server/medi
 import type { AuthorizedMediaScope } from '$lib/server/media/paths.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import {
+  addPublicPdfAttachment,
+  deletePublicEditorialAsset,
+  PublicEditorialAssetServiceError,
+  upsertPublicSupportImage,
+} from '$lib/server/services/public-editorial-assets.js'
+import {
   archivePublicActivity,
   authorizePublicActivityMediaScope,
   clearPublicActivityImage,
@@ -164,6 +170,7 @@ async function run(action: () => Promise<unknown>) {
       cause instanceof PublicActivityServiceError ||
       cause instanceof PublicActivityRegistrationServiceError ||
       cause instanceof PublicSiteServiceError ||
+      cause instanceof PublicEditorialAssetServiceError ||
       cause instanceof MediaStorageError
     ) {
       return fail(
@@ -198,6 +205,11 @@ async function audit(input: {
 const ACTIVITY_IMAGE_POLICY = {
   maxBytes: 5 * 1024 * 1024,
   allowedTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
+}
+
+const ACTIVITY_PDF_POLICY = {
+  maxBytes: 15 * 1024 * 1024,
+  allowedTypes: ['application/pdf'] as const,
 }
 
 async function cleanupStoredImage(input: {
@@ -448,6 +460,18 @@ export const actions: Actions = {
         activityId: id,
         operation: 'delete',
       })
+      await Promise.all(
+        (activity.assets ?? []).map((asset) =>
+          cleanupStoredImage({
+            scope,
+            pathname: asset.storageKey,
+            ludoId: ludo.id,
+            memberId: member.id,
+            activityId: id,
+            operation: 'delete',
+          }),
+        ),
+      )
       await audit({
         action: 'public_activity.deleted',
         ludoId: ludo.id,
@@ -517,6 +541,115 @@ export const actions: Actions = {
         ludoId: ludo.id,
         memberId: member.id,
         activityId: id,
+      })
+      return { success: true }
+    })
+  },
+
+  uploadSupportImage: async (event) => {
+    const { ludo, member } = await requireActivityContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      const revision = parseRevision(data)
+      const file = data.get('file')
+      const alt = String(data.get('alt') ?? '').trim()
+      if (!(file instanceof File)) throw new MediaStorageError('Sélectionnez une image.')
+      const registered = await uploadAndRegisterMedia({
+        authorize: () => authorizePublicActivityMediaScope(ludo.id, id, revision),
+        upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: ACTIVITY_IMAGE_POLICY }),
+        register: async (scope, blob) => ({
+          scope,
+          result: await upsertPublicSupportImage({
+            ludoId: ludo.id,
+            owner: { type: 'activity', id },
+            memberId: member.id,
+            scope,
+            blob,
+            alt,
+            caption: String(data.get('caption') ?? '').trim() || null,
+            credit: String(data.get('credit') ?? '').trim() || null,
+          }),
+        }),
+        cleanup: deletePublicSiteMedia,
+      })
+      await cleanupStoredImage({
+        scope: registered.scope,
+        pathname: registered.result.previousStorageKey,
+        ludoId: ludo.id,
+        memberId: member.id,
+        activityId: id,
+        operation: 'support-replace',
+      })
+      await audit({
+        action: 'public_activity.support_image_updated',
+        ludoId: ludo.id,
+        memberId: member.id,
+        activityId: id,
+      })
+      return { success: true }
+    })
+  },
+
+  uploadAttachment: async (event) => {
+    const { ludo, member } = await requireActivityContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      const revision = parseRevision(data)
+      const file = data.get('file')
+      if (!(file instanceof File)) throw new MediaStorageError('Sélectionnez un PDF.')
+      const asset = await uploadAndRegisterMedia({
+        authorize: () => authorizePublicActivityMediaScope(ludo.id, id, revision),
+        upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: ACTIVITY_PDF_POLICY }),
+        register: (scope, blob) =>
+          addPublicPdfAttachment({
+            ludoId: ludo.id,
+            owner: { type: 'activity', id },
+            memberId: member.id,
+            scope,
+            blob,
+            title: String(data.get('title') ?? ''),
+            fileName: file.name,
+          }),
+        cleanup: deletePublicSiteMedia,
+      })
+      await audit({
+        action: 'public_activity.attachment_added',
+        ludoId: ludo.id,
+        memberId: member.id,
+        activityId: id,
+        metadata: { assetId: asset.id },
+      })
+      return { success: true }
+    })
+  },
+
+  deleteAsset: async (event) => {
+    const { ludo, member } = await requireActivityContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    const assetId = String(data.get('assetId') ?? '')
+    return run(async () => {
+      const scope = await authorizePublicActivityMediaScope(ludo.id, id, parseRevision(data))
+      const asset = await deletePublicEditorialAsset(assetId, ludo.id, {
+        type: 'activity',
+        id,
+      })
+      await cleanupStoredImage({
+        scope,
+        pathname: asset.storageKey,
+        ludoId: ludo.id,
+        memberId: member.id,
+        activityId: id,
+        operation: 'asset-remove',
+      })
+      await audit({
+        action: 'public_activity.asset_removed',
+        ludoId: ludo.id,
+        memberId: member.id,
+        activityId: id,
+        metadata: { assetId, kind: asset.kind },
       })
       return { success: true }
     })

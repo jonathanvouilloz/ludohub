@@ -13,6 +13,7 @@ const newsWithRelations = {
   updatedBy: true,
   publishedBy: true,
   targets: { with: { site: true } },
+  assets: true,
 } as const
 
 export type PublicNewsUpdateData = Pick<

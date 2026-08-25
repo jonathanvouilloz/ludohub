@@ -18,6 +18,7 @@ const managementRelations = {
   targets: { with: { site: true as const } },
   dates: { orderBy: [asc(publicActivityDates.startsAt)] },
   exceptions: { orderBy: [asc(publicActivityExceptions.excludedAt)] },
+  assets: true as const,
 }
 
 const publicRelations = {
@@ -28,6 +29,7 @@ const publicRelations = {
 const publicDetailRelations = {
   ...publicRelations,
   targets: { with: { site: true as const } },
+  assets: true as const,
 }
 
 const publicColumns = {

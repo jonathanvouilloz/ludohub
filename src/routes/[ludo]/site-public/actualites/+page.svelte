@@ -5,6 +5,8 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import NewsDialog, { type EditableNews } from '$lib/components/public-site/NewsDialog.svelte'
+  import EditorialAssetsEditor from '$lib/components/public-site/EditorialAssetsEditor.svelte'
+  import { compressEditorialImageFormData } from '$lib/media/editorial-image.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
   import NewspaperIcon from '@lucide/svelte/icons/newspaper'
   import PencilIcon from '@lucide/svelte/icons/pencil'
@@ -138,6 +140,7 @@
               enctype="multipart/form-data"
               use:enhance={toastEnhance({
                 success: item.imageUrl ? 'Image remplacée.' : 'Image ajoutée.',
+                prepare: (formData) => compressEditorialImageFormData(formData, 'content'),
                 onPending: (pending) => (imagePendingId = pending ? item.id : null),
               })}
             >
@@ -186,6 +189,8 @@
               </form>
             {/if}
           </section>
+
+          <EditorialAssetsEditor ownerId={item.id} revision={item.revision} assets={item.assets} />
         </article>
       {/each}
     </div>

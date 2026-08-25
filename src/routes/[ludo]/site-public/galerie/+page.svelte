@@ -8,6 +8,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
+  import { compressEditorialImageFormData } from '$lib/media/editorial-image.js'
   import ImagesIcon from '@lucide/svelte/icons/images'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   let { data } = $props()
@@ -112,6 +113,7 @@
               enctype="multipart/form-data"
               use:enhance={toastEnhance({
                 success: item.imageUrl ? 'Image remplacée.' : 'Image ajoutée.',
+                prepare: (formData) => compressEditorialImageFormData(formData, 'gallery'),
                 onPending: (v) => (mediaPending = v ? item.id : null),
               })}
             >

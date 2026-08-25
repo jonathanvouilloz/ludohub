@@ -85,7 +85,7 @@ describe('stockage Blob', () => {
     )
   })
 
-  it('utilise downloadUrl comme URL publique canonique pour un PDF', async () => {
+  it('conserve des URL distinctes pour ouvrir et télécharger un PDF', async () => {
     vi.mocked(put).mockImplementation(async (pathname) => ({
       url: `https://blob.test/${pathname}`,
       downloadUrl: `https://blob.test/${pathname}?download=1`,
@@ -100,7 +100,7 @@ describe('stockage Blob', () => {
       policy: { maxBytes: 1024, allowedTypes: ['application/pdf'] },
     })
 
-    expect(stored.url).toBe(stored.downloadUrl)
+    expect(stored.url).toBe(`https://blob.test/${stored.pathname}`)
     expect(stored.downloadUrl).toBe(`https://blob.test/${stored.pathname}?download=1`)
   })
 

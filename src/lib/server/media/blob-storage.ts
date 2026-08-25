@@ -87,7 +87,8 @@ export async function uploadPublicSiteMedia(input: {
     token: blobToken(),
   })
   return {
-    url: contentType === 'application/pdf' ? blob.downloadUrl : blob.url,
+    // `url` ouvre le fichier dans le navigateur ; `downloadUrl` force le téléchargement.
+    url: blob.url,
     downloadUrl: blob.downloadUrl,
     pathname: blob.pathname as ManagedBlobPath,
     contentType,

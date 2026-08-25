@@ -4,10 +4,12 @@
   import ActivityDialog, {
     type EditableActivity,
   } from '$lib/components/public-site/ActivityDialog.svelte'
+  import EditorialAssetsEditor from '$lib/components/public-site/EditorialAssetsEditor.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
+  import { compressEditorialImageFormData } from '$lib/media/editorial-image.js'
   import CalendarIcon from '@lucide/svelte/icons/calendar-days'
   import PencilIcon from '@lucide/svelte/icons/pencil'
 
@@ -293,6 +295,7 @@
                 enctype="multipart/form-data"
                 use:enhance={toastEnhance({
                   success: item.imageUrl ? 'Image remplacée.' : 'Image ajoutée.',
+                  prepare: (formData) => compressEditorialImageFormData(formData, 'content'),
                   onPending: (value) => (imagePendingId = value ? item.id : null),
                 })}
               >
@@ -345,6 +348,11 @@
                 </form>
               {/if}
             </section>
+            <EditorialAssetsEditor
+              ownerId={item.id}
+              revision={item.revision}
+              assets={item.assets}
+            />
           {/if}
         </article>
       {/each}

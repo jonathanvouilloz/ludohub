@@ -22,6 +22,8 @@ export interface ToastEnhanceOptions {
   updateOptions?: { reset?: boolean; invalidateAll?: boolean }
   /** Désactive l'auto-`update()` (cas avancé où l'appelant gère lui-même). */
   skipUpdate?: boolean
+  /** Prépare ou transforme le FormData avant envoi (compression d'image, par exemple). */
+  prepare?: (formData: FormData) => Promise<void> | void
 }
 
 /**
@@ -43,10 +45,22 @@ export function toastEnhance(opts: ToastEnhanceOptions = {}): SubmitFunction {
     onError,
     updateOptions,
     skipUpdate = false,
+    prepare,
   } = opts
 
-  return () => {
+  return async ({ formData, cancel }) => {
     onPending?.(true)
+
+    try {
+      await prepare?.(formData)
+    } catch (cause) {
+      cancel()
+      onPending?.(false)
+      const message = cause instanceof Error ? cause.message : errorFallback
+      if (errorMode === 'toast') toast.error(message)
+      onError?.(message)
+      return
+    }
 
     return async ({ result, update }) => {
       onPending?.(false)
