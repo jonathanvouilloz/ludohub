@@ -53,6 +53,70 @@ les settings** (§9 du backlog), socle de la double ludo (§10) et du module Pâ
 
 ---
 
+## Cadrage lieux et horaires — 2026-08-05
+
+Ce lot est le prérequis direct de l'epic 20 « Site public ». Aucun code ni migration n'a été
+appliqué pendant le cadrage.
+
+### État constaté
+
+- `ludotheques` porte encore une seule adresse et un seul jeu de coordonnées ;
+- `src/lib/server/sites.ts` contient une exception codée en dur pour `paquis-secheron` ;
+- `attendance_records.site` stocke une clé texte `paquis` ou `secheron` ;
+- aucun modèle d'horaires récurrents n'existe en base ;
+- l'UI de fréquentation sait déjà demander et mémoriser le lieu choisi.
+
+### Modèle cible
+
+`ludo_sites` :
+
+- `id`, `ludo_id`, `slug`, `name` ;
+- adresse, NPA, ville, téléphone, e-mail, informations d'accès ;
+- latitude et longitude facultatives pour une future suggestion géographique ;
+- `is_primary`, `is_active`, `sort_order`, timestamps ;
+- unicité `(ludo_id, slug)`.
+
+`site_opening_intervals` :
+
+- `id`, `site_id`, jour de semaine ;
+- heure d'ouverture et de fermeture ;
+- ordre d'affichage ;
+- plusieurs intervalles possibles le même jour pour gérer matin et après-midi ;
+- aucune exception datée : les fermetures temporaires relèvent des annonces de l'epic 20.
+
+### Migration prévue
+
+1. créer un lieu principal pour chaque ludothèque à partir de ses coordonnées actuelles ;
+2. créer deux lieux pour Pâquis-Sécheron ;
+3. ajouter `attendance_records.site_id` nullable ;
+4. convertir les valeurs texte existantes vers les UUID des lieux ;
+5. adapter l'unicité fréquentation et les queries ;
+6. remplacer `src/lib/server/sites.ts` par les queries DB ;
+7. conserver temporairement la colonne texte uniquement pendant la transition, puis la retirer
+   après vérification des données ;
+8. faire exécuter la migration de production explicitement par Jonathan.
+
+### Interface réglages
+
+- une page « Lieux et horaires » réservée aux responsables ;
+- ludo mono-site : une seule fiche, sans exposer la complexité multi-lieux ;
+- Pâquis-Sécheron : deux fiches réordonnables ;
+- plusieurs plages horaires par jour ;
+- prévisualisation du rendu public ;
+- les autres membres peuvent consulter, mais pas modifier ces réglages.
+
+### Critères avant ouverture de l'epic 20
+
+- [ ] chaque ludothèque possède au moins un lieu en base ;
+- [ ] Pâquis-Sécheron possède exactement deux lieux actifs et stables ;
+- [ ] la fréquentation référence un lieu par UUID ;
+- [ ] les horaires peuvent représenter plusieurs ouvertures le même jour ;
+- [ ] les responsables peuvent modifier lieux et horaires ;
+- [ ] les tests couvrent isolation tenant, mono-site et multi-site ;
+- [ ] la migration et son retour arrière sont documentés.
+
+---
+
 ## Carte du code
 
 > Mise a jour : 2026-07-30

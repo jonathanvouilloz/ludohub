@@ -1,90 +1,181 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import { page } from '$app/state'
+  import PublicSiteSectionCard from '$lib/components/public-site/PublicSiteSectionCard.svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
+  import BellIcon from '@lucide/svelte/icons/bell'
+  import BookOpenIcon from '@lucide/svelte/icons/book-open'
+  import CalendarIcon from '@lucide/svelte/icons/calendar-days'
+  import FileTextIcon from '@lucide/svelte/icons/file-text'
+  import HelpCircleIcon from '@lucide/svelte/icons/circle-help'
+  import ImagesIcon from '@lucide/svelte/icons/images'
+  import InboxIcon from '@lucide/svelte/icons/inbox'
+  import NewspaperIcon from '@lucide/svelte/icons/newspaper'
+  import TrophyIcon from '@lucide/svelte/icons/trophy'
+  import UserRoundIcon from '@lucide/svelte/icons/user-round'
+  import UsersIcon from '@lucide/svelte/icons/users'
 
   let { data } = $props()
   const enabled = $derived(data.publicSiteState.enabled)
+  const base = $derived(`/${data.ludo.slug}/site-public`)
   let saving = $state(false)
 </script>
 
-<svelte:head>
-  <title>Site public · LudoHub</title>
-</svelte:head>
+<svelte:head><title>Site public · LudoHub</title></svelte:head>
 
 <main class="public-site-home">
-  <header>
+  <header class="page-header">
     <div>
-      <p class="eyebrow">Module éditorial</p>
       <h1>Site public</h1>
-      <p class="intro">Gérez ici les contenus qui seront publiés sur le site de la ludothèque.</p>
+      <p>Choisissez ce que vous souhaitez mettre à jour sur le site de la ludothèque.</p>
     </div>
-    <span class:enabled class="status">{enabled ? 'Activé' : 'Désactivé'}</span>
+    <span class:enabled class="status">{enabled ? 'Site actif' : 'Site désactivé'}</span>
   </header>
 
-  {#if page.form?.error}
-    <p class="error" role="alert">{page.form.error}</p>
-  {/if}
+  {#if page.form?.error}<p class="error" role="alert">{page.form.error}</p>{/if}
 
   {#if enabled}
-    <section class="foundation-card">
-      <h2>Contenus du site</h2>
-      <p>Gérez les informations urgentes et les articles publiés pour un ou plusieurs lieux.</p>
-      <div class="content-links">
-        <a class="content-link" href="/{data.ludo.slug}/site-public/annonces">Gérer les annonces</a>
-        <a class="content-link" href="/{data.ludo.slug}/site-public/actualites"
-          >Gérer les actualités</a
-        >
-        <a class="content-link" href="/{data.ludo.slug}/site-public/activites"
-          >Gérer les activités</a
-        >
-        <a class="content-link" href="/{data.ludo.slug}/site-public/top-3">Gérer les Top 3</a>
-        <a class="content-link" href="/{data.ludo.slug}/site-public/faq">Gérer la FAQ</a>
-        <a class="content-link" href="/{data.ludo.slug}/site-public/documents"
-          >Gérer les documents</a
-        >
-        <a class="content-link" href="/{data.ludo.slug}/site-public/galerie">Gérer la galerie</a>
-        <a class="content-link" href="/{data.ludo.slug}/site-public/profils">Gérer les profils</a>
-        <a class="content-link" href="/{data.ludo.slug}/site-public/annuaire">Gérer l’annuaire</a>
-        <a class="content-link" href="/{data.ludo.slug}/site-public/contacts">Messages reçus</a>
+    <section aria-labelledby="publish-title">
+      <div class="section-heading">
+        <h2 id="publish-title">Publier</h2>
+        <p>Les contenus régulièrement ajoutés ou mis en avant.</p>
+      </div>
+      <div class="section-grid">
+        <PublicSiteSectionCard
+          href={`${base}/annonces`}
+          title="Annonces"
+          description="Afficher une information urgente ou temporaire."
+          icon={BellIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/actualites`}
+          title="Actualités"
+          description="Rédiger et publier les nouvelles de la ludothèque."
+          icon={NewspaperIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/activites`}
+          title="Activités"
+          description="Présenter les activités et leurs dates."
+          icon={CalendarIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/top-3`}
+          title="Top 3"
+          description="Mettre en avant trois jeux autour d’un thème."
+          icon={TrophyIcon}
+        />
+      </div>
+    </section>
+
+    <section aria-labelledby="information-title">
+      <div class="section-heading">
+        <h2 id="information-title">Informations du site</h2>
+        <p>Les contenus de référence consultés par les familles.</p>
+      </div>
+      <div class="section-grid">
+        <PublicSiteSectionCard
+          href={`${base}/faq`}
+          title="Questions fréquentes"
+          description="Répondre simplement aux questions courantes."
+          icon={HelpCircleIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/documents`}
+          title="Documents"
+          description="Publier des règlements, rapports et fichiers PDF."
+          icon={FileTextIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/galerie`}
+          title="Galerie"
+          description="Ajouter les photos visibles sur le site."
+          icon={ImagesIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/profils`}
+          title="Équipe et comité"
+          description="Présenter les personnes de la ludothèque."
+          icon={UserRoundIcon}
+        />
+        <PublicSiteSectionCard
+          href={`${base}/annuaire`}
+          title="Annuaire genevois"
+          description="Référencer les autres ludothèques du canton."
+          icon={BookOpenIcon}
+        />
+      </div>
+    </section>
+
+    <section aria-labelledby="requests-title">
+      <div class="section-heading">
+        <h2 id="requests-title">Messages et demandes</h2>
+        <p>Ce qui a été envoyé depuis le site et demande votre attention.</p>
+      </div>
+      <div class="section-grid">
+        <PublicSiteSectionCard
+          href={`${base}/contacts`}
+          title="Messages reçus"
+          description="Lire et traiter les demandes de contact."
+          icon={InboxIcon}
+        />
+        {#if data.canConfigure}
+          <PublicSiteSectionCard
+            href={`${base}/inscriptions`}
+            title="Inscriptions aux activités"
+            description="Consulter les inscriptions et mettre à jour leur statut."
+            icon={UsersIcon}
+          />
+        {/if}
       </div>
     </section>
   {:else}
-    <section class="foundation-card">
-      <h2>Le module est inactif</h2>
+    <section class="inactive-panel">
+      <h2>Le site public est désactivé</h2>
       <p>
-        L’activation est isolée à cette ludothèque et exige au moins un lieu actif ainsi qu’un lieu
-        principal.
+        Activez-le pour accéder aux rubriques et publier du contenu. Un lieu principal actif est
+        nécessaire.
       </p>
     </section>
   {/if}
 
   {#if data.canConfigure}
-    <form
-      method="POST"
-      action="?/toggle"
-      use:enhance={toastEnhance({
-        onPending: (pending) => (saving = pending),
-        success: enabled ? 'Module désactivé.' : 'Module activé.',
-      })}
-    >
-      <input type="hidden" name="enabled" value={enabled ? 'false' : 'true'} />
-      <button type="submit" class:danger={enabled} disabled={saving}>
-        {saving ? 'Enregistrement…' : enabled ? 'Désactiver le module' : 'Activer le module'}
-      </button>
-    </form>
+    <section class="settings" aria-labelledby="settings-title">
+      <div>
+        <h2 id="settings-title">Réglage du site</h2>
+        <p>
+          {enabled
+            ? 'La désactivation masque les contenus du site public.'
+            : 'L’activation rend les rubriques éditoriales disponibles.'}
+        </p>
+      </div>
+      <form
+        method="POST"
+        action="?/toggle"
+        use:enhance={toastEnhance({
+          onPending: (pending) => (saving = pending),
+          success: enabled ? 'Module désactivé.' : 'Module activé.',
+        })}
+      >
+        <input type="hidden" name="enabled" value={enabled ? 'false' : 'true'} />
+        <Button type="submit" variant={enabled ? 'destructive' : 'default'} disabled={saving}
+          >{saving ? 'Enregistrement…' : enabled ? 'Désactiver le site' : 'Activer le site'}</Button
+        >
+      </form>
+    </section>
   {/if}
 </main>
 
 <style>
   .public-site-home {
+    display: grid;
     max-width: var(--max-content);
     margin: 0 auto;
-    padding: var(--space-10) var(--space-6);
-    display: grid;
-    gap: var(--space-6);
+    padding: var(--space-6) var(--space-6) var(--space-12);
+    gap: var(--space-10);
   }
-  header {
+  .page-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
@@ -95,23 +186,20 @@
   p {
     margin: 0;
   }
-  .eyebrow {
-    color: var(--text-muted);
-    font-size: var(--text-label);
-    font-weight: var(--weight-bold);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
   h1 {
-    margin-top: var(--space-1);
-    font-size: var(--text-h1);
     color: var(--text-main);
+    font-size: var(--text-h1);
   }
-  .intro {
+  .page-header p,
+  .section-heading p,
+  .settings p,
+  .inactive-panel p {
     margin-top: var(--space-2);
     color: var(--text-muted);
+    line-height: 1.5;
   }
   .status {
+    flex: 0 0 auto;
     padding: var(--space-2) var(--space-3);
     border-radius: var(--radius-pill);
     background: var(--bg-muted);
@@ -123,58 +211,61 @@
     background: var(--success-light);
     color: var(--success);
   }
-  .foundation-card {
-    padding: var(--space-6);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    background: var(--bg-card);
+  section {
     display: grid;
-    gap: var(--space-2);
-  }
-  .foundation-card p {
-    color: var(--text-muted);
-    line-height: 1.6;
-  }
-  .content-link {
-    color: var(--ludo-color);
-    font-weight: var(--weight-semibold);
-  }
-  .content-links {
-    display: flex;
-    flex-wrap: wrap;
     gap: var(--space-4);
   }
-  form {
-    display: flex;
-    justify-content: flex-start;
+  .section-heading h2,
+  .settings h2,
+  .inactive-panel h2 {
+    color: var(--text-main);
+    font-size: var(--text-h2);
   }
-  button {
-    min-height: 44px;
-    padding: var(--space-3) var(--space-5);
-    border: 0;
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .settings,
+  .inactive-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: var(--space-6);
+    border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    background: var(--ludo-color);
-    color: var(--text-inverse);
-    font: inherit;
-    font-weight: var(--weight-semibold);
-    cursor: pointer;
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
   }
-  button.danger {
-    background: var(--danger);
+  .inactive-panel {
+    grid-template-columns: 1fr;
   }
-  button:disabled {
-    cursor: wait;
-    opacity: 0.65;
+  .settings form {
+    display: flex;
   }
   .error {
     padding: var(--space-3);
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-sm);
     background: var(--danger-light);
     color: var(--danger);
   }
-  @media (max-width: 640px) {
-    header {
+  @media (max-width: 720px) {
+    .public-site-home {
+      padding: var(--space-4) var(--space-4) var(--space-10);
+      gap: var(--space-8);
+    }
+    .page-header {
       flex-direction: column;
+    }
+    .settings {
+      grid-template-columns: 1fr;
+      align-items: stretch;
+    }
+    .section-grid {
+      grid-template-columns: 1fr;
+    }
+    .settings :global(button) {
+      width: 100%;
     }
   }
 </style>

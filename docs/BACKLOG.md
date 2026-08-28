@@ -102,6 +102,11 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
 
 - [ ] **Alimenter le site de Pâquis-Sécheron depuis LudoHub.** _(revue 2026-07-22)_ Le site de Pâquis sera **directement relié** à l'app pour : **horaires**, **membres de l'équipe**, **événements**, **blog**, **carnets d'activités**. Il faut donc un **module dédié, activable uniquement pour cette ludothèque** (flag par ludo + exposition publique en lecture, probablement des routes API/JSON consommées par le site). Dépend de §9 (horaires) et §10 (double ludothèque). Projet lié : `ludo-paquis` (`projets/ludo/website`).
 
+  **Cadrage du 5 août 2026 :** le périmètre détaillé est désormais suivi dans
+  [features/20-site-public.md](features/20-site-public.md), avec la spécification canonique dans
+  `../../website-v2/docs/PHASE-2-SPEC.md`. Le projet cible est `website-v2` ; `website` reste la source
+  legacy à ne pas modifier.
+
 ---
 
 ## Questions tranchées (2026-07-30)

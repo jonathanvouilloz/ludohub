@@ -3,15 +3,18 @@
   import ArrowUpIcon from '@lucide/svelte/icons/arrow-up'
   import EyeIcon from '@lucide/svelte/icons/eye'
   import PencilIcon from '@lucide/svelte/icons/pencil'
+  import PlusIcon from '@lucide/svelte/icons/plus'
   import { enhance } from '$app/forms'
   import { Button } from '$lib/components/ui/button/index.js'
   import HoursPreview from '$lib/components/settings/HoursPreview.svelte'
   import SiteEditor from '$lib/components/settings/SiteEditor.svelte'
+  import SiteCreateForm from '$lib/components/settings/SiteCreateForm.svelte'
   import { toastEnhance } from '$lib/utils/enhance'
 
   let { data, form } = $props()
   let mode = $state<'preview' | 'edit'>('preview')
   let dirtySites = $state<Record<string, boolean>>({})
+  let creating = $state(false)
 
   const activeSites = $derived(data.sites.filter((site) => site.isActive))
   const multiSite = $derived(data.sites.length > 1)
@@ -65,7 +68,12 @@
 {#if data.sites.length === 0}
   <section class="empty">
     <h2>Aucun lieu configuré</h2>
-    <p>Le lieu principal doit d’abord être ajouté par l’administration.</p>
+    {#if data.canEdit}
+      <p>Ajoutez votre premier lieu pour pouvoir activer le site public.</p>
+      <SiteCreateForm />
+    {:else}
+      <p>Un responsable doit ajouter le premier lieu.</p>
+    {/if}
   </section>
 {:else if mode === 'preview' || !data.canEdit}
   <section aria-labelledby="preview-title">
@@ -84,8 +92,18 @@
         <p class="section-label">Édition</p>
         <h2 id="edit-title">{multiSite ? 'Vos lieux' : 'Votre ludothèque'}</h2>
       </div>
-      {#if multiSite}<p class="section-help">L’ordre est repris dans l’affichage public.</p>{/if}
+      <div class="section-actions">
+        {#if multiSite}<p class="section-help">L’ordre est repris dans l’affichage public.</p>{/if}
+        <Button variant="outline" onclick={() => (creating = !creating)}>
+          <PlusIcon size={16} />
+          {creating ? 'Annuler' : 'Ajouter un lieu'}
+        </Button>
+      </div>
     </div>
+
+    {#if creating}
+      <SiteCreateForm oncreated={() => (creating = false)} />
+    {/if}
 
     {#if multiSite && hasDirty}
       <p class="reorder-warning" role="status">
@@ -192,6 +210,11 @@
     gap: var(--space-4);
     margin-bottom: var(--space-4);
   }
+  .section-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+  }
   .section-label {
     margin: 0 0 var(--space-1);
     color: var(--ludo-color);
@@ -232,6 +255,11 @@
     .section-head {
       align-items: flex-start;
       flex-direction: column;
+    }
+    .section-actions {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: var(--space-2);
     }
   }
 </style>

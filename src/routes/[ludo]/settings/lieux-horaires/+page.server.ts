@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit'
 import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
 import {
+  createSiteWithOpeningHours,
   listSitesWithOpeningHours,
   reorderSites,
   SiteServiceError,
@@ -44,6 +45,29 @@ async function run(operation: () => Promise<unknown>) {
 }
 
 export const actions: Actions = {
+  create: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+
+    return run(() =>
+      createSiteWithOpeningHours(ludo.id, {
+        slug: String(data.get('slug') ?? ''),
+        name: String(data.get('name') ?? ''),
+        address: optionalText(data, 'address'),
+        postalCode: optionalText(data, 'postalCode'),
+        city: optionalText(data, 'city'),
+        phone: optionalText(data, 'phone'),
+        email: optionalText(data, 'email'),
+        accessInfo: optionalText(data, 'accessInfo'),
+        latitude: optionalCoordinate(data, 'latitude'),
+        longitude: optionalCoordinate(data, 'longitude'),
+        isPrimary: data.has('isPrimary'),
+        isActive: data.has('isActive'),
+        openingIntervals: parseOpeningHours(data.get('openingHours')),
+      }),
+    )
+  },
+
   update: async (event) => {
     const { ludo } = await requireResponsableContext(event)
     const data = await event.request.formData()

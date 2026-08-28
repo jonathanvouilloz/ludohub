@@ -23,6 +23,7 @@
 | 17  | NEWSLETTER — Audience, campagnes & envoi email (Resend)          | L      | **DONE**     | [17-newsletter.md](features/17-newsletter.md)                 |
 | 18  | DOCUMENTATION /aide — Guide utilisateur visuel (skill user-docs) | M      | EN ATTENTE   | [18-documentation-aide.md](features/18-documentation-aide.md) |
 | 19  | REVUE PRODUIT 2026-07 — 13 items de la note vocale du 22 juillet | L      | **EN COURS** | [19-revue-produit-2026-07.md](features/19-revue-produit-2026-07.md) |
+| 20  | SITE PUBLIC — Contenus, API et formulaires                       | XL     | **EN COURS** | [20-site-public.md](features/20-site-public.md) |
 
 ## Backlog produit — epic 19
 
@@ -36,6 +37,8 @@ mais non vérifiés**. Les chantiers qui deviendront probablement des epics à p
 - **Mail complet & évolutif** (§6) — pièces jointes, templates, cycle de vie campagne
   (archivage/pagination/suppression/duplication), tracking `delivered`.
 - **Module site public Pâquis-Sécheron** (§12) — dépend des horaires (§9) et de la double ludo (§10).
+- **Epic 20 — Site public** — cadré le 5 août 2026 après entretien ; spécification complète dans
+  `../../website-v2/docs/PHASE-2-SPEC.md`. Démarre après stabilisation des lieux et horaires de l'epic 19.
 - **Durcissement auth** (§11).
 
 Le reste (bugs fréquentation/indispos, saisie rétroactive, swap sur absence, horaires simples)

@@ -10,6 +10,7 @@
   import { toastEnhance } from '$lib/utils/enhance.js'
   import MapPinnedIcon from '@lucide/svelte/icons/map-pinned'
   let { data } = $props()
+  const selectedId = $derived(page.url.searchParams.get('item'))
   let open = $state(false),
     editing = $state<EditableDirectoryEntry | null>(null),
     pending = $state<string | null>(null)
@@ -41,9 +42,9 @@
       description="Créez une première entrée."
       >{#snippet action()}<Button onclick={create}>Nouvelle entrée</Button>{/snippet}</EmptyState
     >{:else}<div class="list">
-      {#each data.entries as item (item.id)}<article>
-          <div>
-            <h2>{item.name}</h2>
+      {#each data.entries as item (item.id)}<article class:compact={selectedId !== item.id}>
+          <div class="head">
+            <h2><a href={selectedId === item.id ? '?' : `?item=${item.id}`}>{item.name}</a></h2>
             <p>{item.address || ''} {item.postalCode || ''} {item.city} · ordre {item.sortOrder}</p>
           </div>
           <div class="badges">
@@ -139,5 +140,16 @@
       align-items: stretch;
       flex-direction: column;
     }
+  }
+  article.compact footer {
+    display: none;
+  }
+  h2 a {
+    color: var(--text-main);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
   }
 </style>

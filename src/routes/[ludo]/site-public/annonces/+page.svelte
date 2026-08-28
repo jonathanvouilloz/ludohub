@@ -12,6 +12,7 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
 
   let { data } = $props()
+  const selectedId = $derived(page.url.searchParams.get('item'))
   let dialogOpen = $state(false)
   let editing = $state<EditableAnnouncement | null>(null)
   let togglingId = $state<string | null>(null)
@@ -69,10 +70,18 @@
   {:else}
     <div class="list">
       {#each data.announcements as announcement (announcement.id)}
-        <article class="announcement" class:inactive={announcement.status !== 'published'}>
+        <article
+          class="announcement"
+          class:inactive={announcement.status !== 'published'}
+          class:compact={selectedId !== announcement.id}
+        >
           <div class="announcement-head">
             <div>
-              <h2>{announcement.title}</h2>
+              <h2>
+                <a href={selectedId === announcement.id ? '?' : `?item=${announcement.id}`}
+                  >{announcement.title}</a
+                >
+              </h2>
               <p class="targets">{targetLabel(announcement)}</p>
             </div>
             {#if announcement.status === 'published'}
@@ -253,5 +262,16 @@
     footer :global(button) {
       width: 100%;
     }
+  }
+  .compact > :not(.announcement-head) {
+    display: none;
+  }
+  h2 a {
+    color: var(--text-main);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
   }
 </style>

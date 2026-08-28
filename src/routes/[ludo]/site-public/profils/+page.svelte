@@ -11,6 +11,7 @@
   import UsersIcon from '@lucide/svelte/icons/users'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   let { data } = $props()
+  const selectedId = $derived(page.url.searchParams.get('item'))
   let open = $state(false),
     editing = $state<EditableProfile | null>(null),
     pending = $state<string | null>(null),
@@ -46,11 +47,13 @@
       description="Créez un profil en brouillon."
       >{#snippet action()}<Button onclick={create}>Nouveau profil</Button>{/snippet}</EmptyState
     >{:else}<div class="grid">
-      {#each data.profiles as item (item.id)}<article>
+      {#each data.profiles as item (item.id)}<article class:compact={selectedId !== item.id}>
           {#if item.photoUrl}<img src={item.photoUrl} alt={item.photoAlt ?? ''} />{/if}
           <div class="head">
             <div>
-              <h2>{item.displayName}</h2>
+              <h2>
+                <a href={selectedId === item.id ? '?' : `?item=${item.id}`}>{item.displayName}</a>
+              </h2>
               <p>
                 {item.roleTitle || 'Sans fonction'} · {item.section === 'team'
                   ? 'Équipe'
@@ -209,5 +212,16 @@
     padding: var(--space-3);
     background: var(--danger-light);
     color: var(--danger);
+  }
+  article.compact > :not(.head) {
+    display: none;
+  }
+  h2 a {
+    color: var(--text-main);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
   }
 </style>

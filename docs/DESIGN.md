@@ -91,16 +91,16 @@ Chaque ludo a une couleur d'accent stockée en DB (`ludotheques.color`). Utilis�
 
 ### Échelle
 
-| Classe     | Taille           | Poids | Usage                             |
-| ---------- | ---------------- | ----- | --------------------------------- |
-| `.display` | 2rem (32px)      | 700   | Titres de page principaux         |
-| `.h1`      | 1.5rem (24px)    | 700   | Titres de section                 |
-| `.h2`      | 1.25rem (20px)   | 600   | Sous-titres, en-têtes de card     |
-| `.h3`      | 1rem (16px)      | 600   | Labels de groupe, captions fortes |
+| Classe     | Taille           | Poids | Usage                                          |
+| ---------- | ---------------- | ----- | ---------------------------------------------- |
+| `.display` | 2rem (32px)      | 700   | Titres de page principaux                      |
+| `.h1`      | 1.5rem (24px)    | 700   | Titres de section                              |
+| `.h2`      | 1.25rem (20px)   | 600   | Sous-titres, en-têtes de card                  |
+| `.h3`      | 1rem (16px)      | 600   | Labels de groupe, captions fortes              |
 | card-title | 1.125rem (18px)  | 700   | Titre de carte (`--text-card-title`, DataCard) |
-| `.body`    | 0.9375rem (15px) | 400   | Corps de texte standard           |
-| `.small`   | 0.8125rem (13px) | 400   | Métadonnées, timestamps           |
-| `.label`   | 0.75rem (12px)   | 500   | Labels navigation, badges         |
+| `.body`    | 0.9375rem (15px) | 400   | Corps de texte standard                        |
+| `.small`   | 0.8125rem (13px) | 400   | Métadonnées, timestamps                        |
+| `.label`   | 0.75rem (12px)   | 500   | Labels navigation, badges                      |
 
 ### Do / Don't
 
@@ -235,14 +235,14 @@ Intégration via `lucide-svelte` (tree-shakeable, pas de sprite).
 
 Variantes réelles (les libellés du tableau historique « primary=accent » sont **caducs**) :
 
-| Variante      | Rendu                                                          | Usage                                          |
-| ------------- | ------------------------------------------------------------- | ---------------------------------------------- |
-| `default`     | fond `--primary` (bleu), texte inverse                         | Action principale (Installer, Créer, Enregistrer) |
-| `outline`     | fond blanc + **bordure `--border-strong`** + `shadow-sm`       | Action secondaire, « Annuler » de dialogue      |
-| `secondary`   | fond `--bg-sidebar`                                            | Alternative neutre filled                       |
-| `ghost`       | **bordure `--border-strong`** transparente (texte)            | Action tertiaire texte                          |
-| `destructive` | fond `--danger`/10 + bordure `--danger`/30 + texte `--danger`  | Suppression (dans une modal de confirmation)    |
-| `link`        | lien souligné                                                 | Rare                                            |
+| Variante      | Rendu                                                         | Usage                                             |
+| ------------- | ------------------------------------------------------------- | ------------------------------------------------- |
+| `default`     | fond `--primary` (bleu), texte inverse                        | Action principale (Installer, Créer, Enregistrer) |
+| `outline`     | fond blanc + **bordure `--border-strong`** + `shadow-sm`      | Action secondaire, « Annuler » de dialogue        |
+| `secondary`   | fond `--bg-sidebar`                                           | Alternative neutre filled                         |
+| `ghost`       | **bordure `--border-strong`** transparente (texte)            | Action tertiaire texte                            |
+| `destructive` | fond `--danger`/10 + bordure `--danger`/30 + texte `--danger` | Suppression (dans une modal de confirmation)      |
+| `link`        | lien souligné                                                 | Rare                                              |
 
 **Règles absolues (palette très claire) :**
 
@@ -275,3 +275,12 @@ Toute suppression/action irréversible passe par un `AlertDialog` (trigger = bou
 ### 9.6 Primitives shadcn
 
 `ui/button`, `ui/badge`, `ui/dialog`, `ui/alert-dialog`, `ui/input`, `ui/label`, `ui/select`, `ui/table`, `ui/separator`, `ui/date-picker`. **Extensions maison** (variantes ajoutées, nouveaux composants `data-table`/`data-card`/`collapsible-section`/`StatusBadge`) vivent aussi sous `ui/` et sont la référence.
+
+### 9.7 Gestion éditoriale du site public
+
+- L’accueil du module regroupe les rubriques par tâche : **Publier**, **Informations du site** et **Messages et demandes**.
+- Une liste éditoriale sert uniquement à choisir un contenu. Les formulaires, médias et changements de statut restent dans la fiche de l’élément ouvert.
+- Les contenus riches suivent le parcours `liste → fiche → modification`. Les formulaires longs utilisent une page complète plutôt qu’une grande modale.
+- `<EditorialListItem>` est la ligne commune des listes éditoriales. `<PublicSiteSectionCard>` est réservé aux destinations de l’accueil du module.
+- Les inscriptions aux activités sont une rubrique autonome et ne sont jamais mélangées à la liste des activités.
+- Les termes techniques comme « slug » et « Markdown » ne sont pas utilisés comme libellés principaux. Ils restent dans les options avancées ou sont traduits en langage courant.

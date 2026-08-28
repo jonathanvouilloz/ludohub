@@ -10,6 +10,7 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
 
   let { data } = $props()
+  const selectedId = $derived(page.url.searchParams.get('item'))
   let dialogOpen = $state(false)
   let editing = $state<EditableFaq | null>(null)
   let pendingId = $state<string | null>(null)
@@ -59,10 +60,13 @@
       {#each data.faqs as item (item.id)}<article
           class="card"
           class:muted={item.status !== 'published'}
+          class:compact={selectedId !== item.id}
         >
           <div class="card-head">
             <div>
-              <h2>{item.question}</h2>
+              <h2>
+                <a href={selectedId === item.id ? '?' : `?item=${item.id}`}>{item.question}</a>
+              </h2>
               <p class="meta">
                 {item.category || 'Sans catégorie'} · ordre {item.sortOrder} · {targetLabel(item)}
               </p>
@@ -233,5 +237,16 @@
     .badges {
       justify-content: flex-start;
     }
+  }
+  .compact > :not(.card-head) {
+    display: none;
+  }
+  h2 a {
+    color: var(--text-main);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
   }
 </style>

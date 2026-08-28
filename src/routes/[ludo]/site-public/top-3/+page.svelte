@@ -13,6 +13,7 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
 
   let { data } = $props()
+  const selectedId = $derived(page.url.searchParams.get('item'))
   let dialogOpen = $state(false)
   let editing = $state<EditableTopThree | null>(null)
   let pendingId = $state<string | null>(null)
@@ -65,10 +66,14 @@
   {:else}
     <div class="list">
       {#each data.topThrees as item (item.id)}
-        <article class="card" class:muted={item.status !== 'published'}>
+        <article
+          class="card"
+          class:muted={item.status !== 'published'}
+          class:compact={selectedId !== item.id}
+        >
           <div class="card-head">
             <div>
-              <h2>{item.theme}</h2>
+              <h2><a href={selectedId === item.id ? '?' : `?item=${item.id}`}>{item.theme}</a></h2>
               <p class="targets">/{item.slug} · {targetLabel(item)}</p>
             </div>
             <div class="badges">
@@ -76,7 +81,9 @@
               {:else if item.status === 'hidden'}<Badge variant="secondary">Masqué</Badge>
               {:else}<Badge variant="outline">Brouillon</Badge>{/if}
               {#if inactiveTargets(item)}<Badge variant="warning">Cible inactive</Badge>{/if}
-              {#if item.isHomepage}<Badge variant="default"><HouseIcon size={14} aria-hidden="true" /> Sur l’accueil</Badge>{/if}
+              {#if item.isHomepage}<Badge variant="default"
+                  ><HouseIcon size={14} aria-hidden="true" /> Sur l’accueil</Badge
+                >{/if}
             </div>
           </div>
           <ol>
@@ -98,11 +105,12 @@
               method="POST"
               action="?/publication"
               use:enhance={toastEnhance({
-                success: item.status === 'published'
-                  ? item.isHomepage
-                    ? 'Top 3 masqué et retiré de l’accueil.'
-                    : 'Top 3 masqué.'
-                  : 'Top 3 publié.',
+                success:
+                  item.status === 'published'
+                    ? item.isHomepage
+                      ? 'Top 3 masqué et retiré de l’accueil.'
+                      : 'Top 3 masqué.'
+                    : 'Top 3 publié.',
                 onPending: (value) => (pendingId = value ? item.id : null),
               })}
             >
@@ -295,5 +303,16 @@
     header :global(button) {
       width: 100%;
     }
+  }
+  .compact > :not(.card-head) {
+    display: none;
+  }
+  h2 a {
+    color: var(--text-main);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
   }
 </style>

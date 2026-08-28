@@ -12,6 +12,7 @@
   import ImagesIcon from '@lucide/svelte/icons/images'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   let { data } = $props()
+  const selectedId = $derived(page.url.searchParams.get('item'))
   let open = $state(false),
     editing = $state<EditableGalleryItem | null>(null),
     pending = $state<string | null>(null),
@@ -47,7 +48,7 @@
       description="Créez une photo en brouillon."
       >{#snippet action()}<Button onclick={create}>Nouvelle photo</Button>{/snippet}</EmptyState
     >{:else}<div class="grid">
-      {#each data.galleryItems as item (item.id)}<article>
+      {#each data.galleryItems as item (item.id)}<article class:compact={selectedId !== item.id}>
           {#if item.imageUrl}<img src={item.imageUrl} alt={item.alt} />{:else}<div
               class="placeholder"
             >
@@ -55,7 +56,9 @@
             </div>{/if}
           <div class="head">
             <div>
-              <h2>{item.caption}</h2>
+              <h2>
+                <a href={selectedId === item.id ? '?' : `?item=${item.id}`}>{item.caption}</a>
+              </h2>
               <small>Ordre {item.sortOrder}</small>
             </div>
             <div>
@@ -209,5 +212,16 @@
     padding: var(--space-3);
     background: var(--danger-light);
     color: var(--danger);
+  }
+  article.compact > :not(.head) {
+    display: none;
+  }
+  h2 a {
+    color: var(--text-main);
+    text-decoration: none;
+  }
+  h2 a:hover {
+    color: var(--primary);
+    text-decoration: underline;
   }
 </style>

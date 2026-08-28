@@ -1,26 +1,35 @@
 import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
-const page = () => readFile(new URL('./+page.svelte', import.meta.url), 'utf8')
+const activityList = () => readFile(new URL('./+page.svelte', import.meta.url), 'utf8')
+const activityDetail = () => readFile(new URL('./[id]/+page.svelte', import.meta.url), 'utf8')
+const registrationList = () =>
+  readFile(new URL('../inscriptions/+page.svelte', import.meta.url), 'utf8')
+const registrationDetail = () =>
+  readFile(new URL('../inscriptions/[id]/+page.svelte', import.meta.url), 'utf8')
 
 describe('gestion UI des inscriptions aux activités', () => {
   it('réserve les réglages et les données personnelles aux responsables', async () => {
-    const source = await page()
-    expect(source).toContain('{#if data.canManageRegistrations}')
-    expect(source).toContain('action="?/registrationSettings"')
-    expect(source).toContain('name="capacity"')
-    expect(source).toContain('Les coordonnées sont privées et visibles uniquement ici.')
-    expect(source).toContain('registration.contactName')
-    expect(source).toContain('registration.email')
+    const [list, activity, registration] = await Promise.all([
+      activityList(),
+      activityDetail(),
+      registrationDetail(),
+    ])
+    expect(list).toContain('{#if data.canManageRegistrations}')
+    expect(list).toContain('/site-public/inscriptions')
+    expect(activity).toContain('action="?/registrationSettings"')
+    expect(activity).toContain('name="capacity"')
+    expect(registration).toContain('item.contactName')
+    expect(registration).toContain('item.email')
   })
 
   it('expose filtres, détail et transition CAS sans annulation publique', async () => {
-    const source = await page()
-    expect(source).toContain('name="registrationActivity"')
-    expect(source).toContain('name="registrationStatus"')
-    expect(source).toContain('action="?/registrationStatus"')
-    expect(source).toContain('value={registration.revision}')
-    expect(source).toContain('Annulée par l’équipe')
-    expect(source).not.toContain('annulation autonome')
+    const [list, detail] = await Promise.all([registrationList(), registrationDetail()])
+    expect(list).toContain('name="registrationActivity"')
+    expect(list).toContain('name="registrationStatus"')
+    expect(detail).toContain('action="?/registrationStatus"')
+    expect(detail).toContain('value={item.revision}')
+    expect(detail).toContain('Annulée')
+    expect(detail).not.toContain('annulation autonome')
   })
 })

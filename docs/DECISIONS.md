@@ -4,6 +4,21 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-08-16 | Le site public Astro lit LudoHub à la requête
+
+**Contexte :** Le site Pâquis-Sécheron était généré en statique. Les lieux et horaires affichés
+étaient donc le contenu de secours du dernier build, même après leur mise à jour dans LudoHub.
+
+**Décision :** Le site utilise l'adaptateur Vercel Astro en rendu serveur (`output: 'server'`). Les
+données publiques sont relues depuis l'API LudoHub à chaque requête ; les modifications des lieux,
+horaires et contenus publiés n'exigent plus de redéploiement.
+
+**Alternatives :** Conserver le site statique et redéployer après chaque modification (rejeté :
+risque de divergence et opération manuelle) ; ISR avec invalidation (reporté : aucun mécanisme de
+purge LudoHub n'est encore nécessaire).
+
+---
+
 ## 2026-07-30 | Une intention d'UI se consomme une fois — `?new=1` hors d'un `$effect` réactif
 
 **Contexte :** Les pages `frequentation`, `games` et `supplies` ouvraient leur dialog de création en lisant `?new=1` dans un `$effect`, puis nettoyaient l'URL via `replaceState`. Le paramètre étant relu à **chaque** reconstruction de `page.url` — dont celle déclenchée par l'`invalidateAll()` qui suit l'enregistrement du formulaire — le dialog se **rouvrait juste après validation**. Aggravant : `replaceState` lève si le routeur n'est pas encore initialisé, et l'échec silencieux laissait `new=1` dans l'URL indéfiniment.
