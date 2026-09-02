@@ -160,6 +160,22 @@
               {multiSite}
               bind:dirty={dirtySites[site.id]}
             />
+            {#if !site.isPrimary && !site.isActive}
+              <form
+                class="delete-site"
+                method="POST"
+                action="?/delete"
+                onsubmit={(event) => {
+                  if (!confirm(`Supprimer définitivement le lieu « ${site.name} » ?`)) {
+                    event.preventDefault()
+                  }
+                }}
+                use:enhance={toastEnhance({ success: 'Lieu supprimé.' })}
+              >
+                <input type="hidden" name="siteId" value={site.id} />
+                <Button type="submit" variant="destructive" size="sm">Supprimer ce lieu</Button>
+              </form>
+            {/if}
           </div>
         </div>
       {/each}
@@ -261,5 +277,10 @@
       flex-direction: column;
       gap: var(--space-2);
     }
+  }
+  .delete-site {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: var(--space-2);
   }
 </style>

@@ -220,9 +220,19 @@ export async function setPublicAnnouncementActive(
   }
 }
 
-export async function deletePublicAnnouncement(announcementId: string, ludoId: string) {
-  if (!(await deletePublicAnnouncementRow(announcementId, ludoId))) {
-    throw new PublicAnnouncementServiceError('Annonce introuvable.')
+export async function deletePublicAnnouncement(
+  announcementId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  requireRevision(expectedRevision)
+  const current = await getPublicAnnouncement(announcementId, ludoId)
+  if (current.revision !== expectedRevision) concurrentChange()
+  if (current.status === 'published') {
+    throw new PublicAnnouncementServiceError('Désactivez l’annonce avant de la supprimer.')
+  }
+  if (!(await deletePublicAnnouncementRow(announcementId, ludoId, expectedRevision))) {
+    concurrentChange()
   }
 }
 

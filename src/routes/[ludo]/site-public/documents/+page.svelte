@@ -122,7 +122,7 @@
                 >{item.status === 'published' ? 'Masquer' : 'Publier'}</Button
               >
             </form>
-            {#if item.status === 'draft'}<form
+            {#if item.status !== 'published'}<form
                 method="POST"
                 action="?/delete"
                 onsubmit={(event) => {

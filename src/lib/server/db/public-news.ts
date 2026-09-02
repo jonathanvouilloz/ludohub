@@ -238,10 +238,20 @@ export async function updatePublicNewsImageRow(
   return row
 }
 
-export async function deletePublicNewsRow(newsId: string, ludoId: string) {
+export async function deletePublicNewsRow(
+  newsId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
   const [row] = await db
     .delete(publicNews)
-    .where(and(eq(publicNews.id, newsId), eq(publicNews.ludoId, ludoId)))
+    .where(
+      and(
+        eq(publicNews.id, newsId),
+        eq(publicNews.ludoId, ludoId),
+        eq(publicNews.revision, expectedRevision),
+      ),
+    )
     .returning({ id: publicNews.id })
   return row
 }

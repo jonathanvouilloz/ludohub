@@ -13,7 +13,7 @@
   <NewsForm
     news={data.news}
     sites={data.sites}
-    action="../../?/update"
+    action="?/update"
     cancelHref={detailHref}
     successHref={detailHref}
   />

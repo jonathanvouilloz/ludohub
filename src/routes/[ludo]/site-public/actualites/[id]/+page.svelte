@@ -60,7 +60,7 @@
     </div>
     <form
       method="POST"
-      action="../?/transition"
+      action="?/transition"
       use:enhance={toastEnhance({
         success: news.status === 'published' ? 'Actualité masquée.' : 'Actualité publiée.',
         onPending: (value) => (pending = value),
@@ -104,7 +104,7 @@
     <div class="media-actions">
       <form
         method="POST"
-        action="../?/uploadImage"
+        action="?/uploadImage"
         enctype="multipart/form-data"
         use:enhance={toastEnhance({
           success: news.imageUrl ? 'Image remplacée.' : 'Image ajoutée.',
@@ -143,7 +143,7 @@
       </form>
       {#if news.imageUrl}<form
           method="POST"
-          action="../?/removeImage"
+          action="?/removeImage"
           use:enhance={toastEnhance({
             success: 'Image retirée.',
             onPending: (value) => (imagePending = value),
@@ -159,6 +159,27 @@
   </section>
 
   <EditorialAssetsEditor ownerId={news.id} revision={news.revision} assets={news.assets} />
+
+  {#if news.status !== 'published'}
+    <section class="danger-zone" aria-labelledby="delete-title">
+      <div>
+        <h2 id="delete-title">Supprimer cette actualité</h2>
+        <p>Cette action supprime aussi toutes ses images et pièces jointes.</p>
+      </div>
+      <form
+        method="POST"
+        action="?/delete"
+        onsubmit={(event) => {
+          if (!confirm('Supprimer définitivement cette actualité ?')) event.preventDefault()
+        }}
+        use:enhance={toastEnhance({ redirect: 'Actualité supprimée.' })}
+      >
+        <input type="hidden" name="id" value={news.id} />
+        <input type="hidden" name="revision" value={news.revision} />
+        <Button type="submit" variant="destructive">Supprimer définitivement</Button>
+      </form>
+    </section>
+  {/if}
 </main>
 
 <style>
@@ -250,6 +271,15 @@
     margin-top: var(--space-1);
     color: var(--text-muted);
   }
+  .danger-zone {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    border-color: var(--danger);
+  }
+  .danger-zone p {
+    margin-top: var(--space-1);
+    color: var(--text-muted);
+  }
   .cover {
     width: min(100%, 640px);
     max-height: 380px;
@@ -289,7 +319,8 @@
     .detail-header,
     .publication,
     .media-actions,
-    .media-actions form {
+    .media-actions form,
+    .danger-zone {
       align-items: stretch;
       flex-direction: column;
       grid-template-columns: 1fr;

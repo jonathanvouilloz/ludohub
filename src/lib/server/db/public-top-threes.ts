@@ -24,7 +24,7 @@ export type PublicTopThreeUpdateData = Pick<
 export type PublicTopThreeSummaryRow = Pick<
   PublicTopThreeRow,
   'id' | 'ludoId' | 'slug' | 'theme' | 'isHomepage' | 'publishedAt'
-> & { games: Array<Pick<PublicTopThreeGame, 'name'>> }
+> & { games: Array<Pick<PublicTopThreeGame, 'name' | 'imageUrl' | 'imageAlt'>> }
 
 export function listPublicTopThreeRows(ludoId: string) {
   return db.query.publicTopThrees.findMany({
@@ -48,8 +48,8 @@ export function listVisiblePublicTopThreeSummaryRows(
       slug: publicTopThrees.slug,
       theme: publicTopThrees.theme,
       isHomepage: publicTopThrees.isHomepage,
-      games: sql<Array<{ name: string }>>`(
-        SELECT jsonb_agg(jsonb_build_object('name', game.value->>'name') ORDER BY game.ordinality)
+      games: sql<Array<{ name: string; imageUrl?: string; imageAlt?: string }>>`(
+        SELECT jsonb_agg(jsonb_strip_nulls(jsonb_build_object('name', game.value->>'name', 'imageUrl', game.value->>'imageUrl', 'imageAlt', game.value->>'imageAlt')) ORDER BY game.ordinality)
         FROM jsonb_array_elements(${publicTopThrees.games}) WITH ORDINALITY AS game(value, ordinality)
       )`,
       publishedAt: publicTopThrees.publishedAt,
@@ -197,6 +197,33 @@ export async function updatePublicTopThreePublicationRow(
   return row
 }
 
+export async function updatePublicTopThreeGamesMediaRow(
+  topThreeId: string,
+  ludoId: string,
+  expectedRevision: number,
+  games: PublicTopThreeGame[],
+  memberId: string,
+  updatedAt: Date,
+) {
+  const [row] = await db
+    .update(publicTopThrees)
+    .set({
+      games,
+      updatedByMemberId: memberId,
+      updatedAt,
+      revision: sql`${publicTopThrees.revision} + 1`,
+    })
+    .where(
+      and(
+        eq(publicTopThrees.id, topThreeId),
+        eq(publicTopThrees.ludoId, ludoId),
+        eq(publicTopThrees.revision, expectedRevision),
+      ),
+    )
+    .returning()
+  return row
+}
+
 /**
  * `neon-http` ne fournit pas de transaction callback ; `db.batch` délègue à la
  * transaction wire Neon. Les quatre requêtes restent donc dans la même transaction,
@@ -295,7 +322,7 @@ export async function deleteDraftPublicTopThreeRow(
       and(
         eq(publicTopThrees.id, topThreeId),
         eq(publicTopThrees.ludoId, ludoId),
-        eq(publicTopThrees.status, 'draft'),
+        sql`${publicTopThrees.status} <> 'published'`,
         eq(publicTopThrees.revision, expectedRevision),
       ),
     )

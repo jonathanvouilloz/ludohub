@@ -1,16 +1,27 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
+import {
+  deletePublicSiteMedia,
+  MediaStorageError,
+  uploadPublicSiteMedia,
+} from '$lib/server/media/blob-storage.js'
+import { MediaCompensationError, uploadAndRegisterMedia } from '$lib/server/media/media-service.js'
+import type { AuthorizedMediaScope } from '$lib/server/media/paths.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import { isPublicSiteEnabled, PublicSiteServiceError } from '$lib/server/services/public-site.js'
 import {
   createPublicTopThree,
+  authorizePublicTopThreeMediaScope,
+  clearPublicTopThreeGameImage,
   deselectPublicTopThreeFromHomepage,
   deleteDraftPublicTopThree,
   hidePublicTopThree,
+  getPublicTopThree,
   listPublicTopThreesForManagement,
   publishPublicTopThree,
   selectPublicTopThreeForHomepage,
+  setPublicTopThreeGameImage,
   PublicTopThreeServiceError,
   type PublicTopThreeInput,
   type PublicTopThreeTargeting,
@@ -83,10 +94,63 @@ async function run(action: () => Promise<unknown>) {
   try {
     return await action()
   } catch (cause) {
-    if (cause instanceof PublicTopThreeServiceError || cause instanceof PublicSiteServiceError) {
+    if (
+      cause instanceof PublicTopThreeServiceError ||
+      cause instanceof PublicSiteServiceError ||
+      cause instanceof MediaStorageError
+    ) {
       return fail(400, { error: cause.message })
     }
+    if (cause instanceof MediaCompensationError) return fail(500, { error: cause.message })
     throw cause
+  }
+}
+
+const TOP_GAME_IMAGE_POLICY = {
+  maxBytes: 5 * 1024 * 1024,
+  allowedTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
+}
+
+function imageInput(data: FormData) {
+  const file = data.get('file')
+  if (!(file instanceof File)) throw new MediaStorageError('Sélectionnez une image.')
+  const alt = String(data.get('alt') ?? '').trim()
+  if (!alt || alt.length > 300) {
+    throw new PublicTopThreeServiceError(
+      'Le texte alternatif doit contenir entre 1 et 300 caractères.',
+    )
+  }
+  const index = Number(data.get('gameIndex'))
+  if (!Number.isSafeInteger(index) || index < 0 || index > 2) {
+    throw new PublicTopThreeServiceError('La position du jeu est invalide.')
+  }
+  return { file, alt, index }
+}
+
+async function cleanupTopGameImage(input: {
+  scope: AuthorizedMediaScope
+  pathname: string | null
+  ludoId: string
+  memberId: string
+  topThreeId: string
+  operation: 'replace' | 'remove' | 'delete'
+}) {
+  if (!input.pathname) return
+  try {
+    await deletePublicSiteMedia(input.scope, input.pathname)
+  } catch (cause) {
+    console.error(
+      '[public-top-three] image cleanup failed',
+      { topThreeId: input.topThreeId },
+      cause,
+    )
+    await audit({
+      action: 'public_top_three.image_cleanup_failed',
+      ludoId: input.ludoId,
+      memberId: input.memberId,
+      topThreeId: input.topThreeId,
+      metadata: { operation: input.operation },
+    })
   }
 }
 
@@ -204,9 +268,10 @@ export const actions: Actions = {
       if (next !== 'true' && next !== 'false') {
         throw new PublicTopThreeServiceError('Sélection d’accueil invalide.')
       }
-      const selection = next === 'true'
-        ? await selectPublicTopThreeForHomepage(id, ludo.id, member.id, revisionInput(data))
-        : await deselectPublicTopThreeFromHomepage(id, ludo.id, member.id, revisionInput(data))
+      const selection =
+        next === 'true'
+          ? await selectPublicTopThreeForHomepage(id, ludo.id, member.id, revisionInput(data))
+          : await deselectPublicTopThreeFromHomepage(id, ludo.id, member.id, revisionInput(data))
       if (selection.changed) {
         await audit({
           action: selection.topThree.isHomepage
@@ -227,12 +292,90 @@ export const actions: Actions = {
     const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     return run(async () => {
-      await deleteDraftPublicTopThree(id, ludo.id, revisionInput(data))
+      const revision = revisionInput(data)
+      const [scope, topThree] = await Promise.all([
+        authorizePublicTopThreeMediaScope(ludo.id, id, revision),
+        getPublicTopThree(id, ludo.id),
+      ])
+      await deleteDraftPublicTopThree(id, ludo.id, revision)
+      await Promise.all(
+        topThree.games.map((game) =>
+          cleanupTopGameImage({
+            scope,
+            pathname: game.imageStorageKey ?? null,
+            ludoId: ludo.id,
+            memberId: member.id,
+            topThreeId: id,
+            operation: 'delete',
+          }),
+        ),
+      )
       await audit({
         action: 'public_top_three.deleted',
         ludoId: ludo.id,
         memberId: member.id,
         topThreeId: id,
+      })
+      return { success: true }
+    })
+  },
+
+  uploadGameImage: async (event) => {
+    const { ludo, member } = await requireTopThreeContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      const revision = revisionInput(data)
+      const { file, alt, index } = imageInput(data)
+      const result = await uploadAndRegisterMedia({
+        authorize: () => authorizePublicTopThreeMediaScope(ludo.id, id, revision),
+        upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: TOP_GAME_IMAGE_POLICY }),
+        register: (scope, blob) =>
+          setPublicTopThreeGameImage(ludo.id, id, member.id, revision, index, scope, blob, alt),
+        cleanup: deletePublicSiteMedia,
+      })
+      await cleanupTopGameImage({
+        scope: await authorizePublicTopThreeMediaScope(ludo.id, id, result.topThree.revision),
+        pathname: result.previousStorageKey,
+        ludoId: ludo.id,
+        memberId: member.id,
+        topThreeId: id,
+        operation: 'replace',
+      })
+      await audit({
+        action: 'public_top_three.game_image_updated',
+        ludoId: ludo.id,
+        memberId: member.id,
+        topThreeId: id,
+        metadata: { position: index + 1, hadPreviousImage: Boolean(result.previousStorageKey) },
+      })
+      return { success: true }
+    })
+  },
+
+  removeGameImage: async (event) => {
+    const { ludo, member } = await requireTopThreeContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      const revision = revisionInput(data)
+      const index = Number(data.get('gameIndex'))
+      const scope = await authorizePublicTopThreeMediaScope(ludo.id, id, revision)
+      const result = await clearPublicTopThreeGameImage(ludo.id, id, member.id, revision, index)
+      await cleanupTopGameImage({
+        scope,
+        pathname: result.previousStorageKey,
+        ludoId: ludo.id,
+        memberId: member.id,
+        topThreeId: id,
+        operation: 'remove',
+      })
+      await audit({
+        action: 'public_top_three.game_image_removed',
+        ludoId: ludo.id,
+        memberId: member.id,
+        topThreeId: id,
+        metadata: { position: index + 1 },
       })
       return { success: true }
     })

@@ -148,7 +148,7 @@ export async function deleteDraftPublicProfileRow(id: string, ludoId: string, re
       and(
         eq(profiles.id, id),
         eq(profiles.ludoId, ludoId),
-        eq(profiles.status, 'draft'),
+        sql`${profiles.status} <> 'published'`,
         eq(profiles.revision, revision),
       ),
     )

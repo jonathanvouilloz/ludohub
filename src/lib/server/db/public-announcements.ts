@@ -142,10 +142,20 @@ export async function updatePublicAnnouncementPublicationRow(
   return row
 }
 
-export async function deletePublicAnnouncementRow(announcementId: string, ludoId: string) {
+export async function deletePublicAnnouncementRow(
+  announcementId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
   const [row] = await db
     .delete(publicAnnouncements)
-    .where(and(eq(publicAnnouncements.id, announcementId), eq(publicAnnouncements.ludoId, ludoId)))
+    .where(
+      and(
+        eq(publicAnnouncements.id, announcementId),
+        eq(publicAnnouncements.ludoId, ludoId),
+        eq(publicAnnouncements.revision, expectedRevision),
+      ),
+    )
     .returning({ id: publicAnnouncements.id })
   return row
 }

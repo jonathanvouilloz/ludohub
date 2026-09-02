@@ -152,11 +152,12 @@ describe('FAQ', () => {
       expect.objectContaining({ changed: true }),
     )
   })
-  it('supprime seulement un brouillon avec CAS', async () => {
+  it('supprime un brouillon ou une question masquée avec CAS', async () => {
     await deleteDraftPublicFaq('faq', L, 1)
     expect(m.remove).toHaveBeenCalledWith('faq', L, 1)
     m.get.mockResolvedValue(row({ status: 'hidden' }))
-    await expect(deleteDraftPublicFaq('faq', L, 1)).rejects.toThrow(/brouillon/)
+    await deleteDraftPublicFaq('faq', L, 1)
+    expect(m.remove).toHaveBeenCalledWith('faq', L, 1)
   })
   it('borne et masque la liste publique', async () => {
     await listVisiblePublicFaqs(L, undefined, 999)

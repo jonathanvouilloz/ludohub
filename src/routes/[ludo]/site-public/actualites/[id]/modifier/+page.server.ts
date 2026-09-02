@@ -4,6 +4,7 @@ import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { getPublicNews, PublicNewsServiceError } from '$lib/server/services/public-news.js'
 import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import type { PageServerLoad } from './$types'
+export { actions } from '../../+page.server.js'
 
 export const load: PageServerLoad = async (event) => {
   const { ludo } = await requireLudoContext(event)

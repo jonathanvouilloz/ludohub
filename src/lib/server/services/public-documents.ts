@@ -379,8 +379,8 @@ export async function deleteDraftPublicDocument(
 ) {
   revision(expectedRevision)
   const current = await getPublicDocument(id, ludoId)
-  if (current.status !== 'draft')
-    throw new PublicDocumentServiceError('Seul un brouillon peut être supprimé.')
+  if (current.status === 'published')
+    throw new PublicDocumentServiceError('Masquez ce document avant de le supprimer.')
   if (current.revision !== expectedRevision) concurrent()
   const deleted = await deleteDraftPublicDocumentRow(id, ludoId, expectedRevision)
   if (!deleted) concurrent()

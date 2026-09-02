@@ -285,8 +285,8 @@ export async function clearPublicGalleryImageFile(
 export async function deleteDraftPublicGalleryImage(id: string, l: string, r: number) {
   rev(r)
   const current = await getPublicGalleryImage(id, l)
-  if (current.status !== 'draft')
-    throw new PublicGalleryServiceError('Seul un brouillon peut être supprimé.')
+  if (current.status === 'published')
+    throw new PublicGalleryServiceError('Masquez cette photo avant de la supprimer.')
   if (current.revision !== r) concurrent()
   const deleted = await deleteDraftPublicGalleryRow(id, l, r)
   if (!deleted) concurrent()

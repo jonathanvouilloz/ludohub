@@ -10,7 +10,7 @@
     <h1>Nouvelle actualité</h1>
     <p>Commencez par créer un brouillon. Vous pourrez ajouter les images et le publier ensuite.</p>
   </header>
-  <NewsForm sites={data.sites} action="../?/create" cancelHref={listHref} successHref={listHref} />
+  <NewsForm sites={data.sites} action="?/create" cancelHref={listHref} successHref={listHref} />
 </main>
 
 <style>

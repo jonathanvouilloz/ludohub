@@ -329,14 +329,18 @@ export function hidePublicNews(
   return transitionPublicNews(newsId, ludoId, 'hidden', memberId, expectedRevision, now)
 }
 
-export async function deleteDraftPublicNews(newsId: string, ludoId: string) {
+export async function deleteDraftPublicNews(
+  newsId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  requireRevision(expectedRevision)
   const current = await getPublicNews(newsId, ludoId)
-  if (current.status !== 'draft') {
-    throw new PublicNewsServiceError('Seule une actualité jamais publiée peut être supprimée.')
+  if (current.revision !== expectedRevision) concurrentChange()
+  if (current.status === 'published') {
+    throw new PublicNewsServiceError('Masquez cette actualité avant de la supprimer.')
   }
-  if (!(await deletePublicNewsRow(newsId, ludoId))) {
-    throw new PublicNewsServiceError('Actualité introuvable.')
-  }
+  if (!(await deletePublicNewsRow(newsId, ludoId, expectedRevision))) concurrentChange()
 }
 
 export async function authorizePublicNewsMediaScope(

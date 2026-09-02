@@ -20,6 +20,8 @@ vi.mock('$lib/server/services/public-news.js', () => {
     PublicNewsServiceError,
     listPublicNewsForManagement: vi.fn(),
     createPublicNews: vi.fn(),
+    deleteDraftPublicNews: vi.fn(),
+    getPublicNews: vi.fn(),
     updatePublicNews: vi.fn(),
     publishPublicNews: vi.fn(),
     hidePublicNews: vi.fn(),
@@ -43,6 +45,8 @@ import {
   authorizePublicNewsMediaScope,
   clearPublicNewsImage,
   createPublicNews,
+  deleteDraftPublicNews,
+  getPublicNews,
   hidePublicNews,
   listPublicNewsForManagement,
   publishPublicNews,
@@ -127,7 +131,7 @@ function newsFields(extra: Array<[string, string]> = []): Array<[string, string]
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(requireLudoContext).mockResolvedValue({
-    ludo: { id: LUDO_ID },
+    ludo: { id: LUDO_ID, slug: 'test' },
     member: { id: MEMBER_ID, role: 'member', isActive: true },
   } as never)
   vi.mocked(isPublicSiteEnabled).mockResolvedValue(true)
@@ -137,6 +141,8 @@ beforeEach(() => {
     { id: SITE_INACTIVE, ludoId: LUDO_ID, name: 'Sécheron', isActive: false },
   ] as never)
   vi.mocked(createPublicNews).mockResolvedValue(news as never)
+  vi.mocked(getPublicNews).mockResolvedValue(news as never)
+  vi.mocked(deleteDraftPublicNews).mockResolvedValue(undefined)
   vi.mocked(updatePublicNews).mockResolvedValue(news as never)
   vi.mocked(publishPublicNews).mockResolvedValue({
     news: { ...news, status: 'published', revision: 2, publishedAt: new Date() },
@@ -314,6 +320,28 @@ describe('actions actualités', () => {
     expect(hidePublicNews).toHaveBeenCalledWith(NEWS_ID, LUDO_ID, MEMBER_ID, 4)
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'public_news.hidden' }),
+    )
+  })
+
+  it('supprime un brouillon, ses médias, puis redirige vers la liste', async () => {
+    vi.mocked(getPublicNews).mockResolvedValue({
+      ...news,
+      imageStorageKey: OLD_PATH,
+      assets: [{ storageKey: NEW_PATH }],
+    } as never)
+    await expect(
+      actions.delete!(
+        event([
+          ['id', NEWS_ID],
+          ['revision', '1'],
+        ]) as never,
+      ),
+    ).rejects.toMatchObject({ status: 303, location: '/test/site-public/actualites' })
+    expect(deleteDraftPublicNews).toHaveBeenCalledWith(NEWS_ID, LUDO_ID, 1)
+    expect(deletePublicSiteMedia).toHaveBeenCalledWith(SCOPE, OLD_PATH)
+    expect(deletePublicSiteMedia).toHaveBeenCalledWith(SCOPE, NEW_PATH)
+    expect(emitAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'public_news.deleted', entityId: NEWS_ID }),
     )
   })
 

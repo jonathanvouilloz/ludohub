@@ -134,7 +134,7 @@ export async function deleteDraftPublicGalleryRow(id: string, ludoId: string, re
       and(
         eq(images.id, id),
         eq(images.ludoId, ludoId),
-        eq(images.status, 'draft'),
+        sql`${images.status} <> 'published'`,
         eq(images.revision, revision),
       ),
     )

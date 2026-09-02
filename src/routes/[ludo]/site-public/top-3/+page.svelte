@@ -8,6 +8,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
+  import { compressEditorialImageFormData } from '$lib/media/editorial-image.js'
   import ListOrderedIcon from '@lucide/svelte/icons/list-ordered'
   import HouseIcon from '@lucide/svelte/icons/house'
   import PencilIcon from '@lucide/svelte/icons/pencil'
@@ -17,6 +18,7 @@
   let dialogOpen = $state(false)
   let editing = $state<EditableTopThree | null>(null)
   let pendingId = $state<string | null>(null)
+  let pendingMedia = $state<string | null>(null)
 
   function openCreate() {
     editing = null
@@ -89,8 +91,75 @@
           <ol>
             {#each item.games as game, index (index)}
               <li>
-                <strong>{game.name}</strong>
-                <p>{game.description}</p>
+                <div class="game-content">
+                  {#if game.imageUrl}
+                    <img src={game.imageUrl} alt={game.imageAlt ?? ''} />
+                  {/if}
+                  <div>
+                    <strong>{game.name}</strong>
+                    <p>{game.description}</p>
+                  </div>
+                </div>
+                <div class="game-media">
+                  <form
+                    method="POST"
+                    action="?/uploadGameImage"
+                    enctype="multipart/form-data"
+                    use:enhance={toastEnhance({
+                      success: game.imageUrl ? 'Image du jeu remplacée.' : 'Image du jeu ajoutée.',
+                      prepare: (formData) => compressEditorialImageFormData(formData, 'gallery'),
+                      onPending: (value) => (pendingMedia = value ? `${item.id}-${index}` : null),
+                    })}
+                  >
+                    <input type="hidden" name="id" value={item.id} />
+                    <input type="hidden" name="revision" value={item.revision} />
+                    <input type="hidden" name="gameIndex" value={index} />
+                    <label>
+                      <span>Image du jeu #{index + 1}</span>
+                      <input
+                        type="file"
+                        name="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        required
+                      />
+                    </label>
+                    <label>
+                      <span>Description de l’image</span>
+                      <input
+                        type="text"
+                        name="alt"
+                        value={game.imageAlt ?? `Boîte du jeu ${game.name}`}
+                        maxlength="300"
+                        required
+                      />
+                    </label>
+                    <Button
+                      type="submit"
+                      size="sm"
+                      disabled={pendingMedia === `${item.id}-${index}`}
+                      >{pendingMedia === `${item.id}-${index}`
+                        ? 'Envoi…'
+                        : game.imageUrl
+                          ? 'Remplacer'
+                          : 'Ajouter l’image'}</Button
+                    >
+                  </form>
+                  {#if game.imageUrl}
+                    <form
+                      method="POST"
+                      action="?/removeGameImage"
+                      use:enhance={toastEnhance({
+                        success: 'Image du jeu retirée.',
+                        onPending: (value) => (pendingMedia = value ? `${item.id}-${index}` : null),
+                      })}
+                    >
+                      <input type="hidden" name="id" value={item.id} />
+                      <input type="hidden" name="revision" value={item.revision} />
+                      <input type="hidden" name="gameIndex" value={index} />
+                      <Button type="submit" size="sm" variant="outline">Retirer</Button>
+                    </form>
+                  {/if}
+                </div>
               </li>
             {/each}
           </ol>
@@ -167,7 +236,7 @@
                 </Button>
               </form>
             {/if}
-            {#if item.status === 'draft'}
+            {#if item.status !== 'published'}
               <form
                 method="POST"
                 action="?/delete"
@@ -269,6 +338,49 @@
     color: var(--text-muted);
     line-height: 1.5;
   }
+  .game-content {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .game-content img {
+    width: 88px;
+    height: 88px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+  }
+  .game-media,
+  .game-media form,
+  .game-media label {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+  }
+  .game-media {
+    flex-wrap: wrap;
+    margin-top: var(--space-3);
+  }
+  .game-media form:first-child {
+    flex: 1;
+  }
+  .game-media label {
+    min-width: 12rem;
+    flex: 1;
+    flex-direction: column;
+    align-items: stretch;
+    color: var(--text-muted);
+    font-size: var(--text-label);
+  }
+  .game-media input {
+    min-height: 40px;
+    width: 100%;
+    padding: var(--space-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+    color: var(--text-main);
+  }
   footer {
     justify-content: flex-end;
     padding-top: var(--space-3);
@@ -302,6 +414,14 @@
     }
     header :global(button) {
       width: 100%;
+    }
+    .game-content {
+      grid-template-columns: 1fr;
+    }
+    .game-media,
+    .game-media form {
+      align-items: stretch;
+      flex-direction: column;
     }
   }
   .compact > :not(.card-head) {

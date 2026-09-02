@@ -303,8 +303,8 @@ export async function clearPublicProfilePhoto(
 export async function deleteDraftPublicProfile(id: string, l: string, r: number) {
   rev(r)
   const current = await getPublicProfile(id, l)
-  if (current.status !== 'draft')
-    throw new PublicProfileServiceError('Seul un brouillon peut être supprimé.')
+  if (current.status === 'published')
+    throw new PublicProfileServiceError('Masquez ce profil avant de le supprimer.')
   if (current.revision !== r) concurrent()
   const deleted = await deleteDraftPublicProfileRow(id, l, r)
   if (!deleted) concurrent()

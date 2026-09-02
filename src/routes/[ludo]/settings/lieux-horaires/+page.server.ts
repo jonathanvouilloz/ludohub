@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit'
 import { requireLudoContext, requireResponsableContext } from '$lib/server/ludo-context.js'
 import {
   createSiteWithOpeningHours,
+  deleteSite,
   listSitesWithOpeningHours,
   reorderSites,
   SiteServiceError,
@@ -107,5 +108,11 @@ export const actions: Actions = {
       }
       await reorderSites(ludo.id, parsed)
     })
+  },
+
+  delete: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() => deleteSite(ludo.id, String(data.get('siteId') ?? '')))
   },
 }

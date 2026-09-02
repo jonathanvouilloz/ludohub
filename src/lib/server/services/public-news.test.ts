@@ -19,6 +19,7 @@ vi.mock('./public-site.js', () => ({
 }))
 
 import {
+  deletePublicNewsRow,
   getPublicNewsRowForLudo,
   getPublishedPublicNewsRowBySlug,
   insertPublicNewsAtomic,
@@ -33,6 +34,7 @@ import { isPublicSiteEnabled, validatePublicSiteTargets } from './public-site.js
 import {
   authorizePublicNewsMediaScope,
   createPublicNews,
+  deleteDraftPublicNews,
   clearPublicNewsImage,
   getPublicNews,
   getVisiblePublicNewsBySlug,
@@ -94,6 +96,7 @@ beforeEach(() => {
   vi.mocked(updatePublicNewsAtomic).mockResolvedValue(news({ revision: 2 }) as never)
   vi.mocked(updatePublicNewsImageRow).mockResolvedValue(news({ revision: 2 }) as never)
   vi.mocked(updatePublicNewsPublicationRow).mockResolvedValue(news({ revision: 2 }) as never)
+  vi.mocked(deletePublicNewsRow).mockResolvedValue({ id: 'news-a' })
   vi.mocked(listVisiblePublicNewsSummaryRows).mockResolvedValue([])
   vi.mocked(getPublishedPublicNewsRowBySlug).mockResolvedValue(undefined)
 })
@@ -273,6 +276,33 @@ describe('mise à jour et concurrence', () => {
     await expect(
       updatePublicNews('news-a', LUDO, { slug: 'déjà-pris' }, MEMBER, 1, NOW),
     ).rejects.toThrow(/slug est déjà utilisé/)
+  })
+})
+
+describe('suppression', () => {
+  it('supprime un brouillon à la révision attendue', async () => {
+    await deleteDraftPublicNews('news-a', LUDO, 1)
+    expect(deletePublicNewsRow).toHaveBeenCalledWith('news-a', LUDO, 1)
+  })
+
+  it('supprime une actualité masquée', async () => {
+    vi.mocked(getPublicNewsRowForLudo).mockResolvedValueOnce(
+      news({ status: 'hidden', publishedAt: FIRST }) as never,
+    )
+    await deleteDraftPublicNews('news-a', LUDO, 1)
+    expect(deletePublicNewsRow).toHaveBeenCalledWith('news-a', LUDO, 1)
+  })
+
+  it('refuse une actualité encore publiée ou une suppression concurrente', async () => {
+    vi.mocked(getPublicNewsRowForLudo).mockResolvedValueOnce(
+      news({ status: 'published', publishedAt: FIRST }) as never,
+    )
+    await expect(deleteDraftPublicNews('news-a', LUDO, 1)).rejects.toThrow(/Masquez/)
+    expect(deletePublicNewsRow).not.toHaveBeenCalled()
+
+    vi.mocked(getPublicNewsRowForLudo).mockResolvedValueOnce(news() as never)
+    vi.mocked(deletePublicNewsRow).mockResolvedValueOnce(undefined as never)
+    await expect(deleteDraftPublicNews('news-a', LUDO, 1)).rejects.toThrow(/Rechargez/)
   })
 })
 

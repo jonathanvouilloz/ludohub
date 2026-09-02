@@ -3,6 +3,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('$lib/server/ludo-context.js', () => ({ requireLudoContext: vi.fn() }))
 vi.mock('$lib/server/db/sites.js', () => ({ listSiteRowsWithOpeningHours: vi.fn() }))
 vi.mock('$lib/server/services/events.js', () => ({ emitAuditEvent: vi.fn() }))
+vi.mock('$lib/server/media/blob-storage.js', () => {
+  class MediaStorageError extends Error {}
+  return {
+    MediaStorageError,
+    uploadPublicSiteMedia: vi.fn(),
+    deletePublicSiteMedia: vi.fn(),
+  }
+})
+vi.mock('$lib/server/media/media-service.js', () => {
+  class MediaCompensationError extends Error {}
+  return { MediaCompensationError, uploadAndRegisterMedia: vi.fn() }
+})
 vi.mock('$lib/server/services/public-site.js', () => {
   class PublicSiteServiceError extends Error {}
   return { PublicSiteServiceError, isPublicSiteEnabled: vi.fn() }
@@ -13,27 +25,37 @@ vi.mock('$lib/server/services/public-top-threes.js', () => {
     PublicTopThreeServiceError,
     listPublicTopThreesForManagement: vi.fn(),
     createPublicTopThree: vi.fn(),
+    authorizePublicTopThreeMediaScope: vi.fn(),
+    clearPublicTopThreeGameImage: vi.fn(),
+    getPublicTopThree: vi.fn(),
     selectPublicTopThreeForHomepage: vi.fn(),
     deselectPublicTopThreeFromHomepage: vi.fn(),
     updatePublicTopThree: vi.fn(),
     publishPublicTopThree: vi.fn(),
     hidePublicTopThree: vi.fn(),
     deleteDraftPublicTopThree: vi.fn(),
+    setPublicTopThreeGameImage: vi.fn(),
   }
 })
 
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
+import { deletePublicSiteMedia, uploadPublicSiteMedia } from '$lib/server/media/blob-storage.js'
+import { uploadAndRegisterMedia } from '$lib/server/media/media-service.js'
 import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import {
   createPublicTopThree,
+  authorizePublicTopThreeMediaScope,
+  clearPublicTopThreeGameImage,
   deselectPublicTopThreeFromHomepage,
   deleteDraftPublicTopThree,
   hidePublicTopThree,
+  getPublicTopThree,
   listPublicTopThreesForManagement,
   publishPublicTopThree,
   selectPublicTopThreeForHomepage,
+  setPublicTopThreeGameImage,
   updatePublicTopThree,
 } from '$lib/server/services/public-top-threes.js'
 import { actions, load } from './+page.server.js'
@@ -42,6 +64,9 @@ const LUDO_ID = '11111111-1111-4111-8111-111111111111'
 const MEMBER_ID = '22222222-2222-4222-8222-222222222222'
 const TOP_THREE_ID = '33333333-3333-4333-8333-333333333333'
 const SITE_ID = '44444444-4444-4444-8444-444444444444'
+const OLD_PATH = `public-site/${LUDO_ID}/top-games/${TOP_THREE_ID}/55555555-5555-4555-8555-555555555555.jpg`
+const NEW_PATH = `public-site/${LUDO_ID}/top-games/${TOP_THREE_ID}/66666666-6666-4666-8666-666666666666.jpg`
+const scope = { ludoId: LUDO_ID, domain: 'top-games', entityId: TOP_THREE_ID } as never
 const games = [
   { name: 'Azul', description: 'Accessible et élégant.' },
   { name: 'Cascadia', description: 'Paisible et tactique.' },
@@ -92,6 +117,28 @@ beforeEach(() => {
     { id: SITE_ID, isActive: true },
   ] as never)
   vi.mocked(createPublicTopThree).mockResolvedValue(topThree as never)
+  vi.mocked(getPublicTopThree).mockResolvedValue(topThree as never)
+  vi.mocked(authorizePublicTopThreeMediaScope).mockResolvedValue(scope)
+  vi.mocked(uploadPublicSiteMedia).mockResolvedValue({
+    pathname: NEW_PATH,
+    url: 'https://blob.test/top-game.jpg',
+    downloadUrl: 'https://blob.test/top-game.jpg?download=1',
+    contentType: 'image/jpeg',
+    size: 4,
+  } as never)
+  vi.mocked(setPublicTopThreeGameImage).mockResolvedValue({
+    topThree: { ...topThree, revision: 2 },
+    previousStorageKey: OLD_PATH,
+  } as never)
+  vi.mocked(clearPublicTopThreeGameImage).mockResolvedValue({
+    topThree: { ...topThree, revision: 2 },
+    previousStorageKey: OLD_PATH,
+  } as never)
+  vi.mocked(uploadAndRegisterMedia).mockImplementation(async (input) => {
+    const authorized = await input.authorize()
+    const blob = await input.upload(authorized)
+    return input.register(authorized, blob)
+  })
   vi.mocked(updatePublicTopThree).mockResolvedValue(topThree as never)
   vi.mocked(publishPublicTopThree).mockResolvedValue({
     topThree: { ...topThree, status: 'published', revision: 2 },
@@ -335,5 +382,49 @@ describe('gestion des Top 3 publics', () => {
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'public_top_three.deleted', entityId: TOP_THREE_ID }),
     )
+  })
+
+  it('ajoute, remplace et retire une image de jeu avec nettoyage du Blob précédent', async () => {
+    const file = new File([new Uint8Array([0xff, 0xd8, 0xff, 0])], 'jeu.jpg', {
+      type: 'image/jpeg',
+    })
+    const uploadData = new FormData()
+    uploadData.set('id', TOP_THREE_ID)
+    uploadData.set('revision', '1')
+    uploadData.set('gameIndex', '1')
+    uploadData.set('alt', 'Boîte du jeu Cascadia')
+    uploadData.set('file', file)
+    await actions.uploadGameImage!({
+      ...event(),
+      request: new Request('http://local.test', { method: 'POST', body: uploadData }),
+    } as never)
+    expect(setPublicTopThreeGameImage).toHaveBeenCalledWith(
+      LUDO_ID,
+      TOP_THREE_ID,
+      MEMBER_ID,
+      1,
+      1,
+      scope,
+      expect.objectContaining({ pathname: NEW_PATH }),
+      'Boîte du jeu Cascadia',
+    )
+    expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD_PATH)
+
+    vi.mocked(deletePublicSiteMedia).mockClear()
+    await actions.removeGameImage!(
+      event([
+        ['id', TOP_THREE_ID],
+        ['revision', '2'],
+        ['gameIndex', '1'],
+      ]) as never,
+    )
+    expect(clearPublicTopThreeGameImage).toHaveBeenCalledWith(
+      LUDO_ID,
+      TOP_THREE_ID,
+      MEMBER_ID,
+      2,
+      1,
+    )
+    expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD_PATH)
   })
 })

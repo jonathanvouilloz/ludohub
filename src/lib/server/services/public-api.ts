@@ -145,13 +145,17 @@ export type PublicTopThreeSummaryItem = {
   id: string
   slug: string
   theme: string
-  games: Array<{ name: string }>
+  games: Array<{ name: string; image: { url: string; alt: string } | null }>
   isHomepage: boolean
   publishedAt: string
 }
 
 export type PublicTopThreeItem = Omit<PublicTopThreeSummaryItem, 'games'> & {
-  games: Array<{ name: string; description: string | null }>
+  games: Array<{
+    name: string
+    description: string | null
+    image: { url: string; alt: string } | null
+  }>
   sites: Array<{ id: string; slug: string; name: string }>
 }
 
@@ -578,7 +582,10 @@ export async function getPublicTopThreesByLudoSlug(
       id: item.id,
       slug: item.slug,
       theme: item.theme,
-      games: item.games,
+      games: item.games.map((game) => ({
+        name: game.name,
+        image: game.imageUrl && game.imageAlt ? { url: game.imageUrl, alt: game.imageAlt } : null,
+      })),
       isHomepage: item.isHomepage,
       publishedAt: item.publishedAt!.toISOString(),
     })),
@@ -607,6 +614,7 @@ export async function getPublicTopThreeDetailByLudoSlug(
       games: item.games.map((game) => ({
         name: game.name,
         description: game.description ?? null,
+        image: game.imageUrl && game.imageAlt ? { url: game.imageUrl, alt: game.imageAlt } : null,
       })),
       publishedAt: item.publishedAt!.toISOString(),
       sites: item.targets

@@ -63,6 +63,14 @@ export async function getSiteRowForLudo(siteId: string, ludoId: string) {
   })
 }
 
+export async function deleteSiteRow(siteId: string, ludoId: string) {
+  const [row] = await db
+    .delete(ludoSites)
+    .where(and(eq(ludoSites.id, siteId), eq(ludoSites.ludoId, ludoId)))
+    .returning({ id: ludoSites.id })
+  return row
+}
+
 export async function insertSiteWithIntervalsAtomic(
   data: LudoSiteInsert & { id: string },
   intervals: Array<

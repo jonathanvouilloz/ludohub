@@ -1,6 +1,12 @@
 <script lang="ts" module>
   export type TopThreeSite = { id: string; name: string; isActive: boolean }
-  export type TopThreeGame = { name: string; description?: string }
+  export type TopThreeGame = {
+    name: string
+    description?: string
+    imageUrl?: string
+    imageStorageKey?: string
+    imageAlt?: string
+  }
   export type EditableTopThree = {
     id: string
     revision: number

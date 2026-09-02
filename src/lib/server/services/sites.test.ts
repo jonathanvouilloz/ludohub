@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../db/sites.js', () => ({
+  deleteSiteRow: vi.fn(),
   getSiteRowForLudo: vi.fn(),
   insertSiteWithIntervalsAtomic: vi.fn(),
   listActiveSiteRows: vi.fn(),
@@ -10,6 +11,7 @@ vi.mock('../db/sites.js', () => ({
 }))
 
 import {
+  deleteSiteRow,
   getSiteRowForLudo,
   insertSiteWithIntervalsAtomic,
   listActiveSiteRows,
@@ -19,6 +21,7 @@ import {
 } from '../db/sites.js'
 import {
   createSiteWithOpeningHours,
+  deleteSite,
   normalizeOpeningIntervals,
   reorderSites,
   SiteServiceError,
@@ -53,6 +56,7 @@ beforeEach(() => {
   vi.mocked(getSiteRowForLudo).mockResolvedValue(SITE as never)
   vi.mocked(insertSiteWithIntervalsAtomic).mockResolvedValue(undefined)
   vi.mocked(updateSiteWithIntervalsAtomic).mockResolvedValue(undefined)
+  vi.mocked(deleteSiteRow).mockResolvedValue({ id: 'site-b' } as never)
 })
 
 describe('normalizeOpeningIntervals', () => {
@@ -151,5 +155,30 @@ describe('reorderSites', () => {
   it('réordonne un ensemble tenant complet', async () => {
     await reorderSites(LUDO, ['site-a'])
     expect(updateSiteOrderRows).toHaveBeenCalledWith(LUDO, ['site-a'])
+  })
+})
+
+describe('deleteSite', () => {
+  it('supprime uniquement un lieu masqué et non principal du tenant', async () => {
+    vi.mocked(getSiteRowForLudo).mockResolvedValue({
+      ...SITE,
+      id: 'site-b',
+      isPrimary: false,
+      isActive: false,
+    } as never)
+    await deleteSite(LUDO, 'site-b')
+    expect(deleteSiteRow).toHaveBeenCalledWith('site-b', LUDO)
+  })
+
+  it('refuse de supprimer le lieu principal ou un lieu encore actif', async () => {
+    await expect(deleteSite(LUDO, 'site-a')).rejects.toThrow(/principal/)
+    vi.mocked(getSiteRowForLudo).mockResolvedValue({
+      ...SITE,
+      id: 'site-b',
+      isPrimary: false,
+      isActive: true,
+    } as never)
+    await expect(deleteSite(LUDO, 'site-b')).rejects.toThrow(/Masquez/)
+    expect(deleteSiteRow).not.toHaveBeenCalled()
   })
 })

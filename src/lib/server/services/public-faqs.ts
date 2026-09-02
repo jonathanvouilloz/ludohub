@@ -233,8 +233,8 @@ export const hidePublicFaq = (
 export async function deleteDraftPublicFaq(id: string, ludoId: string, rev: number) {
   revision(rev)
   const current = await getPublicFaq(id, ludoId)
-  if (current.status !== 'draft')
-    throw new PublicFaqServiceError('Seul un brouillon peut être supprimé.')
+  if (current.status === 'published')
+    throw new PublicFaqServiceError('Masquez cette question avant de la supprimer.')
   if (current.revision !== rev || !(await deleteDraftPublicFaqRow(id, ludoId, rev))) concurrent()
 }
 export async function listVisiblePublicFaqs(ludoId: string, siteId?: string, limit = 100) {

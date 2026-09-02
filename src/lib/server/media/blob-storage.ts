@@ -1,5 +1,9 @@
 import { del, put } from '@vercel/blob'
+import { dev } from '$app/environment'
 import { env } from '$env/dynamic/private'
+import { env as publicEnv } from '$env/dynamic/public'
+import { mkdir, unlink, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
 import {
   parseManagedPublicSitePath,
   publicSiteMediaPath,
@@ -22,6 +26,27 @@ export type StoredBlob = {
 }
 
 export class MediaStorageError extends Error {}
+
+const LOCAL_MEDIA_ROOT = resolve('static')
+
+function localMediaUrl(pathname: ManagedBlobPath): string {
+  const baseUrl = (publicEnv.PUBLIC_APP_URL || 'http://localhost:5173').replace(/\/$/, '')
+  return `${baseUrl}/${pathname}`
+}
+
+function localMediaFile(pathname: ManagedBlobPath): string {
+  return resolve(LOCAL_MEDIA_ROOT, ...pathname.split('/'))
+}
+
+function storageFailure(
+  operation: 'enregistrement' | 'suppression',
+  error: unknown,
+): MediaStorageError {
+  const detail = error instanceof Error ? error.message : String(error)
+  return new MediaStorageError(
+    `Le stockage des médias a échoué pendant l’${operation}. Vérifiez la configuration BLOB_READ_WRITE_TOKEN. (${detail})`,
+  )
+}
 
 function blobToken(): string {
   const token = env.BLOB_READ_WRITE_TOKEN
@@ -81,11 +106,31 @@ export async function uploadPublicSiteMedia(input: {
     scope: input.scope,
     mediaType: contentType,
   })
-  const blob = await put(pathname, input.file, {
-    access: 'public',
-    contentType,
-    token: blobToken(),
-  })
+  if (dev) {
+    const destination = localMediaFile(pathname)
+    await mkdir(dirname(destination), { recursive: true })
+    await writeFile(destination, new Uint8Array(await input.file.arrayBuffer()))
+    const url = localMediaUrl(pathname)
+    return {
+      url,
+      downloadUrl: url,
+      pathname,
+      contentType,
+      size: input.file.size,
+    }
+  }
+
+  let blob
+  try {
+    blob = await put(pathname, input.file, {
+      access: 'public',
+      contentType,
+      token: blobToken(),
+    })
+  } catch (error) {
+    if (error instanceof MediaStorageError) throw error
+    throw storageFailure('enregistrement', error)
+  }
   return {
     // `url` ouvre le fichier dans le navigateur ; `downloadUrl` force le téléchargement.
     url: blob.url,
@@ -111,5 +156,19 @@ export async function deletePublicSiteMedia(
   ) {
     throw new MediaStorageError('Ce média n’appartient pas au périmètre autorisé.')
   }
-  await del(pathname, { token: blobToken() })
+  if (dev) {
+    try {
+      await unlink(localMediaFile(pathname as ManagedBlobPath))
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
+        throw storageFailure('suppression', error)
+    }
+    return
+  }
+  try {
+    await del(pathname, { token: blobToken() })
+  } catch (error) {
+    if (error instanceof MediaStorageError) throw error
+    throw storageFailure('suppression', error)
+  }
 }

@@ -124,7 +124,7 @@ export async function deleteDraftPublicFaqRow(id: string, ludoId: string, revisi
       and(
         eq(publicFaqs.id, id),
         eq(publicFaqs.ludoId, ludoId),
-        eq(publicFaqs.status, 'draft'),
+        sql`${publicFaqs.status} <> 'published'`,
         eq(publicFaqs.revision, revision),
       ),
     )

@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@vercel/blob', () => ({ put: vi.fn(), del: vi.fn() }))
+vi.mock('$app/environment', () => ({ dev: false }))
 vi.mock('$env/dynamic/private', () => ({ env: { BLOB_READ_WRITE_TOKEN: 'test-token' } }))
+vi.mock('$env/dynamic/public', () => ({ env: { PUBLIC_APP_URL: 'https://app.test' } }))
 
 import { del, put } from '@vercel/blob'
 import {
@@ -121,5 +123,24 @@ describe('stockage Blob', () => {
 
     await deletePublicSiteMedia(otherScope, pathname)
     expect(del).toHaveBeenCalledWith(pathname, { token: 'test-token' })
+  })
+
+  it('transforme les erreurs du fournisseur en erreur métier exploitable par le formulaire', async () => {
+    vi.mocked(put).mockRejectedValue(new Error('This store does not exist.'))
+
+    await expect(
+      uploadPublicSiteMedia({
+        scope,
+        file: file([0xff, 0xd8, 0xff, 0], 'image/jpeg'),
+        policy: imagePolicy,
+      }),
+    ).rejects.toThrow(MediaStorageError)
+    await expect(
+      uploadPublicSiteMedia({
+        scope,
+        file: file([0xff, 0xd8, 0xff, 0], 'image/jpeg'),
+        policy: imagePolicy,
+      }),
+    ).rejects.toThrow(/configuration BLOB_READ_WRITE_TOKEN/)
   })
 })

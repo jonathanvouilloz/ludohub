@@ -2,11 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import dashboardSource from './services/dashboard.ts?raw'
 import navConfigSource from '../components/nav/nav-config.ts?raw'
 
-const neon = vi.fn(() => vi.fn())
-const drizzle = vi.fn(() => ({ select: vi.fn() }))
-const betterAuth = vi.fn(() => ({ handler: vi.fn() }))
-const drizzleAdapter = vi.fn(() => ({}))
+const { betterAuth, drizzle, drizzleAdapter, neon, privateEnv } = vi.hoisted(() => ({
+  neon: vi.fn(() => vi.fn()),
+  drizzle: vi.fn(() => ({ select: vi.fn() })),
+  betterAuth: vi.fn(() => ({ handler: vi.fn() })),
+  drizzleAdapter: vi.fn(() => ({})),
+  privateEnv: { ...process.env } as Record<string, string | undefined>,
+}))
 
+vi.mock('$env/dynamic/private', () => ({ env: privateEnv }))
 vi.mock('@neondatabase/serverless', () => ({ neon }))
 vi.mock('drizzle-orm/neon-http', () => ({ drizzle }))
 vi.mock('better-auth/minimal', () => ({ betterAuth }))
@@ -19,8 +23,8 @@ describe('imports serveur sûrs pendant le build', () => {
   })
 
   it('importe la base sans créer de client ni exiger DATABASE_URL', async () => {
-    const previous = process.env.DATABASE_URL
-    delete process.env.DATABASE_URL
+    const previous = privateEnv.DATABASE_URL
+    delete privateEnv.DATABASE_URL
 
     try {
       const { getDb } = await import('./db/index.js')
@@ -29,8 +33,8 @@ describe('imports serveur sûrs pendant le build', () => {
       expect(drizzle).not.toHaveBeenCalled()
       expect(() => getDb()).toThrow('DATABASE_URL is not set')
     } finally {
-      if (previous === undefined) delete process.env.DATABASE_URL
-      else process.env.DATABASE_URL = previous
+      if (previous === undefined) delete privateEnv.DATABASE_URL
+      else privateEnv.DATABASE_URL = previous
     }
   })
 

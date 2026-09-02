@@ -28,6 +28,7 @@ import { listActiveSiteRows } from '../db/sites.js'
 import { isPublicSiteEnabled, validatePublicSiteTargets } from './public-site.js'
 import {
   createPublicAnnouncement,
+  deletePublicAnnouncement,
   getPublicAnnouncement,
   listPublicAnnouncementsForManagement,
   listVisiblePublicAnnouncements,
@@ -211,6 +212,23 @@ describe('CRUD tenant-scoped', () => {
     await expect(
       updatePublicAnnouncement('announcement-a', LUDO, { title: 'Concurrent' }, MEMBER, 1, NOW),
     ).rejects.toThrow(/Rechargez/)
+  })
+
+  it('supprime une annonce inactive avec contrôle atomique de révision', async () => {
+    await deletePublicAnnouncement('announcement-a', LUDO, 1)
+    expect(deletePublicAnnouncementRow).toHaveBeenCalledWith('announcement-a', LUDO, 1)
+  })
+
+  it('refuse une annonce publiée ou une suppression gagnée par une autre écriture', async () => {
+    vi.mocked(getPublicAnnouncementRowForLudo).mockResolvedValueOnce(
+      announcement({ status: 'published' }) as never,
+    )
+    await expect(deletePublicAnnouncement('announcement-a', LUDO, 1)).rejects.toThrow(/Désactivez/)
+    expect(deletePublicAnnouncementRow).not.toHaveBeenCalled()
+
+    vi.mocked(getPublicAnnouncementRowForLudo).mockResolvedValueOnce(announcement() as never)
+    vi.mocked(deletePublicAnnouncementRow).mockResolvedValueOnce(undefined as never)
+    await expect(deletePublicAnnouncement('announcement-a', LUDO, 1)).rejects.toThrow(/Rechargez/)
   })
 })
 

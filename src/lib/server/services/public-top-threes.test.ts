@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   list: vi.fn(),
   listVisible: vi.fn(),
   update: vi.fn(),
+  updateMedia: vi.fn(),
   publication: vi.fn(),
   selectHomepage: vi.fn(),
   deselectHomepage: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock('../db/public-top-threes.js', () => ({
   listPublicTopThreeRows: mocks.list,
   listVisiblePublicTopThreeSummaryRows: mocks.listVisible,
   updatePublicTopThreeAtomic: mocks.update,
+  updatePublicTopThreeGamesMediaRow: mocks.updateMedia,
   updatePublicTopThreePublicationRow: mocks.publication,
   selectPublicTopThreeHomepageAtomic: mocks.selectHomepage,
   deselectPublicTopThreeHomepageRow: mocks.deselectHomepage,
@@ -36,6 +38,8 @@ vi.mock('./public-site.js', () => ({
 
 import {
   createPublicTopThree,
+  authorizePublicTopThreeMediaScope,
+  clearPublicTopThreeGameImage,
   deleteDraftPublicTopThree,
   getVisiblePublicTopThreeBySlug,
   hidePublicTopThree,
@@ -43,6 +47,7 @@ import {
   normalizePublicTopThreeSlug,
   publishPublicTopThree,
   selectPublicTopThreeForHomepage,
+  setPublicTopThreeGameImage,
   deselectPublicTopThreeFromHomepage,
   updatePublicTopThree,
   validatePublicTopThreeGames,
@@ -51,6 +56,8 @@ import {
 const LUDO = '00000000-0000-4000-8000-000000000001'
 const OTHER = '00000000-0000-4000-8000-000000000002'
 const MEMBER = '00000000-0000-4000-8000-000000000003'
+const TOP = '00000000-0000-4000-8000-000000000004'
+const IMAGE_PATH = `public-site/${LUDO}/top-games/${TOP}/00000000-0000-4000-8000-000000000005.webp`
 const NOW = new Date('2026-08-05T12:00:00Z')
 const FIRST = new Date('2026-07-01T12:00:00Z')
 const games = [{ name: 'A' }, { name: 'B', description: '**Bien**' }, { name: 'C' }]
@@ -81,6 +88,7 @@ beforeEach(() => {
   mocks.get.mockResolvedValue(item())
   mocks.insert.mockResolvedValue(item())
   mocks.update.mockResolvedValue(item({ revision: 2 }))
+  mocks.updateMedia.mockResolvedValue(item({ revision: 2 }))
   mocks.publication.mockResolvedValue(item({ revision: 2 }))
   mocks.selectHomepage.mockResolvedValue(
     item({ revision: 2, status: 'published', isHomepage: true }),
@@ -203,6 +211,23 @@ describe('écriture et ciblage', () => {
     )
   })
 
+  it('conserve les images existantes lors de la modification des textes', async () => {
+    const image = {
+      imageUrl: 'https://blob.test/jeu.webp',
+      imageStorageKey: IMAGE_PATH,
+      imageAlt: 'Boîte du jeu A',
+    }
+    mocks.get.mockResolvedValue(item({ games: [{ ...games[0], ...image }, ...games.slice(1)] }))
+    await updatePublicTopThree('top-a', LUDO, { games }, MEMBER, 1)
+    expect(mocks.update).toHaveBeenCalledWith(
+      'top-a',
+      LUDO,
+      1,
+      expect.objectContaining({ games: [{ ...games[0], ...image }, ...games.slice(1)] }),
+      [],
+    )
+  })
+
   it('gère CAS perdu et collision de slug', async () => {
     mocks.get.mockResolvedValueOnce(item({ revision: 2 }))
     await expect(updatePublicTopThree('top-a', LUDO, { theme: 'X' }, MEMBER, 1)).rejects.toThrow(
@@ -280,11 +305,62 @@ describe('publication et suppression', () => {
     })
   })
 
-  it('supprime uniquement un brouillon avec CAS', async () => {
+  it('supprime un brouillon ou un Top 3 masqué avec CAS', async () => {
     await deleteDraftPublicTopThree('top-a', LUDO, 1)
     expect(mocks.remove).toHaveBeenCalledWith('top-a', LUDO, 1)
     mocks.get.mockResolvedValue(item({ status: 'hidden', publishedAt: FIRST }))
-    await expect(deleteDraftPublicTopThree('top-a', LUDO, 1)).rejects.toThrow(/jamais publié/)
+    await deleteDraftPublicTopThree('top-a', LUDO, 1)
+    expect(mocks.remove).toHaveBeenCalledWith('top-a', LUDO, 1)
+  })
+})
+
+describe('images des jeux', () => {
+  it('ajoute puis retire une image dans la position demandée avec CAS', async () => {
+    const current = item({ id: TOP, games })
+    const withImage = {
+      ...current,
+      revision: 2,
+      games: [
+        {
+          ...games[0],
+          imageUrl: 'https://blob.test/jeu.webp',
+          imageStorageKey: IMAGE_PATH,
+          imageAlt: 'Boîte du jeu A',
+        },
+        ...games.slice(1),
+      ],
+    }
+    mocks.get
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce(current)
+      .mockResolvedValueOnce(withImage)
+    const scope = await authorizePublicTopThreeMediaScope(LUDO, TOP, 1)
+    await setPublicTopThreeGameImage(
+      LUDO,
+      TOP,
+      MEMBER,
+      1,
+      0,
+      scope,
+      {
+        url: 'https://blob.test/jeu.webp',
+        downloadUrl: 'https://blob.test/jeu.webp?download=1',
+        pathname: IMAGE_PATH as never,
+        contentType: 'image/webp',
+        size: 1024,
+      },
+      'Boîte du jeu A',
+      NOW,
+    )
+    expect(mocks.updateMedia).toHaveBeenCalledWith(TOP, LUDO, 1, withImage.games, MEMBER, NOW)
+
+    mocks.get.mockReset()
+    mocks.get.mockResolvedValueOnce(withImage).mockResolvedValueOnce({
+      ...current,
+      revision: 3,
+    })
+    await clearPublicTopThreeGameImage(LUDO, TOP, MEMBER, 2, 0, NOW)
+    expect(mocks.updateMedia).toHaveBeenCalledWith(TOP, LUDO, 2, games, MEMBER, NOW)
   })
 })
 

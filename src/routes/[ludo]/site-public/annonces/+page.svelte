@@ -139,6 +139,20 @@
                 {/if}
               </Button>
             </form>
+            {#if announcement.status !== 'published'}
+              <form
+                method="POST"
+                action="?/delete"
+                onsubmit={(event) => {
+                  if (!confirm('Supprimer définitivement cette annonce ?')) event.preventDefault()
+                }}
+                use:enhance={toastEnhance({ success: 'Annonce supprimée.' })}
+              >
+                <input type="hidden" name="id" value={announcement.id} />
+                <input type="hidden" name="revision" value={announcement.revision} />
+                <Button type="submit" size="sm" variant="destructive">Supprimer</Button>
+              </form>
+            {/if}
           </footer>
         </article>
       {/each}

@@ -233,8 +233,8 @@ export const hidePublicDirectoryEntry = (
 export async function deleteDraftPublicDirectoryEntry(id: string, l: string, r: number) {
   rev(r)
   const c = await getPublicDirectoryEntry(id, l)
-  if (c.status !== 'draft')
-    throw new PublicDirectoryServiceError('Seul un brouillon peut être supprimé.')
+  if (c.status === 'published')
+    throw new PublicDirectoryServiceError('Masquez cette entrée avant de la supprimer.')
   if (c.revision !== r || !(await deleteDraftPublicDirectoryRow(id, l, r))) concurrent()
 }
 export async function listPublishedPublicDirectory(l: string, limit = 100) {

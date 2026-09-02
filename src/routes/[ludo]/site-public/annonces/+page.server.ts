@@ -3,6 +3,7 @@ import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import {
   createPublicAnnouncement,
+  deletePublicAnnouncement,
   listPublicAnnouncementsForManagement,
   PublicAnnouncementServiceError,
   setPublicAnnouncementActive,
@@ -150,6 +151,23 @@ export const actions: Actions = {
           },
         })
       }
+      return { success: true }
+    })
+  },
+
+  delete: async (event) => {
+    const { ludo, member } = await requireAnnouncementContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      await deletePublicAnnouncement(id, ludo.id, parseRevision(data))
+      await emitAuditEvent({
+        action: 'public_announcement.deleted',
+        actorLudoId: ludo.id,
+        actorMemberId: member.id,
+        entityType: 'public_announcement',
+        entityId: id,
+      })
       return { success: true }
     })
   },

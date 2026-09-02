@@ -1,11 +1,17 @@
 import { env } from '$env/dynamic/private'
+import { env as publicEnv } from '$env/dynamic/public'
 
 /** TTL court : une désactivation éditoriale ou du module ne doit jamais servir un stale prolongé. */
 export const PUBLIC_CACHE_CONTROL = 'public, max-age=30, s-maxage=60, must-revalidate'
 
 function configuredOrigins(): Set<string> {
   return new Set(
-    (env.PUBLIC_API_ALLOWED_ORIGINS ?? '')
+    (
+      env.API_ALLOWED_ORIGINS ??
+      env.PUBLIC_API_ALLOWED_ORIGINS ??
+      publicEnv.PUBLIC_API_ALLOWED_ORIGINS ??
+      ''
+    )
       .split(',')
       .map((origin) => origin.trim())
       .filter(Boolean),

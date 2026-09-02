@@ -1,4 +1,4 @@
-import { error, fail, type RequestEvent } from '@sveltejs/kit'
+import { error, fail, redirect, type RequestEvent } from '@sveltejs/kit'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import {
@@ -19,6 +19,8 @@ import {
   authorizePublicNewsMediaScope,
   clearPublicNewsImage,
   createPublicNews,
+  deleteDraftPublicNews,
+  getPublicNews,
   hidePublicNews,
   listPublicNewsForManagement,
   publishPublicNews,
@@ -136,7 +138,7 @@ async function cleanupPreviousImage(input: {
   ludoId: string
   memberId: string
   newsId: string
-  operation: 'replace' | 'remove' | 'support-replace' | 'asset-remove'
+  operation: 'replace' | 'remove' | 'support-replace' | 'asset-remove' | 'delete'
 }) {
   if (!input.pathname) return
   try {
@@ -229,6 +231,44 @@ export const actions: Actions = {
         })
       }
       return { success: true }
+    })
+  },
+
+  delete: async (event) => {
+    const { ludo, member } = await requireNewsContext(event)
+    const data = await event.request.formData()
+    const id = String(data.get('id') ?? '')
+    return run(async () => {
+      const revision = parseRevision(data)
+      const [scope, news] = await Promise.all([
+        authorizePublicNewsMediaScope(ludo.id, id, revision),
+        getPublicNews(id, ludo.id),
+      ])
+      await deleteDraftPublicNews(id, ludo.id, revision)
+      const storedPaths = [
+        news.imageStorageKey,
+        ...(news.assets ?? []).map((asset) => asset.storageKey),
+      ].filter((pathname): pathname is string => Boolean(pathname))
+      await Promise.all(
+        storedPaths.map((pathname) =>
+          cleanupPreviousImage({
+            scope,
+            pathname,
+            ludoId: ludo.id,
+            memberId: member.id,
+            newsId: id,
+            operation: 'delete',
+          }),
+        ),
+      )
+      await emitAuditEvent({
+        action: 'public_news.deleted',
+        actorLudoId: ludo.id,
+        actorMemberId: member.id,
+        entityType: 'public_news',
+        entityId: id,
+      })
+      throw redirect(303, `/${ludo.slug}/site-public/actualites`)
     })
   },
 

@@ -74,7 +74,7 @@
                 >{item.status === 'published' ? 'Masquer' : 'Publier'}</Button
               >
             </form>
-            {#if item.status === 'draft'}
+            {#if item.status !== 'published'}
               <form
                 method="POST"
                 action="?/delete"

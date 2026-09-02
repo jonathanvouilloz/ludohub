@@ -215,7 +215,13 @@ const topThreeRow = {
   theme: 'Jeux coopératifs',
   isHomepage: true,
   games: [
-    { name: 'Jeu A', description: 'A' },
+    {
+      name: 'Jeu A',
+      description: 'A',
+      imageUrl: 'https://blob.test/jeu-a.webp',
+      imageStorageKey: 'top-games/internal/jeu-a.webp',
+      imageAlt: 'Boîte du jeu A',
+    },
     { name: 'Jeu B', description: null },
     { name: 'Jeu C', description: 'C' },
   ],
@@ -226,7 +232,14 @@ const topThreeRow = {
 describe('Top 3 publics', () => {
   it('borne la liste en base et projette seulement les noms', async () => {
     listVisibleTopThrees.mockResolvedValue([
-      { ...topThreeRow, games: topThreeRow.games.map(({ name }) => ({ name })) },
+      {
+        ...topThreeRow,
+        games: topThreeRow.games.map(({ name, imageUrl, imageAlt }) => ({
+          name,
+          imageUrl,
+          imageAlt,
+        })),
+      },
     ])
     const result = await getPublicTopThreesByLudoSlug('demo', undefined, 3)
     expect(listVisibleTopThrees).toHaveBeenCalledWith(ludo.id, undefined, 3)
@@ -235,7 +248,14 @@ describe('Top 3 publics', () => {
       slug: 'jeux-cooperatifs',
       theme: 'Jeux coopératifs',
       isHomepage: true,
-      games: [{ name: 'Jeu A' }, { name: 'Jeu B' }, { name: 'Jeu C' }],
+      games: [
+        {
+          name: 'Jeu A',
+          image: { url: 'https://blob.test/jeu-a.webp', alt: 'Boîte du jeu A' },
+        },
+        { name: 'Jeu B', image: null },
+        { name: 'Jeu C', image: null },
+      ],
       publishedAt: '2026-08-05T09:00:00.000Z',
     })
   })
@@ -244,7 +264,12 @@ describe('Top 3 publics', () => {
     getVisibleTopThree.mockResolvedValue(topThreeRow)
     const result = await getPublicTopThreeDetailByLudoSlug('demo', 'jeux-cooperatifs')
     expect(result?.topThree.games).toHaveLength(3)
-    expect(result?.topThree.games[1]).toEqual({ name: 'Jeu B', description: null })
+    expect(result?.topThree.games[0].image).toEqual({
+      url: 'https://blob.test/jeu-a.webp',
+      alt: 'Boîte du jeu A',
+    })
+    expect(result?.topThree.games[1]).toEqual({ name: 'Jeu B', description: null, image: null })
+    expect(result?.topThree.games[0]).not.toHaveProperty('imageStorageKey')
     expect(result?.topThree.isHomepage).toBe(true)
     expect(result?.topThree).not.toHaveProperty('revision')
   })

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import {
+  deleteSiteRow,
   getSiteRowForLudo,
   insertSiteWithIntervalsAtomic,
   listActiveSiteRows,
@@ -222,6 +223,27 @@ export async function updateSiteWithOpeningHours(
     return (await getSiteRowForLudo(siteId, ludoId))!
   } catch (error) {
     if (isUniqueViolation(error)) throw new SiteServiceError('Un lieu avec ce slug existe déjà.')
+    throw error
+  }
+}
+
+export async function deleteSite(ludoId: string, siteId: string) {
+  const current = await getSiteRowForLudo(siteId, ludoId)
+  if (!current) throw new SiteServiceError('Lieu introuvable.')
+  if (current.isPrimary) {
+    throw new SiteServiceError('Choisissez un autre lieu principal avant de supprimer celui-ci.')
+  }
+  if (current.isActive) {
+    throw new SiteServiceError('Masquez le lieu avant de le supprimer.')
+  }
+  try {
+    if (!(await deleteSiteRow(siteId, ludoId))) throw new SiteServiceError('Lieu introuvable.')
+  } catch (error) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
+      throw new SiteServiceError(
+        'Ce lieu est encore utilisé par du contenu ou un historique et ne peut pas être supprimé.',
+      )
+    }
     throw error
   }
 }

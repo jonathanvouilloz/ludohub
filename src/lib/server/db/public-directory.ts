@@ -86,7 +86,7 @@ export async function deleteDraftPublicDirectoryRow(id: string, l: string, r: nu
       and(
         eq(entries.id, id),
         eq(entries.ludoId, l),
-        eq(entries.status, 'draft'),
+        sql`${entries.status} <> 'published'`,
         eq(entries.revision, r),
       ),
     )

@@ -9,22 +9,30 @@ import {
   listVisiblePublicTopThreeSummaryRows,
   selectPublicTopThreeHomepageAtomic,
   updatePublicTopThreeAtomic,
+  updatePublicTopThreeGamesMediaRow,
   updatePublicTopThreePublicationRow,
 } from '../db/public-top-threes.js'
 import { listActiveSiteRows } from '../db/sites.js'
 import { createDraftPublicationState, transitionPublicContent } from '../public-content.js'
 import type { PublicTopThreeGame as PublicTopThreeGameShape } from '../schema.js'
+import type { StoredBlob } from '../media/blob-storage.js'
+import {
+  createAuthorizedMediaScope,
+  parseManagedPublicSitePath,
+  type AuthorizedMediaScope,
+} from '../media/paths.js'
 import type { PublicAnnouncementTargeting } from './public-announcements.js'
 import { isPublicSiteEnabled, validatePublicSiteTargets } from './public-site.js'
 
 export class PublicTopThreeServiceError extends Error {}
 
 export type PublicTopThreeGame = PublicTopThreeGameShape
+export type PublicTopThreeEditableGame = Pick<PublicTopThreeGameShape, 'name' | 'description'>
 export type PublicTopThreeTargeting = PublicAnnouncementTargeting
 export type PublicTopThreeInput = {
   slug: string
   theme: string
-  games: PublicTopThreeGame[]
+  games: PublicTopThreeEditableGame[]
 } & PublicTopThreeTargeting
 export type PublicTopThreeUpdateInput = Partial<
   Pick<PublicTopThreeInput, 'slug' | 'theme' | 'games'>
@@ -67,7 +75,10 @@ function markdown(value: string) {
   return normalized
 }
 
-export function validatePublicTopThreeGames(games: PublicTopThreeGame[]) {
+export function validatePublicTopThreeGames(
+  games: PublicTopThreeEditableGame[],
+  existing: PublicTopThreeGame[] = [],
+) {
   if (!Array.isArray(games) || games.length !== 3) {
     throw new PublicTopThreeServiceError('Un Top 3 doit contenir exactement trois jeux.')
   }
@@ -88,8 +99,17 @@ export function validatePublicTopThreeGames(games: PublicTopThreeGame[]) {
       throw new PublicTopThreeServiceError(`Le jeu en position ${index + 1} est invalide.`)
     }
     const name = text(game.name, `Le nom du jeu en position ${index + 1}`, 160)
-    if (game.description === undefined) return { name }
-    return { name, description: markdown(game.description) }
+    const preserved = existing[index]
+    const media =
+      preserved?.imageUrl && preserved.imageStorageKey && preserved.imageAlt
+        ? {
+            imageUrl: preserved.imageUrl,
+            imageStorageKey: preserved.imageStorageKey,
+            imageAlt: preserved.imageAlt,
+          }
+        : {}
+    if (game.description === undefined) return { name, ...media }
+    return { name, description: markdown(game.description), ...media }
   })
 }
 
@@ -227,7 +247,10 @@ export async function updatePublicTopThree(
       {
         slug,
         theme: input.theme === undefined ? current.theme : text(input.theme, 'Le thème', 160),
-        games: input.games === undefined ? current.games : validatePublicTopThreeGames(input.games),
+        games:
+          input.games === undefined
+            ? current.games
+            : validatePublicTopThreeGames(input.games, current.games),
         updatedByMemberId: memberId,
         updatedAt: now,
       },
@@ -371,8 +394,8 @@ export async function deleteDraftPublicTopThree(
 ) {
   revision(expectedRevision)
   const current = await getPublicTopThree(id, ludoId)
-  if (current.status !== 'draft') {
-    throw new PublicTopThreeServiceError('Seul un Top 3 jamais publié peut être supprimé.')
+  if (current.status === 'published') {
+    throw new PublicTopThreeServiceError('Masquez ce Top 3 avant de le supprimer.')
   }
   if (
     current.revision !== expectedRevision ||
@@ -380,6 +403,125 @@ export async function deleteDraftPublicTopThree(
   ) {
     concurrent()
   }
+}
+
+function gameIndex(value: number) {
+  if (!Number.isSafeInteger(value) || value < 0 || value > 2) {
+    throw new PublicTopThreeServiceError('La position du jeu est invalide.')
+  }
+  return value
+}
+
+function mediaScope(
+  scope: AuthorizedMediaScope,
+  ludoId: string,
+  topThreeId: string,
+  pathname?: string,
+) {
+  const parsed = pathname ? parseManagedPublicSitePath(pathname) : null
+  if (
+    scope.ludoId !== ludoId.toLowerCase() ||
+    scope.domain !== 'top-games' ||
+    scope.entityId !== topThreeId.toLowerCase() ||
+    (pathname &&
+      (!parsed ||
+        parsed.ludoId !== ludoId.toLowerCase() ||
+        parsed.domain !== 'top-games' ||
+        parsed.entityId !== topThreeId.toLowerCase()))
+  ) {
+    throw new PublicTopThreeServiceError('L’image n’appartient pas à ce Top 3.')
+  }
+}
+
+export async function authorizePublicTopThreeMediaScope(
+  ludoId: string,
+  topThreeId: string,
+  expectedRevision: number,
+) {
+  revision(expectedRevision)
+  const current = await getPublicTopThree(topThreeId, ludoId)
+  if (current.revision !== expectedRevision) concurrent()
+  return createAuthorizedMediaScope({ ludoId, domain: 'top-games', entityId: topThreeId })
+}
+
+export async function setPublicTopThreeGameImage(
+  ludoId: string,
+  topThreeId: string,
+  memberId: string,
+  expectedRevision: number,
+  index: number,
+  scope: AuthorizedMediaScope,
+  blob: StoredBlob,
+  alt: string,
+  now = new Date(),
+) {
+  revision(expectedRevision)
+  const position = gameIndex(index)
+  mediaScope(scope, ludoId, topThreeId, blob.pathname)
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(blob.contentType)) {
+    throw new PublicTopThreeServiceError('Format image non autorisé.')
+  }
+  if (!Number.isSafeInteger(blob.size) || blob.size < 1 || blob.size > 5 * 1024 * 1024) {
+    throw new PublicTopThreeServiceError('L’image doit peser au maximum 5 Mio.')
+  }
+  const current = await getPublicTopThree(topThreeId, ludoId)
+  if (current.revision !== expectedRevision) concurrent()
+  const games = current.games.map((game, gamePosition) =>
+    gamePosition === position
+      ? {
+          ...game,
+          imageUrl: text(blob.url, 'L’URL de l’image', 2000),
+          imageStorageKey: blob.pathname,
+          imageAlt: text(alt, 'Le texte alternatif', 300),
+        }
+      : game,
+  )
+  const updated = await updatePublicTopThreeGamesMediaRow(
+    topThreeId,
+    ludoId,
+    expectedRevision,
+    games,
+    memberId,
+    now,
+  )
+  if (!updated) concurrent()
+  return {
+    topThree: await getPublicTopThree(topThreeId, ludoId),
+    previousStorageKey: current.games[position]?.imageStorageKey ?? null,
+  }
+}
+
+export async function clearPublicTopThreeGameImage(
+  ludoId: string,
+  topThreeId: string,
+  memberId: string,
+  expectedRevision: number,
+  index: number,
+  now = new Date(),
+) {
+  revision(expectedRevision)
+  const position = gameIndex(index)
+  const current = await getPublicTopThree(topThreeId, ludoId)
+  if (current.revision !== expectedRevision) concurrent()
+  const previousStorageKey = current.games[position]?.imageStorageKey ?? null
+  const games = current.games.map((game, gamePosition) => {
+    if (gamePosition !== position) return game
+    const withoutImage = { ...game }
+    delete withoutImage.imageUrl
+    delete withoutImage.imageStorageKey
+    delete withoutImage.imageAlt
+    return withoutImage
+  })
+  const updated = await updatePublicTopThreeGamesMediaRow(
+    topThreeId,
+    ludoId,
+    expectedRevision,
+    games,
+    memberId,
+    now,
+  )
+  if (!updated) concurrent()
+  return { topThree: await getPublicTopThree(topThreeId, ludoId), previousStorageKey }
 }
 
 export async function listVisiblePublicTopThreeSummaries(
