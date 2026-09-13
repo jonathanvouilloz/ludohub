@@ -6,6 +6,7 @@
   let { ludoSlug }: { ludoSlug: string } = $props()
 
   const sections: Record<string, string> = {
+    'lieux-horaires': 'Lieux et horaires',
     annonces: 'Annonces',
     actualites: 'Actualités',
     activites: 'Activités',

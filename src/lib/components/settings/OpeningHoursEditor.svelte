@@ -48,7 +48,7 @@
               <input
                 type="time"
                 value={entry.row.opensAt}
-                onchange={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}
+                oninput={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}
                 required
               />
             </label>
@@ -58,7 +58,7 @@
               <input
                 type="time"
                 value={entry.row.closesAt}
-                onchange={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}
+                oninput={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}
                 required
               />
             </label>

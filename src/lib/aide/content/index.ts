@@ -7,6 +7,7 @@ import { section as jeux } from './jeux'
 import { section as materiel } from './materiel'
 import { section as newsletter } from './newsletter'
 import { section as reseau } from './reseau'
+import { section as sitePublic } from './site-public'
 
 // Le skill user-docs ajoute ici un import + une entrée par module généré.
 // Ordre = sommaire affiché sur /aide (du premier pas vers les modules avancés).
@@ -18,6 +19,7 @@ export const sections: GuideSection[] = [
   jeux,
   materiel,
   newsletter,
+  sitePublic,
   reseau,
 ]
 

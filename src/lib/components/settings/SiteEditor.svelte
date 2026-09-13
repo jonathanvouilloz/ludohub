@@ -34,8 +34,11 @@
   let openingHours = $state<OpeningHourInput[]>([])
   let saving = $state(false)
 
+  // Resynchronise après un chargement serveur, mais jamais pendant une saisie.
+  // Sans cette garde, le passage de `dirty` à true recréait la prop `site` dans
+  // le parent et annulait immédiatement la modification des heures.
   $effect.pre(() => {
-    openingHours = site.openingHours.map((row) => ({ ...row }))
+    if (!dirty) openingHours = site.openingHours.map((row) => ({ ...row }))
   })
 </script>
 

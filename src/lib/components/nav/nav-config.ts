@@ -11,7 +11,6 @@ import BellIcon from '@lucide/svelte/icons/bell'
 import ClipboardListIcon from '@lucide/svelte/icons/clipboard-list'
 import MailIcon from '@lucide/svelte/icons/mail'
 import CircleHelpIcon from '@lucide/svelte/icons/circle-help'
-import MapPinIcon from '@lucide/svelte/icons/map-pin'
 import Globe2Icon from '@lucide/svelte/icons/globe-2'
 
 /** Zone(s) du shell où une destination apparaît. */
@@ -107,13 +106,6 @@ export function buildNavConfig(slug: string): NavDest[] {
       match: (p) => p.startsWith('/reseau/notifications'),
       zones: ['sidebar', 'sheet'],
       badgeKey: 'notifications',
-    },
-    {
-      label: 'Lieux et horaires',
-      href: `/${base}/settings/lieux-horaires`,
-      icon: MapPinIcon,
-      match: (p) => p.startsWith(`/${base}/settings/lieux-horaires`),
-      zones: ['sidebar', 'sheet'],
     },
     {
       label: 'Site public',

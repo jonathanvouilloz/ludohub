@@ -4,6 +4,14 @@ import { buildNavConfig, isNavDestinationVisible } from './nav-config.js'
 const publicSite = buildNavConfig('demo').find((destination) => destination.publicSiteOnly)!
 
 describe('navigation Site public', () => {
+  it('regroupe les lieux et horaires dans le module Site public', () => {
+    const destinations = buildNavConfig('demo')
+    expect(destinations.some((destination) => destination.label === 'Lieux et horaires')).toBe(
+      false,
+    )
+    expect(publicSite.match('/demo/site-public/lieux-horaires')).toBe(true)
+  })
+
   it('reste masquée pour un membre lorsque le module est désactivé', () => {
     expect(
       isNavDestinationVisible(publicSite, {

@@ -71,7 +71,7 @@ beforeEach(() => {
   vi.mocked(deleteSite).mockResolvedValue(undefined)
 })
 
-describe('route lieux et horaires', () => {
+describe('route Site public — lieux et horaires', () => {
   it('charge les lieux du tenant et expose le droit de modification', async () => {
     await expect(load(event() as never)).resolves.toEqual({ sites: [], canEdit: true })
     expect(listSitesWithOpeningHours).toHaveBeenCalledWith(LUDO_ID)

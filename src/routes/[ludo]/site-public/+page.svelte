@@ -11,6 +11,7 @@
   import HelpCircleIcon from '@lucide/svelte/icons/circle-help'
   import ImagesIcon from '@lucide/svelte/icons/images'
   import InboxIcon from '@lucide/svelte/icons/inbox'
+  import MapPinIcon from '@lucide/svelte/icons/map-pin'
   import NewspaperIcon from '@lucide/svelte/icons/newspaper'
   import TrophyIcon from '@lucide/svelte/icons/trophy'
   import UserRoundIcon from '@lucide/svelte/icons/user-round'
@@ -76,6 +77,12 @@
       </div>
       <div class="section-grid">
         <PublicSiteSectionCard
+          href={`${base}/lieux-horaires`}
+          title="Lieux et horaires"
+          description="Modifier les adresses, les accès et les horaires affichés sur le site."
+          icon={MapPinIcon}
+        />
+        <PublicSiteSectionCard
           href={`${base}/faq`}
           title="Questions fréquentes"
           description="Répondre simplement aux questions courantes."
@@ -138,6 +145,22 @@
         nécessaire.
       </p>
     </section>
+    {#if data.canConfigure}
+      <section aria-labelledby="prepare-title">
+        <div class="section-heading">
+          <h2 id="prepare-title">Préparer le site</h2>
+          <p>Vérifiez les informations pratiques avant l’activation.</p>
+        </div>
+        <div class="section-grid">
+          <PublicSiteSectionCard
+            href={`${base}/lieux-horaires`}
+            title="Lieux et horaires"
+            description="Configurer les adresses, les accès et les horaires du site."
+            icon={MapPinIcon}
+          />
+        </div>
+      </section>
+    {/if}
   {/if}
 
   {#if data.canConfigure}

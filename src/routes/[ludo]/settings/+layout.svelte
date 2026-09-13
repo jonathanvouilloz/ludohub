@@ -8,12 +8,11 @@
 
   type NavItem = { label: string; href: string }
   const items = $derived<NavItem[]>([
-    { label: 'Lieux et horaires', href: `/${slug}/settings/lieux-horaires` },
     ...(data.canEditSettings
       ? [
           { label: 'Membres', href: `/${slug}/settings/membres` },
-          { label: "Types d'événement", href: `/${slug}/settings/evenements` },
           { label: 'Infos ludothèque', href: `/${slug}/settings/infos` },
+          { label: "Types d'événement", href: `/${slug}/settings/evenements` },
         ]
       : []),
   ])

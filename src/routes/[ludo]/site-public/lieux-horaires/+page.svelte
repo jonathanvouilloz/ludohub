@@ -39,7 +39,7 @@
 </script>
 
 <svelte:head>
-  <title>Lieux et horaires</title>
+  <title>Lieux et horaires · Site public</title>
 </svelte:head>
 
 <header class="head">
