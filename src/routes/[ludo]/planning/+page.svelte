@@ -2,6 +2,8 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import PlanningTable from '$lib/components/planning/PlanningTable.svelte'
   import { daysBetween, formatDayWeekday } from '$lib/utils/dates.js'
+  import PrinterIcon from '@lucide/svelte/icons/printer'
+  import FileSpreadsheetIcon from '@lucide/svelte/icons/file-spreadsheet'
 
   let { data } = $props()
 
@@ -39,9 +41,21 @@
         <p class="muted">Aucune saison active.</p>
       {/if}
     </div>
-    {#if data.responsable}
-      <Button href="/{data.ludo.slug}/planning/saisons" variant="outline">Gérer les saisons</Button>
-    {/if}
+    <div class="actions">
+      {#if data.activeSeason}
+        <Button href="/{data.ludo.slug}/planning/export" variant="outline">
+          <FileSpreadsheetIcon aria-hidden="true" /> Exporter Excel
+        </Button>
+        <Button href="/{data.ludo.slug}/planning/print" variant="outline">
+          <PrinterIcon aria-hidden="true" /> Imprimer
+        </Button>
+      {/if}
+      {#if data.responsable}
+        <Button href="/{data.ludo.slug}/planning/saisons" variant="outline"
+          >Gérer les saisons</Button
+        >
+      {/if}
+    </div>
   </header>
 
   {#if data.activeSeason}
@@ -86,6 +100,12 @@
     justify-content: space-between;
     gap: var(--space-4);
     margin-bottom: var(--space-6);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
   }
   h1 {
     color: var(--text-main);
