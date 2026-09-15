@@ -147,8 +147,13 @@
       >
     </section>{/if}
 
-  {#if item.lifecycle === 'active'}<section>
-      <h2>Mise en avant</h2>
+  {#if item.lifecycle === 'active'}<details class="secondary-settings">
+      <summary><span>Mettre l’activité en avant</span><small>Optionnel</small></summary>
+      <section class="settings-panel">
+      <div>
+        <h2>Mise en avant sur la page d’accueil</h2>
+        <p>Choisissez une position seulement si cette activité doit être mise en avant.</p>
+      </div>
       <form
         class="feature"
         method="POST"
@@ -175,10 +180,16 @@
           >Appliquer</Button
         >
       </form>
-    </section>{/if}
+      </section>
+    </details>{/if}
 
-  {#if item.lifecycle === 'active'}<section>
-      <h2>Image et documents</h2>
+  {#if item.lifecycle === 'active'}<details class="secondary-settings">
+      <summary><span>Images et documents</span><small>Optionnel</small></summary>
+      <section class="settings-panel">
+      <div>
+        <h2>Images et documents</h2>
+        <p>Ajoutez une image de couverture et les documents utiles aux familles.</p>
+      </div>
       {#if item.imageUrl}<img class="cover" src={item.imageUrl} alt={item.imageAlt ?? ''} />{/if}
       <form
         class="media"
@@ -229,9 +240,12 @@
         revision={item.revision}
         assets={item.assets}
       />
-    </section>{/if}
+      </section>
+    </details>{/if}
 
-  <section class="lifecycle">
+  <details class="secondary-settings lifecycle-settings">
+    <summary><span>Archiver ou supprimer cette activité</span><small>Actions avancées</small></summary>
+  <section class="lifecycle settings-panel">
     <div>
       <h2>Classement</h2>
       <p>Archivez une ancienne activité ou placez-la dans la corbeille.</p>
@@ -295,13 +309,14 @@
       </form>
     </div>
   </section>
+  </details>
   <ActivityDialog bind:open={editOpen} activity={item} sites={data.sites} />
 </main>
 
 <style>
   .detail-page {
     display: grid;
-    max-width: 920px;
+    max-width: 1020px;
     margin: 0 auto;
     padding: var(--space-3) var(--space-6) var(--space-12);
     gap: var(--space-5);
@@ -373,9 +388,20 @@
   .registration,
   .feature,
   .media {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(15rem, 1fr) auto;
     align-items: flex-end;
     gap: var(--space-3);
+  }
+  .registration .toggle {
+    align-self: end;
+    min-width: 14rem;
+  }
+  .feature {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .media {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   }
   label {
     display: grid;
@@ -404,6 +430,44 @@
     border-radius: var(--radius-sm);
     object-fit: cover;
   }
+  .secondary-settings {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
+  }
+  .secondary-settings summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 60px;
+    padding: 0 var(--space-6);
+    color: var(--text-main);
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+    list-style: none;
+  }
+  .secondary-settings summary::-webkit-details-marker {
+    display: none;
+  }
+  .secondary-settings summary small {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+    font-weight: var(--weight-normal);
+  }
+  .secondary-settings[open] summary {
+    border-bottom: 1px solid var(--border);
+  }
+  .secondary-settings .settings-panel {
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .lifecycle-settings summary {
+    color: var(--text-muted);
+  }
   @media (max-width: 700px) {
     .detail-page {
       padding: var(--space-3) var(--space-4) var(--space-10);
@@ -415,10 +479,14 @@
     .feature,
     .media {
       align-items: stretch;
-      flex-direction: column;
+      grid-template-columns: 1fr;
     }
     section {
       padding: var(--space-4);
+    }
+    .secondary-settings summary {
+      min-height: 56px;
+      padding-inline: var(--space-4);
     }
     header :global(button),
     .publication :global(button),

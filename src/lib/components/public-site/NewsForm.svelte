@@ -18,6 +18,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import RichTextEditor from './RichTextEditor.svelte'
   import { toastEnhance } from '$lib/utils/enhance.js'
 
   let {
@@ -123,16 +124,15 @@
       <p class="hint">Une ou deux phrases affichées dans la liste des actualités.</p>
     </div>
     <div class="field">
-      <Label for="news-body">Texte de l’actualité</Label><textarea
+      <Label for="news-body">Texte de l’actualité</Label>
+      <RichTextEditor
         id="news-body"
         name="body"
         bind:value={body}
-        maxlength="50000"
-        rows="14"
+        ariaLabel="Texte de l’actualité"
         placeholder="Rédigez le contenu complet de l’actualité."
-        required
-      ></textarea>
-      <p class="hint">Vous pouvez utiliser des titres, des listes et des liens.</p>
+      />
+      <p class="hint">Mettez en forme le texte avec des titres, des listes et des liens.</p>
     </div>
   </section>
 
