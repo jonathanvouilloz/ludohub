@@ -93,7 +93,6 @@
         <h2 id="edit-title">{multiSite ? 'Vos lieux' : 'Votre ludothèque'}</h2>
       </div>
       <div class="section-actions">
-        {#if multiSite}<p class="section-help">L’ordre est repris dans l’affichage public.</p>{/if}
         <Button variant="outline" onclick={() => (creating = !creating)}>
           <PlusIcon size={16} />
           {creating ? 'Annuler' : 'Ajouter un lieu'}
@@ -105,55 +104,9 @@
       <SiteCreateForm oncreated={() => (creating = false)} />
     {/if}
 
-    {#if multiSite && hasDirty}
-      <p class="reorder-warning" role="status">
-        Enregistrez vos modifications avant de changer l’ordre des lieux.
-      </p>
-    {/if}
-
     <div class="editors">
       {#each data.sites as site, index (site.id)}
         <div class="editor-row">
-          {#if multiSite}
-            <div class="order-actions" aria-label={`Ordre de ${site.name}`}>
-              <form
-                method="POST"
-                action="?/reorder"
-                use:enhance={toastEnhance({ success: 'Ordre mis à jour.' })}
-              >
-                <input
-                  type="hidden"
-                  name="orderedIds"
-                  value={JSON.stringify(movedIds(index, -1))}
-                />
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  disabled={hasDirty || index === 0}
-                  aria-label="Monter"
-                >
-                  <ArrowUpIcon size={16} />
-                </Button>
-              </form>
-              <form
-                method="POST"
-                action="?/reorder"
-                use:enhance={toastEnhance({ success: 'Ordre mis à jour.' })}
-              >
-                <input type="hidden" name="orderedIds" value={JSON.stringify(movedIds(index, 1))} />
-                <Button
-                  type="submit"
-                  variant="ghost"
-                  size="icon"
-                  disabled={hasDirty || index === data.sites.length - 1}
-                  aria-label="Descendre"
-                >
-                  <ArrowDownIcon size={16} />
-                </Button>
-              </form>
-            </div>
-          {/if}
           <div class="editor-main">
             <SiteEditor
               site={{ ...site, openingHours: site.openingIntervals }}
@@ -180,6 +133,33 @@
         </div>
       {/each}
     </div>
+
+    {#if multiSite}
+      <details class="reorder-settings">
+        <summary>Modifier l’ordre d’affichage des lieux</summary>
+        {#if hasDirty}
+          <p class="reorder-help">Terminez d’abord l’enregistrement du lieu en cours, puis revenez ici pour modifier l’ordre.</p>
+        {:else}
+          <div class="reorder-list">
+            {#each data.sites as site, index (site.id)}
+              <div class="reorder-item">
+                <span>{site.name}</span>
+                <div>
+                  <form method="POST" action="?/reorder" use:enhance={toastEnhance({ success: 'Ordre mis à jour.' })}>
+                    <input type="hidden" name="orderedIds" value={JSON.stringify(movedIds(index, -1))} />
+                    <Button type="submit" variant="ghost" size="icon" disabled={index === 0} aria-label={`Monter ${site.name}`}><ArrowUpIcon size={16} /></Button>
+                  </form>
+                  <form method="POST" action="?/reorder" use:enhance={toastEnhance({ success: 'Ordre mis à jour.' })}>
+                    <input type="hidden" name="orderedIds" value={JSON.stringify(movedIds(index, 1))} />
+                    <Button type="submit" variant="ghost" size="icon" disabled={index === data.sites.length - 1} aria-label={`Descendre ${site.name}`}><ArrowDownIcon size={16} /></Button>
+                  </form>
+                </div>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </details>
+    {/if}
   </section>
 {/if}
 
@@ -197,7 +177,6 @@
     color: var(--text-main);
   }
   .head p,
-  .section-help,
   .empty p {
     margin: var(--space-1) 0 0;
     color: var(--text-muted);
@@ -209,14 +188,6 @@
     border-radius: var(--radius-sm);
     background: var(--danger-light);
     color: var(--danger);
-    font-size: var(--text-small);
-  }
-  .reorder-warning {
-    margin: 0 0 var(--space-4);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-sm);
-    background: var(--warning-light);
-    color: var(--warning);
     font-size: var(--text-small);
   }
   .section-head {
@@ -244,20 +215,28 @@
     flex-direction: column;
     gap: var(--space-4);
   }
-  .editor-row {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--space-2);
-  }
+  .editor-row { display: flex; align-items: flex-start; }
   .editor-main {
     min-width: 0;
     flex: 1;
   }
-  .order-actions {
-    display: flex;
-    flex-direction: column;
-    padding-top: var(--space-2);
+  .reorder-settings {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
   }
+  .reorder-settings summary {
+    min-height: 48px;
+    padding: var(--space-3) var(--space-4);
+    color: var(--text-main);
+    font-size: var(--text-small);
+    font-weight: var(--weight-semibold);
+    cursor: pointer;
+  }
+  .reorder-help { margin: 0; padding: 0 var(--space-4) var(--space-4); color: var(--text-muted); font-size: var(--text-small); }
+  .reorder-list { display: grid; gap: var(--space-2); padding: 0 var(--space-4) var(--space-4); }
+  .reorder-item { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); background: var(--bg-hover); color: var(--text-main); font-size: var(--text-small); }
+  .reorder-item > div, .reorder-item form { display: flex; align-items: center; gap: var(--space-1); }
   .empty {
     padding: var(--space-8);
     border: 1px dashed var(--border-strong);

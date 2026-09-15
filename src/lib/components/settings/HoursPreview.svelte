@@ -58,10 +58,7 @@
       </dl>
 
       {#if site.accessInfo}
-        <div class="access">
-          <span>Informations pratiques</span>
-          <p>{site.accessInfo}</p>
-        </div>
+        <p class="access"><strong>À savoir&nbsp;:</strong> {site.accessInfo}</p>
       {/if}
     </article>
   {/each}
@@ -70,8 +67,9 @@
 <style>
   .preview-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
     align-items: start;
+    max-width: 1100px;
     gap: var(--space-4);
   }
   .preview-card {
@@ -133,21 +131,12 @@
   }
   .access {
     margin: var(--space-4) 0 0;
-    padding: var(--space-3);
-    border-radius: var(--radius-sm);
-    background: var(--bg-hover);
     color: var(--text-muted);
     font-size: var(--text-small);
     white-space: pre-line;
   }
-  .access span {
-    display: block;
-    margin-bottom: var(--space-1);
+  .access strong {
     color: var(--text-main);
-    font-size: var(--text-label);
     font-weight: var(--weight-semibold);
-  }
-  .access p {
-    margin: 0;
   }
 </style>
