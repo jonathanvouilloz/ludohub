@@ -276,22 +276,23 @@
             type="submit"
             variant="destructive">Mettre à la corbeille</Button
           >
-        </form>{:else}<form
-          method="POST"
-          action="?/delete"
-          onsubmit={(event) => {
-            if (!confirm('Supprimer définitivement cette activité et ses médias ?')) {
-              event.preventDefault()
-            }
-          }}
-          use:enhance={toastEnhance({ redirect: 'Activité supprimée.' })}
-        >
-          <input type="hidden" name="id" value={item.id} /><input
-            type="hidden"
-            name="revision"
-            value={item.revision}
-          /><Button type="submit" variant="destructive">Supprimer définitivement</Button>
         </form>{/if}
+      <form
+        method="POST"
+        action="?/delete"
+        onsubmit={(event) => {
+          if (!confirm('Supprimer définitivement cette activité et ses médias ?')) {
+            event.preventDefault()
+          }
+        }}
+        use:enhance={toastEnhance({ redirect: 'Activité supprimée.' })}
+      >
+        <input type="hidden" name="id" value={item.id} /><input
+          type="hidden"
+          name="revision"
+          value={item.revision}
+        /><Button type="submit" variant="destructive">Supprimer définitivement</Button>
+      </form>
     </div>
   </section>
   <ActivityDialog bind:open={editOpen} activity={item} sites={data.sites} />

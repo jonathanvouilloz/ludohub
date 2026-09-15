@@ -13,10 +13,12 @@
   import { Spinner } from '$lib/components/ui/spinner/index.js'
   import { Skeleton, SkeletonCard } from '$lib/components/ui/skeleton/index.js'
   import { EmptyState } from '$lib/components/ui/empty-state/index.js'
+  import RichTextEditor from '$lib/components/public-site/RichTextEditor.svelte'
   import InboxIcon from '@lucide/svelte/icons/inbox'
 
   let active = $state(true)
   let role = $state('membre')
+  let richTextDemo = $state('## Une information utile\n\nPrésentez le contenu avec du **gras**, de l’*italique* et des [liens](https://ludohub.ch).')
   const roleLabels: Record<string, string> = { membre: 'Membre', responsable: 'Responsable' }
 
   let demoPending = $state(false)
@@ -268,6 +270,11 @@
       <div class="sg-checkbox-row">
         <Checkbox id="sg-active" bind:checked={active} />
         <Label for="sg-active">Membre actif</Label>
+      </div>
+
+      <div class="sg-field sg-field--editor">
+        <Label for="sg-editor">Éditeur de contenu</Label>
+        <RichTextEditor id="sg-editor" name="styleguide-content" bind:value={richTextDemo} />
       </div>
     </div>
 
@@ -557,6 +564,9 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
+  }
+  .sg-field--editor {
+    width: min(100%, 42rem);
   }
 
   .sg-checkbox-row {

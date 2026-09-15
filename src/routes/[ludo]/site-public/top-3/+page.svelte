@@ -236,14 +236,13 @@
                 </Button>
               </form>
             {/if}
-            {#if item.status !== 'published'}
-              <form
+            <form
                 method="POST"
                 action="?/delete"
                 onsubmit={(event) => {
-                  if (!confirm('Supprimer définitivement ce brouillon ?')) event.preventDefault()
+                  if (!confirm('Supprimer définitivement ce Top 3 ?')) event.preventDefault()
                 }}
-                use:enhance={toastEnhance({ success: 'Brouillon supprimé.' })}
+                use:enhance={toastEnhance({ success: 'Top 3 supprimé.' })}
               >
                 <input type="hidden" name="id" value={item.id} /><input
                   type="hidden"
@@ -251,8 +250,7 @@
                   value={item.revision}
                 />
                 <Button type="submit" size="sm" variant="destructive">Supprimer</Button>
-              </form>
-            {/if}
+            </form>
           </footer>
         </article>
       {/each}

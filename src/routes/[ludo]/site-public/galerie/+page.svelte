@@ -97,17 +97,20 @@
                 >{item.status === 'published' ? 'Masquer' : 'Publier'}</Button
               >
             </form>
-            {#if item.status !== 'published'}<form
+            <form
                 method="POST"
                 action="?/delete"
-                use:enhance={toastEnhance({ success: 'Brouillon supprimé.' })}
+                onsubmit={(event) => {
+                  if (!confirm('Supprimer définitivement cette image ?')) event.preventDefault()
+                }}
+                use:enhance={toastEnhance({ success: 'Image supprimée.' })}
               >
                 <input type="hidden" name="id" value={item.id} /><input
                   type="hidden"
                   name="revision"
                   value={item.revision}
                 /><Button type="submit" size="sm" variant="destructive">Supprimer</Button>
-              </form>{/if}
+            </form>
           </footer>
           <section>
             <form

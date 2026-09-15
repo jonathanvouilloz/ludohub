@@ -339,13 +339,7 @@ describe('publication, archives et corbeille', () => {
     )
   })
 
-  it('supprime définitivement uniquement depuis la corbeille avec CAS', async () => {
-    await expect(permanentlyDeletePublicActivity('activity-a', LUDO, 1)).rejects.toThrow(
-      /corbeille/,
-    )
-    vi.mocked(getPublicActivityRowForLudo).mockResolvedValue(
-      activity({ lifecycle: 'trashed', trashedAt: NOW }) as never,
-    )
+  it('supprime définitivement une activité avec contrôle de révision', async () => {
     await permanentlyDeletePublicActivity('activity-a', LUDO, 1)
     expect(permanentlyDeletePublicActivityRow).toHaveBeenCalledWith('activity-a', LUDO, 1)
   })

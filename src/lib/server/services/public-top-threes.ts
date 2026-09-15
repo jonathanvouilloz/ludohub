@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicTopThreeRow,
+  deletePublicTopThreeRow,
   deselectPublicTopThreeHomepageRow,
   getPublishedPublicTopThreeRowBySlug,
   getPublicTopThreeRowForLudo,
@@ -401,6 +402,19 @@ export async function deleteDraftPublicTopThree(
     current.revision !== expectedRevision ||
     !(await deleteDraftPublicTopThreeRow(id, ludoId, expectedRevision))
   ) {
+    concurrent()
+  }
+}
+
+/** Suppression définitive demandée depuis le back-office, même si le Top 3 est publié. */
+export async function permanentlyDeletePublicTopThree(
+  id: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  revision(expectedRevision)
+  const current = await getPublicTopThree(id, ludoId)
+  if (current.revision !== expectedRevision || !(await deletePublicTopThreeRow(id, ludoId, expectedRevision))) {
     concurrent()
   }
 }

@@ -236,6 +236,20 @@ export async function deletePublicAnnouncement(
   }
 }
 
+/** Suppression définitive demandée depuis le back-office, même si l’annonce est active. */
+export async function permanentlyDeletePublicAnnouncement(
+  announcementId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  requireRevision(expectedRevision)
+  const current = await getPublicAnnouncement(announcementId, ludoId)
+  if (current.revision !== expectedRevision) concurrentChange()
+  if (!(await deletePublicAnnouncementRow(announcementId, ludoId, expectedRevision))) {
+    concurrentChange()
+  }
+}
+
 /**
  * Lecture publique tenant-scoped. Les lieux désactivés sont filtrés à la lecture,
  * y compris s'ils ont été désactivés après la publication.

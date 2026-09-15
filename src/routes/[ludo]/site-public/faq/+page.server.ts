@@ -4,7 +4,7 @@ import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import {
   createPublicFaq,
-  deleteDraftPublicFaq,
+  permanentlyDeletePublicFaq,
   hidePublicFaq,
   listPublicFaqsForManagement,
   publishPublicFaq,
@@ -144,7 +144,7 @@ export const actions: Actions = {
     const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     return run(async () => {
-      await deleteDraftPublicFaq(id, ludo.id, revision(data))
+      await permanentlyDeletePublicFaq(id, ludo.id, revision(data))
       await audit('public_faq.deleted', ludo.id, member.id, id)
       return { success: true }
     })

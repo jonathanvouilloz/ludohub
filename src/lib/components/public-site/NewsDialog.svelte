@@ -21,6 +21,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import RichTextEditor from './RichTextEditor.svelte'
 
   let {
     open = $bindable(false),
@@ -144,16 +145,15 @@
       </div>
 
       <div class="field">
-        <Label for="news-body">Contenu Markdown</Label>
-        <textarea
+        <Label for="news-body">Contenu</Label>
+        <p class="hint">Mettez le texte en forme comme dans un document. Les titres, listes et liens restent cohérents sur le site.</p>
+        <RichTextEditor
           id="news-body"
           name="body"
           bind:value={body}
-          maxlength="50000"
-          rows="10"
-          placeholder="Utilisez les titres, listes et liens Markdown."
-          required
-        ></textarea>
+          ariaLabel="Contenu de l’actualité"
+          placeholder="Écrivez l’actualité : information pratique, contexte, lien utile…"
+        />
       </div>
 
       <fieldset>

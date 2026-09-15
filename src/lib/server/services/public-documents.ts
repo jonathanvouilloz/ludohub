@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicDocumentRow,
+  deletePublicDocumentRow,
   getPublishedPublicDocumentBySlug,
   getPublicDocumentRowForLudo,
   insertPublicDocumentAtomic,
@@ -383,6 +384,20 @@ export async function deleteDraftPublicDocument(
     throw new PublicDocumentServiceError('Masquez ce document avant de le supprimer.')
   if (current.revision !== expectedRevision) concurrent()
   const deleted = await deleteDraftPublicDocumentRow(id, ludoId, expectedRevision)
+  if (!deleted) concurrent()
+  return { previousStorageKey: deleted.pdfStorageKey }
+}
+
+/** Suppression définitive demandée depuis le back-office, même si le document est publié. */
+export async function permanentlyDeletePublicDocument(
+  id: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  revision(expectedRevision)
+  const current = await getPublicDocument(id, ludoId)
+  if (current.revision !== expectedRevision) concurrent()
+  const deleted = await deletePublicDocumentRow(id, ludoId, expectedRevision)
   if (!deleted) concurrent()
   return { previousStorageKey: deleted.pdfStorageKey }
 }

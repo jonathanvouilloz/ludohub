@@ -160,8 +160,7 @@
 
   <EditorialAssetsEditor ownerId={news.id} revision={news.revision} assets={news.assets} />
 
-  {#if news.status !== 'published'}
-    <section class="danger-zone" aria-labelledby="delete-title">
+  <section class="danger-zone" aria-labelledby="delete-title">
       <div>
         <h2 id="delete-title">Supprimer cette actualité</h2>
         <p>Cette action supprime aussi toutes ses images et pièces jointes.</p>
@@ -178,8 +177,7 @@
         <input type="hidden" name="revision" value={news.revision} />
         <Button type="submit" variant="destructive">Supprimer définitivement</Button>
       </form>
-    </section>
-  {/if}
+  </section>
 </main>
 
 <style>

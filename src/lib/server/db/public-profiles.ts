@@ -155,3 +155,14 @@ export async function deleteDraftPublicProfileRow(id: string, ludoId: string, re
     .returning({ id: profiles.id, photoStorageKey: profiles.photoStorageKey })
   return row
 }
+
+/** Suppression explicite avec contrôle de concurrence, quel que soit l’état de publication. */
+export async function deletePublicProfileRow(id: string, ludoId: string, revision: number) {
+  const [row] = await db
+    .delete(profiles)
+    .where(
+      and(eq(profiles.id, id), eq(profiles.ludoId, ludoId), eq(profiles.revision, revision)),
+    )
+    .returning({ id: profiles.id, photoStorageKey: profiles.photoStorageKey })
+  return row
+}

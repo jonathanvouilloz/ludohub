@@ -15,7 +15,7 @@ import {
   authorizePublicProfileMediaScope,
   clearPublicProfilePhoto,
   createPublicProfile,
-  deleteDraftPublicProfile,
+  permanentlyDeletePublicProfile,
   hidePublicProfile,
   listPublicProfilesForManagement,
   publishPublicProfile,
@@ -191,7 +191,7 @@ export const actions: Actions = {
     return run(async () => {
       const r = rev(d),
         s = await authorizePublicProfileMediaScope(ludo.id, id, r),
-        x = await deleteDraftPublicProfile(id, ludo.id, r)
+        x = await permanentlyDeletePublicProfile(id, ludo.id, r)
       await cleanup(s, x.previousStorageKey, ludo.id, member.id, id, 'delete')
       await audit('public_profile.deleted', ludo.id, member.id, id)
       return { success: true }

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('../db/public-directory.js', () => ({
   deleteDraftPublicDirectoryRow: vi.fn(),
+  deletePublicDirectoryRow: vi.fn(),
   getPublicDirectoryRowForLudo: vi.fn(),
   insertPublicDirectoryRow: vi.fn(),
   listPublicDirectoryRows: vi.fn(),

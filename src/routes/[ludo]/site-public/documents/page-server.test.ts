@@ -23,7 +23,7 @@ vi.mock('$lib/server/services/public-documents.js', () => {
     updatePublicDocument: vi.fn(),
     publishPublicDocument: vi.fn(),
     hidePublicDocument: vi.fn(),
-    deleteDraftPublicDocument: vi.fn(),
+    permanentlyDeletePublicDocument: vi.fn(),
     authorizePublicDocumentMediaScope: vi.fn(),
     setPublicDocumentPdf: vi.fn(),
     clearPublicDocumentPdf: vi.fn(),
@@ -39,7 +39,7 @@ import {
   authorizePublicDocumentMediaScope,
   clearPublicDocumentPdf,
   createPublicDocument,
-  deleteDraftPublicDocument,
+  permanentlyDeletePublicDocument,
   listPublicDocumentsForManagement,
   publishPublicDocument,
   setPublicDocumentPdf,
@@ -104,7 +104,7 @@ beforeEach(() => {
     changed: true,
     previousStatus: 'draft',
   } as never)
-  vi.mocked(deleteDraftPublicDocument).mockResolvedValue({ previousStorageKey: OLD } as never)
+  vi.mocked(permanentlyDeletePublicDocument).mockResolvedValue({ previousStorageKey: OLD } as never)
   vi.mocked(authorizePublicDocumentMediaScope).mockResolvedValue(scope)
   vi.mocked(uploadPublicSiteMedia).mockResolvedValue({
     pathname: NEW,
@@ -252,7 +252,7 @@ describe('route documents', () => {
         ['revision', '4'],
       ]) as never,
     )
-    expect(deleteDraftPublicDocument).toHaveBeenCalledWith(ID, L, 4)
+    expect(permanentlyDeletePublicDocument).toHaveBeenCalledWith(ID, L, 4)
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD)
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'public_document.deleted' }),

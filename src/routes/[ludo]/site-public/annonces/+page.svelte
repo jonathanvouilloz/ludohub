@@ -139,8 +139,7 @@
                 {/if}
               </Button>
             </form>
-            {#if announcement.status !== 'published'}
-              <form
+            <form
                 method="POST"
                 action="?/delete"
                 onsubmit={(event) => {
@@ -151,8 +150,7 @@
                 <input type="hidden" name="id" value={announcement.id} />
                 <input type="hidden" name="revision" value={announcement.revision} />
                 <Button type="submit" size="sm" variant="destructive">Supprimer</Button>
-              </form>
-            {/if}
+            </form>
           </footer>
         </article>
       {/each}

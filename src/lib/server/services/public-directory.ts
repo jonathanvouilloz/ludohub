@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicDirectoryRow,
+  deletePublicDirectoryRow,
   getPublicDirectoryRowForLudo,
   insertPublicDirectoryRow,
   listPublicDirectoryRows,
@@ -236,6 +237,13 @@ export async function deleteDraftPublicDirectoryEntry(id: string, l: string, r: 
   if (c.status === 'published')
     throw new PublicDirectoryServiceError('Masquez cette entrée avant de la supprimer.')
   if (c.revision !== r || !(await deleteDraftPublicDirectoryRow(id, l, r))) concurrent()
+}
+
+/** Suppression définitive demandée depuis le back-office, même si l’entrée est publiée. */
+export async function permanentlyDeletePublicDirectoryEntry(id: string, l: string, r: number) {
+  rev(r)
+  const current = await getPublicDirectoryEntry(id, l)
+  if (current.revision !== r || !(await deletePublicDirectoryRow(id, l, r))) concurrent()
 }
 export async function listPublishedPublicDirectory(l: string, limit = 100) {
   if (!Number.isSafeInteger(limit) || limit < 1)

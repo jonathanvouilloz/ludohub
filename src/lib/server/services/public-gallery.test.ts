@@ -20,6 +20,7 @@ vi.mock('../db/public-gallery.js', () => ({
   updatePublicGalleryPublicationRow: m.pub,
   updatePublicGalleryFileRow: m.file,
   deleteDraftPublicGalleryRow: m.remove,
+  deletePublicGalleryRow: m.remove,
   listPublicGalleryRows: m.list,
   listVisiblePublicGalleryRows: m.visible,
 }))

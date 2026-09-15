@@ -12,7 +12,7 @@ import {
   authorizePublicDocumentMediaScope,
   clearPublicDocumentPdf,
   createPublicDocument,
-  deleteDraftPublicDocument,
+  permanentlyDeletePublicDocument,
   hidePublicDocument,
   listPublicDocumentsForManagement,
   publishPublicDocument,
@@ -194,7 +194,7 @@ export const actions: Actions = {
     return run(async () => {
       const rev = revision(data)
       const scope = await authorizePublicDocumentMediaScope(ludo.id, id, rev)
-      const result = await deleteDraftPublicDocument(id, ludo.id, rev)
+      const result = await permanentlyDeletePublicDocument(id, ludo.id, rev)
       await cleanup(scope, result.previousStorageKey, ludo.id, member.id, id, 'delete')
       await audit('public_document.deleted', ludo.id, member.id, id)
       return { success: true }

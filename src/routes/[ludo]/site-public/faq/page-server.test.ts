@@ -15,7 +15,7 @@ vi.mock('$lib/server/services/public-faqs.js', () => {
     updatePublicFaq: vi.fn(),
     publishPublicFaq: vi.fn(),
     hidePublicFaq: vi.fn(),
-    deleteDraftPublicFaq: vi.fn(),
+    permanentlyDeletePublicFaq: vi.fn(),
   }
 })
 import { requireLudoContext } from '$lib/server/ludo-context.js'
@@ -24,7 +24,7 @@ import { emitAuditEvent } from '$lib/server/services/events.js'
 import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import {
   createPublicFaq,
-  deleteDraftPublicFaq,
+  permanentlyDeletePublicFaq,
   hidePublicFaq,
   listPublicFaqsForManagement,
   publishPublicFaq,
@@ -180,7 +180,7 @@ describe('route FAQ', () => {
         ['revision', '4'],
       ]) as never,
     )
-    expect(deleteDraftPublicFaq).toHaveBeenCalledWith(ID, L, 4)
+    expect(permanentlyDeletePublicFaq).toHaveBeenCalledWith(ID, L, 4)
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'public_faq.deleted' }),
     )

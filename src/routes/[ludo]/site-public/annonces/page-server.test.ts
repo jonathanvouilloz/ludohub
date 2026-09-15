@@ -8,7 +8,7 @@ vi.mock('$lib/server/services/public-announcements.js', () => {
     PublicAnnouncementServiceError,
     listPublicAnnouncementsForManagement: vi.fn(),
     createPublicAnnouncement: vi.fn(),
-    deletePublicAnnouncement: vi.fn(),
+    permanentlyDeletePublicAnnouncement: vi.fn(),
     updatePublicAnnouncement: vi.fn(),
     setPublicAnnouncementActive: vi.fn(),
   }
@@ -26,7 +26,7 @@ import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import {
   createPublicAnnouncement,
-  deletePublicAnnouncement,
+  permanentlyDeletePublicAnnouncement,
   listPublicAnnouncementsForManagement,
   PublicAnnouncementServiceError,
   setPublicAnnouncementActive,
@@ -76,7 +76,7 @@ beforeEach(() => {
     { id: SITE_B, ludoId: LUDO_ID, name: 'Sécheron', isActive: false },
   ] as never)
   vi.mocked(createPublicAnnouncement).mockResolvedValue(announcement as never)
-  vi.mocked(deletePublicAnnouncement).mockResolvedValue(undefined)
+  vi.mocked(permanentlyDeletePublicAnnouncement).mockResolvedValue(undefined)
   vi.mocked(updatePublicAnnouncement).mockResolvedValue(announcement as never)
   vi.mocked(setPublicAnnouncementActive).mockResolvedValue({
     announcement: { ...announcement, status: 'published', revision: 2 },
@@ -116,7 +116,7 @@ describe('actions annonces', () => {
         ['revision', '2'],
       ]) as never,
     )
-    expect(deletePublicAnnouncement).toHaveBeenCalledWith(ANNOUNCEMENT_ID, LUDO_ID, 2)
+    expect(permanentlyDeletePublicAnnouncement).toHaveBeenCalledWith(ANNOUNCEMENT_ID, LUDO_ID, 2)
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'public_announcement.deleted', entityId: ANNOUNCEMENT_ID }),
     )

@@ -546,11 +546,6 @@ export async function permanentlyDeletePublicActivity(
   revision(expectedRevision)
   const current = await getPublicActivity(activityId, ludoId)
   if (current.revision !== expectedRevision) conflict()
-  if (current.lifecycle !== 'trashed') {
-    throw new PublicActivityServiceError(
-      'Seule une activité dans la corbeille peut être supprimée.',
-    )
-  }
   if (!(await permanentlyDeletePublicActivityRow(activityId, ludoId, expectedRevision))) conflict()
 }
 

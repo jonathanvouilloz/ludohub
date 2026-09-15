@@ -141,3 +141,14 @@ export async function deleteDraftPublicGalleryRow(id: string, ludoId: string, re
     .returning({ id: images.id, imageStorageKey: images.imageStorageKey })
   return row
 }
+
+/** Suppression explicite avec contrôle de concurrence, quel que soit l’état de publication. */
+export async function deletePublicGalleryRow(id: string, ludoId: string, revision: number) {
+  const [row] = await db
+    .delete(images)
+    .where(
+      and(eq(images.id, id), eq(images.ludoId, ludoId), eq(images.revision, revision)),
+    )
+    .returning({ id: images.id, imageStorageKey: images.imageStorageKey })
+  return row
+}

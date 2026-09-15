@@ -13,7 +13,7 @@ import {
   authorizePublicGalleryMediaScope,
   clearPublicGalleryImageFile,
   createPublicGalleryImage,
-  deleteDraftPublicGalleryImage,
+  permanentlyDeletePublicGalleryImage,
   hidePublicGalleryImage,
   listPublicGalleryForManagement,
   publishPublicGalleryImage,
@@ -177,7 +177,7 @@ export const actions: Actions = {
     return run(async () => {
       const r = rev(d),
         s = await authorizePublicGalleryMediaScope(ludo.id, id, r),
-        x = await deleteDraftPublicGalleryImage(id, ludo.id, r)
+        x = await permanentlyDeletePublicGalleryImage(id, ludo.id, r)
       await cleanup(s, x.previousStorageKey, ludo.id, member.id, id, 'delete')
       await audit('public_gallery.deleted', ludo.id, member.id, id)
       return { success: true }

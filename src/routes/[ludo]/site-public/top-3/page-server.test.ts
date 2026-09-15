@@ -33,7 +33,7 @@ vi.mock('$lib/server/services/public-top-threes.js', () => {
     updatePublicTopThree: vi.fn(),
     publishPublicTopThree: vi.fn(),
     hidePublicTopThree: vi.fn(),
-    deleteDraftPublicTopThree: vi.fn(),
+    permanentlyDeletePublicTopThree: vi.fn(),
     setPublicTopThreeGameImage: vi.fn(),
   }
 })
@@ -49,7 +49,7 @@ import {
   authorizePublicTopThreeMediaScope,
   clearPublicTopThreeGameImage,
   deselectPublicTopThreeFromHomepage,
-  deleteDraftPublicTopThree,
+  permanentlyDeletePublicTopThree,
   hidePublicTopThree,
   getPublicTopThree,
   listPublicTopThreesForManagement,
@@ -378,7 +378,7 @@ describe('gestion des Top 3 publics', () => {
         ['revision', '4'],
       ]) as never,
     )
-    expect(deleteDraftPublicTopThree).toHaveBeenCalledWith(TOP_THREE_ID, LUDO_ID, 4)
+    expect(permanentlyDeletePublicTopThree).toHaveBeenCalledWith(TOP_THREE_ID, LUDO_ID, 4)
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'public_top_three.deleted', entityId: TOP_THREE_ID }),
     )

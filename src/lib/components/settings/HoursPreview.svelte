@@ -57,7 +57,12 @@
         {/each}
       </dl>
 
-      {#if site.accessInfo}<p class="access">{site.accessInfo}</p>{/if}
+      {#if site.accessInfo}
+        <div class="access">
+          <span>Informations pratiques</span>
+          <p>{site.accessInfo}</p>
+        </div>
+      {/if}
     </article>
   {/each}
 </div>
@@ -66,9 +71,11 @@
   .preview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr));
+    align-items: start;
     gap: var(--space-4);
   }
   .preview-card {
+    height: fit-content;
     padding: var(--space-5);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
@@ -132,5 +139,15 @@
     color: var(--text-muted);
     font-size: var(--text-small);
     white-space: pre-line;
+  }
+  .access span {
+    display: block;
+    margin-bottom: var(--space-1);
+    color: var(--text-main);
+    font-size: var(--text-label);
+    font-weight: var(--weight-semibold);
+  }
+  .access p {
+    margin: 0;
   }
 </style>

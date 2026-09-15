@@ -11,7 +11,7 @@ vi.mock('$lib/server/services/public-directory.js', () => {
     PublicDirectoryServiceError,
     listPublicDirectoryForManagement: vi.fn(),
     createPublicDirectoryEntry: vi.fn(),
-    deleteDraftPublicDirectoryEntry: vi.fn(),
+    permanentlyDeletePublicDirectoryEntry: vi.fn(),
     updatePublicDirectoryEntry: vi.fn(),
     publishPublicDirectoryEntry: vi.fn(),
     hidePublicDirectoryEntry: vi.fn(),
@@ -22,7 +22,7 @@ import { emitAuditEvent } from '$lib/server/services/events.js'
 import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import {
   createPublicDirectoryEntry,
-  deleteDraftPublicDirectoryEntry,
+  permanentlyDeletePublicDirectoryEntry,
   hidePublicDirectoryEntry,
   listPublicDirectoryForManagement,
   publishPublicDirectoryEntry,
@@ -145,14 +145,14 @@ describe('route annuaire', () => {
     )
     expect(hidePublicDirectoryEntry).toHaveBeenCalledWith(ID, L, M, 3)
   })
-  it('supprime un brouillon avec tenant, CAS et audit minimal', async () => {
+  it('supprime une entrée avec tenant, CAS et audit minimal', async () => {
     await actions.delete!(
       event([
         ['id', ID],
         ['revision', '5'],
       ]) as never,
     )
-    expect(deleteDraftPublicDirectoryEntry).toHaveBeenCalledWith(ID, L, 5)
+    expect(permanentlyDeletePublicDirectoryEntry).toHaveBeenCalledWith(ID, L, 5)
     expect(emitAuditEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'public_directory.deleted',
@@ -164,10 +164,10 @@ describe('route annuaire', () => {
     expect(vi.mocked(emitAuditEvent).mock.calls[0][0].metadata).toBeUndefined()
   })
   it.each(['published', 'hidden'])(
-    'refuse via le service la suppression d’une entrée %s',
+    'retransmet une erreur de suppression pour une entrée %s',
     async () => {
-      vi.mocked(deleteDraftPublicDirectoryEntry).mockRejectedValue(
-        new PublicDirectoryServiceError('Seul un brouillon peut être supprimé.'),
+      vi.mocked(permanentlyDeletePublicDirectoryEntry).mockRejectedValue(
+        new PublicDirectoryServiceError('L’entrée a été modifiée simultanément.'),
       )
       const result = await actions.delete!(
         event([
@@ -177,7 +177,7 @@ describe('route annuaire', () => {
       )
       expect(result).toMatchObject({
         status: 400,
-        data: { error: expect.stringContaining('brouillon') },
+        data: { error: expect.stringContaining('modifiée simultanément') },
       })
       expect(emitAuditEvent).not.toHaveBeenCalled()
     },
@@ -190,6 +190,6 @@ describe('route annuaire', () => {
       ]) as never,
     )
     expect(result).toMatchObject({ status: 400 })
-    expect(deleteDraftPublicDirectoryEntry).not.toHaveBeenCalled()
+    expect(permanentlyDeletePublicDirectoryEntry).not.toHaveBeenCalled()
   })
 })

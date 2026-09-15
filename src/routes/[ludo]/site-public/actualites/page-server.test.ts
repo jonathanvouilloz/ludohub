@@ -20,7 +20,7 @@ vi.mock('$lib/server/services/public-news.js', () => {
     PublicNewsServiceError,
     listPublicNewsForManagement: vi.fn(),
     createPublicNews: vi.fn(),
-    deleteDraftPublicNews: vi.fn(),
+    permanentlyDeletePublicNews: vi.fn(),
     getPublicNews: vi.fn(),
     updatePublicNews: vi.fn(),
     publishPublicNews: vi.fn(),
@@ -45,7 +45,7 @@ import {
   authorizePublicNewsMediaScope,
   clearPublicNewsImage,
   createPublicNews,
-  deleteDraftPublicNews,
+  permanentlyDeletePublicNews,
   getPublicNews,
   hidePublicNews,
   listPublicNewsForManagement,
@@ -142,7 +142,7 @@ beforeEach(() => {
   ] as never)
   vi.mocked(createPublicNews).mockResolvedValue(news as never)
   vi.mocked(getPublicNews).mockResolvedValue(news as never)
-  vi.mocked(deleteDraftPublicNews).mockResolvedValue(undefined)
+  vi.mocked(permanentlyDeletePublicNews).mockResolvedValue(undefined)
   vi.mocked(updatePublicNews).mockResolvedValue(news as never)
   vi.mocked(publishPublicNews).mockResolvedValue({
     news: { ...news, status: 'published', revision: 2, publishedAt: new Date() },
@@ -337,7 +337,7 @@ describe('actions actualités', () => {
         ]) as never,
       ),
     ).rejects.toMatchObject({ status: 303, location: '/test/site-public/actualites' })
-    expect(deleteDraftPublicNews).toHaveBeenCalledWith(NEWS_ID, LUDO_ID, 1)
+    expect(permanentlyDeletePublicNews).toHaveBeenCalledWith(NEWS_ID, LUDO_ID, 1)
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(SCOPE, OLD_PATH)
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(SCOPE, NEW_PATH)
     expect(emitAuditEvent).toHaveBeenCalledWith(

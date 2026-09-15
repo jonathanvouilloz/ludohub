@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicProfileRow,
+  deletePublicProfileRow,
   getPublicProfileRowForLudo,
   insertPublicProfileAtomic,
   listPublicProfileRows,
@@ -307,6 +308,16 @@ export async function deleteDraftPublicProfile(id: string, l: string, r: number)
     throw new PublicProfileServiceError('Masquez ce profil avant de le supprimer.')
   if (current.revision !== r) concurrent()
   const deleted = await deleteDraftPublicProfileRow(id, l, r)
+  if (!deleted) concurrent()
+  return { previousStorageKey: deleted.photoStorageKey }
+}
+
+/** Suppression définitive demandée depuis le back-office, même si le profil est publié. */
+export async function permanentlyDeletePublicProfile(id: string, l: string, r: number) {
+  rev(r)
+  const current = await getPublicProfile(id, l)
+  if (current.revision !== r) concurrent()
+  const deleted = await deletePublicProfileRow(id, l, r)
   if (!deleted) concurrent()
   return { previousStorageKey: deleted.photoStorageKey }
 }

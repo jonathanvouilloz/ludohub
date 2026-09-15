@@ -74,21 +74,19 @@
                 >{item.status === 'published' ? 'Masquer' : 'Publier'}</Button
               >
             </form>
-            {#if item.status !== 'published'}
-              <form
+            <form
                 method="POST"
                 action="?/delete"
                 onsubmit={(event) => {
-                  if (!confirm('Supprimer définitivement cette entrée en brouillon ?'))
+                  if (!confirm('Supprimer définitivement cette entrée de l’annuaire ?'))
                     event.preventDefault()
                 }}
-                use:enhance={toastEnhance({ success: 'Brouillon supprimé.' })}
+                use:enhance={toastEnhance({ success: 'Entrée supprimée.' })}
               >
                 <input type="hidden" name="id" value={item.id} />
                 <input type="hidden" name="revision" value={item.revision} />
                 <Button type="submit" size="sm" variant="destructive">Supprimer</Button>
-              </form>
-            {/if}
+            </form>
           </footer>
         </article>{/each}
     </div>{/if}<DirectoryDialog bind:open entry={editing} />

@@ -29,6 +29,7 @@ vi.mock('../db/public-top-threes.js', () => ({
   selectPublicTopThreeHomepageAtomic: mocks.selectHomepage,
   deselectPublicTopThreeHomepageRow: mocks.deselectHomepage,
   deleteDraftPublicTopThreeRow: mocks.remove,
+  deletePublicTopThreeRow: mocks.remove,
 }))
 vi.mock('../db/sites.js', () => ({ listActiveSiteRows: mocks.activeSites }))
 vi.mock('./public-site.js', () => ({

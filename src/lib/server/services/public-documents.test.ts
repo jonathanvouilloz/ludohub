@@ -23,6 +23,7 @@ vi.mock('../db/public-documents.js', () => ({
   updatePublicDocumentPublicationRow: m.publication,
   updatePublicDocumentPdfRow: m.pdf,
   deleteDraftPublicDocumentRow: m.remove,
+  deletePublicDocumentRow: m.remove,
   listPublicDocumentRows: m.list,
   listVisiblePublicDocumentSummaryRows: m.visible,
 }))

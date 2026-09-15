@@ -131,3 +131,18 @@ export async function deleteDraftPublicFaqRow(id: string, ludoId: string, revisi
     .returning({ id: publicFaqs.id })
   return row
 }
+
+/** Suppression explicite avec contrôle de concurrence, quel que soit l’état de publication. */
+export async function deletePublicFaqRow(id: string, ludoId: string, revision: number) {
+  const [row] = await db
+    .delete(publicFaqs)
+    .where(
+      and(
+        eq(publicFaqs.id, id),
+        eq(publicFaqs.ludoId, ludoId),
+        eq(publicFaqs.revision, revision),
+      ),
+    )
+    .returning({ id: publicFaqs.id })
+  return row
+}

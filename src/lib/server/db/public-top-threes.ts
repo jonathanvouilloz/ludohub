@@ -329,3 +329,22 @@ export async function deleteDraftPublicTopThreeRow(
     .returning({ id: publicTopThrees.id })
   return row
 }
+
+/** Suppression explicite avec contrôle de concurrence, quel que soit l’état de publication. */
+export async function deletePublicTopThreeRow(
+  topThreeId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  const [row] = await db
+    .delete(publicTopThrees)
+    .where(
+      and(
+        eq(publicTopThrees.id, topThreeId),
+        eq(publicTopThrees.ludoId, ludoId),
+        eq(publicTopThrees.revision, expectedRevision),
+      ),
+    )
+    .returning({ id: publicTopThrees.id })
+  return row
+}

@@ -15,7 +15,7 @@ import {
   authorizePublicTopThreeMediaScope,
   clearPublicTopThreeGameImage,
   deselectPublicTopThreeFromHomepage,
-  deleteDraftPublicTopThree,
+  permanentlyDeletePublicTopThree,
   hidePublicTopThree,
   getPublicTopThree,
   listPublicTopThreesForManagement,
@@ -297,7 +297,7 @@ export const actions: Actions = {
         authorizePublicTopThreeMediaScope(ludo.id, id, revision),
         getPublicTopThree(id, ludo.id),
       ])
-      await deleteDraftPublicTopThree(id, ludo.id, revision)
+      await permanentlyDeletePublicTopThree(id, ludo.id, revision)
       await Promise.all(
         topThree.games.map((game) =>
           cleanupTopGameImage({

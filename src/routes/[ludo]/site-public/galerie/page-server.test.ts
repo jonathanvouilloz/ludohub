@@ -23,7 +23,7 @@ vi.mock('$lib/server/services/public-gallery.js', () => {
     updatePublicGalleryImage: vi.fn(),
     publishPublicGalleryImage: vi.fn(),
     hidePublicGalleryImage: vi.fn(),
-    deleteDraftPublicGalleryImage: vi.fn(),
+    permanentlyDeletePublicGalleryImage: vi.fn(),
     authorizePublicGalleryMediaScope: vi.fn(),
     setPublicGalleryImageFile: vi.fn(),
     clearPublicGalleryImageFile: vi.fn(),
@@ -36,7 +36,7 @@ import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import {
   authorizePublicGalleryMediaScope,
   createPublicGalleryImage,
-  deleteDraftPublicGalleryImage,
+  permanentlyDeletePublicGalleryImage,
   listPublicGalleryForManagement,
   setPublicGalleryImageFile,
 } from '$lib/server/services/public-gallery.js'
@@ -86,7 +86,7 @@ beforeEach(() => {
     image: item,
     previousStorageKey: OLD,
   } as never)
-  vi.mocked(deleteDraftPublicGalleryImage).mockResolvedValue({ previousStorageKey: OLD } as never)
+  vi.mocked(permanentlyDeletePublicGalleryImage).mockResolvedValue({ previousStorageKey: OLD } as never)
   vi.mocked(uploadAndRegisterMedia).mockImplementation(async (x) => {
     const s = await x.authorize(),
       b = await x.upload(s)
@@ -168,7 +168,7 @@ describe('route galerie', () => {
         ['revision', '1'],
       ]) as never,
     )
-    expect(deleteDraftPublicGalleryImage).toHaveBeenCalledWith(ID, L, 1)
+    expect(permanentlyDeletePublicGalleryImage).toHaveBeenCalledWith(ID, L, 1)
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD)
   })
 })

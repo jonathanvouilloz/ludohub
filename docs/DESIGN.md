@@ -282,5 +282,6 @@ Toute suppression/action irréversible passe par un `AlertDialog` (trigger = bou
 - Une liste éditoriale sert uniquement à choisir un contenu. Les formulaires, médias et changements de statut restent dans la fiche de l’élément ouvert.
 - Les contenus riches suivent le parcours `liste → fiche → modification`. Les formulaires longs utilisent une page complète plutôt qu’une grande modale.
 - `<EditorialListItem>` est la ligne commune des listes éditoriales. `<PublicSiteSectionCard>` est réservé aux destinations de l’accueil du module.
+- `<RichTextEditor>` est le champ partagé des actualités et activités : il garde le Markdown comme format de stockage, mais le masque derrière une barre limitée à paragraphes, intertitres, gras, italique, liens, listes, citations et annuler/rétablir. Aucun style libre, couleur ou police n’est proposé ; le titre principal reste un champ séparé.
 - Les inscriptions aux activités sont une rubrique autonome et ne sont jamais mélangées à la liste des activités.
 - Les termes techniques comme « slug » et « Markdown » ne sont pas utilisés comme libellés principaux. Ils restent dans les options avancées ou sont traduits en langage courant.

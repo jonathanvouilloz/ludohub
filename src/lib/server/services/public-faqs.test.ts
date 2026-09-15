@@ -17,6 +17,7 @@ vi.mock('../db/public-faqs.js', () => ({
   updatePublicFaqAtomic: m.update,
   updatePublicFaqPublicationRow: m.publication,
   deleteDraftPublicFaqRow: m.remove,
+  deletePublicFaqRow: m.remove,
   listPublicFaqRows: m.list,
   listVisiblePublicFaqRows: m.visible,
 }))

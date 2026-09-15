@@ -19,7 +19,7 @@ import {
   authorizePublicNewsMediaScope,
   clearPublicNewsImage,
   createPublicNews,
-  deleteDraftPublicNews,
+  permanentlyDeletePublicNews,
   getPublicNews,
   hidePublicNews,
   listPublicNewsForManagement,
@@ -244,7 +244,7 @@ export const actions: Actions = {
         authorizePublicNewsMediaScope(ludo.id, id, revision),
         getPublicNews(id, ludo.id),
       ])
-      await deleteDraftPublicNews(id, ludo.id, revision)
+      await permanentlyDeletePublicNews(id, ludo.id, revision)
       const storedPaths = [
         news.imageStorageKey,
         ...(news.assets ?? []).map((asset) => asset.storageKey),

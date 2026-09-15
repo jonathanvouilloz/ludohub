@@ -2,7 +2,7 @@ import { error, fail, type RequestEvent } from '@sveltejs/kit'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import {
   createPublicDirectoryEntry,
-  deleteDraftPublicDirectoryEntry,
+  permanentlyDeletePublicDirectoryEntry,
   hidePublicDirectoryEntry,
   listPublicDirectoryForManagement,
   publishPublicDirectoryEntry,
@@ -137,7 +137,7 @@ export const actions: Actions = {
     const data = await event.request.formData()
     const id = String(data.get('id') ?? '')
     return run(async () => {
-      await deleteDraftPublicDirectoryEntry(id, ludo.id, revision(data))
+      await permanentlyDeletePublicDirectoryEntry(id, ludo.id, revision(data))
       await audit('public_directory.deleted', ludo.id, member.id, id)
       return { success: true }
     })

@@ -93,3 +93,12 @@ export async function deleteDraftPublicDirectoryRow(id: string, l: string, r: nu
     .returning({ id: entries.id })
   return row
 }
+
+/** Suppression explicite avec contrôle de concurrence, quel que soit l’état de publication. */
+export async function deletePublicDirectoryRow(id: string, l: string, r: number) {
+  const [row] = await db
+    .delete(entries)
+    .where(and(eq(entries.id, id), eq(entries.ludoId, l), eq(entries.revision, r)))
+    .returning({ id: entries.id })
+  return row
+}

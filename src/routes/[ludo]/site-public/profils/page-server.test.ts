@@ -24,7 +24,7 @@ vi.mock('$lib/server/services/public-profiles.js', () => {
     updatePublicProfile: vi.fn(),
     publishPublicProfile: vi.fn(),
     hidePublicProfile: vi.fn(),
-    deleteDraftPublicProfile: vi.fn(),
+    permanentlyDeletePublicProfile: vi.fn(),
     authorizePublicProfileMediaScope: vi.fn(),
     setPublicProfilePhoto: vi.fn(),
     clearPublicProfilePhoto: vi.fn(),
@@ -38,7 +38,7 @@ import { isPublicSiteEnabled } from '$lib/server/services/public-site.js'
 import {
   authorizePublicProfileMediaScope,
   createPublicProfile,
-  deleteDraftPublicProfile,
+  permanentlyDeletePublicProfile,
   listPublicProfilesForManagement,
   setPublicProfilePhoto,
 } from '$lib/server/services/public-profiles.js'
@@ -94,7 +94,7 @@ beforeEach(() => {
     profile: p,
     previousStorageKey: OLD,
   } as never)
-  vi.mocked(deleteDraftPublicProfile).mockResolvedValue({ previousStorageKey: OLD } as never)
+  vi.mocked(permanentlyDeletePublicProfile).mockResolvedValue({ previousStorageKey: OLD } as never)
   vi.mocked(uploadAndRegisterMedia).mockImplementation(async (x) => {
     const s = await x.authorize(),
       b = await x.upload(s)
@@ -186,7 +186,7 @@ describe('route profils', () => {
         ['revision', '1'],
       ]) as never,
     )
-    expect(deleteDraftPublicProfile).toHaveBeenCalledWith(ID, L, 1)
+    expect(permanentlyDeletePublicProfile).toHaveBeenCalledWith(ID, L, 1)
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD)
   })
 })

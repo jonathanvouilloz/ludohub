@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicFaqRow,
+  deletePublicFaqRow,
   getPublicFaqRowForLudo,
   insertPublicFaqAtomic,
   listPublicFaqRows,
@@ -236,6 +237,13 @@ export async function deleteDraftPublicFaq(id: string, ludoId: string, rev: numb
   if (current.status === 'published')
     throw new PublicFaqServiceError('Masquez cette question avant de la supprimer.')
   if (current.revision !== rev || !(await deleteDraftPublicFaqRow(id, ludoId, rev))) concurrent()
+}
+
+/** Suppression définitive demandée depuis le back-office, même si la FAQ est publiée. */
+export async function permanentlyDeletePublicFaq(id: string, ludoId: string, rev: number) {
+  revision(rev)
+  const current = await getPublicFaq(id, ludoId)
+  if (current.revision !== rev || !(await deletePublicFaqRow(id, ludoId, rev))) concurrent()
 }
 export async function listVisiblePublicFaqs(ludoId: string, siteId?: string, limit = 100) {
   if (!(await isPublicSiteEnabled(ludoId))) return []

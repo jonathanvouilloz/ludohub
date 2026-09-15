@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicGalleryRow,
+  deletePublicGalleryRow,
   getPublicGalleryRowForLudo,
   insertPublicGalleryAtomic,
   listPublicGalleryRows,
@@ -289,6 +290,16 @@ export async function deleteDraftPublicGalleryImage(id: string, l: string, r: nu
     throw new PublicGalleryServiceError('Masquez cette photo avant de la supprimer.')
   if (current.revision !== r) concurrent()
   const deleted = await deleteDraftPublicGalleryRow(id, l, r)
+  if (!deleted) concurrent()
+  return { previousStorageKey: deleted.imageStorageKey }
+}
+
+/** Suppression définitive demandée depuis le back-office, même si la photo est publiée. */
+export async function permanentlyDeletePublicGalleryImage(id: string, l: string, r: number) {
+  rev(r)
+  const current = await getPublicGalleryImage(id, l)
+  if (current.revision !== r) concurrent()
+  const deleted = await deletePublicGalleryRow(id, l, r)
   if (!deleted) concurrent()
   return { previousStorageKey: deleted.imageStorageKey }
 }

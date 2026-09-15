@@ -20,6 +20,7 @@ vi.mock('../db/public-profiles.js', () => ({
   updatePublicProfilePublicationRow: m.pub,
   updatePublicProfilePhotoRow: m.photo,
   deleteDraftPublicProfileRow: m.remove,
+  deletePublicProfileRow: m.remove,
   listPublicProfileRows: m.list,
   listVisiblePublicProfileRows: m.visible,
 }))

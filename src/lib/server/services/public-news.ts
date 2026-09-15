@@ -343,6 +343,18 @@ export async function deleteDraftPublicNews(
   if (!(await deletePublicNewsRow(newsId, ludoId, expectedRevision))) concurrentChange()
 }
 
+/** Suppression définitive demandée depuis le back-office, même si l’actualité est publiée. */
+export async function permanentlyDeletePublicNews(
+  newsId: string,
+  ludoId: string,
+  expectedRevision: number,
+) {
+  requireRevision(expectedRevision)
+  const current = await getPublicNews(newsId, ludoId)
+  if (current.revision !== expectedRevision) concurrentChange()
+  if (!(await deletePublicNewsRow(newsId, ludoId, expectedRevision))) concurrentChange()
+}
+
 export async function authorizePublicNewsMediaScope(
   ludoId: string,
   newsId: string,

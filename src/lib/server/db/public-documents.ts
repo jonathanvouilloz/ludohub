@@ -186,3 +186,18 @@ export async function deleteDraftPublicDocumentRow(id: string, ludoId: string, r
     .returning({ id: publicDocuments.id, pdfStorageKey: publicDocuments.pdfStorageKey })
   return row
 }
+
+/** Suppression explicite avec contrôle de concurrence, quel que soit l’état de publication. */
+export async function deletePublicDocumentRow(id: string, ludoId: string, revision: number) {
+  const [row] = await db
+    .delete(publicDocuments)
+    .where(
+      and(
+        eq(publicDocuments.id, id),
+        eq(publicDocuments.ludoId, ludoId),
+        eq(publicDocuments.revision, revision),
+      ),
+    )
+    .returning({ id: publicDocuments.id, pdfStorageKey: publicDocuments.pdfStorageKey })
+  return row
+}

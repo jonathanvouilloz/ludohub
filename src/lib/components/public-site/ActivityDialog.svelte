@@ -28,6 +28,7 @@
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import RichTextEditor from './RichTextEditor.svelte'
   import { toastEnhance } from '$lib/utils/enhance.js'
   import { formatZurichDateTimeLocal } from '$lib/zurich-wall-clock.js'
 
@@ -196,8 +197,15 @@
         ></textarea>
       </div>
       <div class="field">
-        <Label for="activity-body">Description Markdown</Label>
-        <textarea id="activity-body" name="body" bind:value={body} rows="8" required></textarea>
+        <Label for="activity-body">Description</Label>
+        <p class="hint">Utilisez les titres, listes et liens pour présenter l’activité clairement.</p>
+        <RichTextEditor
+          id="activity-body"
+          name="body"
+          bind:value={body}
+          ariaLabel="Description de l’activité"
+          placeholder="Décrivez l’activité, son déroulement et les informations utiles…"
+        />
       </div>
       <div class="field">
         <Label for="activity-location">Lieu ou précision pratique</Label>
