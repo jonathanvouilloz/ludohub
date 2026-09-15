@@ -6,14 +6,14 @@
 
   let { data } = $props()
 
-  const statusFor = (slot: (typeof data.months)[number]['slots'][number]) => {
+  const statusFor = (slot: (typeof data.slots)[number]) => {
     if (slot.closure) return `Fermé — ${slot.closure.label}`
     if (slot.isCancelled) return 'Fermé'
     return 'Ouvert'
   }
-  const filledCount = (slot: (typeof data.months)[number]['slots'][number]) =>
+  const filledCount = (slot: (typeof data.slots)[number]) =>
     slot.assignments.filter((assignment) => !assignment.absence).length
-  const isMine = (slot: (typeof data.months)[number]['slots'][number]) =>
+  const isMine = (slot: (typeof data.slots)[number]) =>
     !slot.closure &&
     !slot.isCancelled &&
     slot.assignments.some((assignment) => assignment.member.id === data.currentMemberId)
@@ -28,9 +28,7 @@
     <div>
       <p class="ludo">{data.ludoName}</p>
       <h1>Planning des samedis</h1>
-      <p class="meta">
-        {data.season.name} · préparé pour {data.currentMemberName} · {data.printedAt}
-      </p>
+      <p class="meta">{data.season.name} · {data.currentMemberName} · {data.printedAt}</p>
     </div>
     <div class="actions no-print">
       <Button href="../" variant="outline"><ArrowLeftIcon aria-hidden="true" /> Planning</Button>
@@ -38,64 +36,64 @@
     </div>
   </header>
 
-  <p class="legend"><span class="legend-mark"></span> Mes samedis de service</p>
-
-  {#each data.months as month (month.key)}
-    <section class="month">
-      <table>
-        <thead>
-          <tr class="month-title"><th colspan="4">{month.label}</th></tr>
-          <tr class="columns">
-            <th>Date</th>
-            <th>Équipe</th>
-            <th>Effectif</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody>
-          {#each month.slots as slot (slot.id)}
-            {@const mine = isMine(slot)}
-            <tr class:mine>
-              <td class="date">
-                <strong>{formatDayWeekday(slot.date)}</strong>
-                {#if mine}<span class="mine-label">Mon service</span>{/if}
-              </td>
-              <td class="team">
-                {#if slot.closure || slot.isCancelled}
-                  —
-                {:else}
-                  {#each slot.assignments as assignment, index (assignment.id)}
-                    <span
-                      class:me={assignment.member.id === data.currentMemberId}
-                      class:absent={!!assignment.absence}
-                    >
-                      {assignment.member.name}{assignment.absence ? ' (absent·e)' : ''}{index <
-                      slot.assignments.length - 1
-                        ? ', '
-                        : ''}
-                    </span>
-                  {/each}
-                {/if}
-              </td>
-              <td class="count"
-                >{slot.closure || slot.isCancelled
-                  ? '—'
-                  : `${filledCount(slot)}/${slot.requiredCount}`}</td
-              >
-              <td class="status">{statusFor(slot)}</td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
-    </section>
-  {/each}
+  <table class="planning-table">
+    <colgroup>
+      <col class="date-col" />
+      <col class="team-col" />
+      <col class="count-col" />
+      <col class="status-col" />
+    </colgroup>
+    <thead>
+      <tr class="columns">
+        <th>Date</th>
+        <th>Équipe</th>
+        <th>Effectif</th>
+        <th>Statut</th>
+      </tr>
+    </thead>
+    <tbody>
+      {#each data.slots as slot (slot.id)}
+        {@const mine = isMine(slot)}
+        <tr class:mine>
+          <td class="date">
+            <strong>{formatDayWeekday(slot.date)}</strong>{#if mine}<span class="mine-label">
+                · Mon service</span
+              >{/if}
+          </td>
+          <td class="team">
+            {#if slot.closure || slot.isCancelled}
+              —
+            {:else}
+              {#each slot.assignments as assignment, index (assignment.id)}
+                <span
+                  class:me={assignment.member.id === data.currentMemberId}
+                  class:absent={!!assignment.absence}
+                >
+                  {assignment.member.name}{assignment.absence ? ' (absent·e)' : ''}{index <
+                  slot.assignments.length - 1
+                    ? ', '
+                    : ''}
+                </span>
+              {/each}
+            {/if}
+          </td>
+          <td class="count"
+            >{slot.closure || slot.isCancelled
+              ? '—'
+              : `${filledCount(slot)}/${slot.requiredCount}`}</td
+          >
+          <td class="status">{statusFor(slot)}</td>
+        </tr>
+      {/each}
+    </tbody>
+  </table>
 </main>
 
 <style>
   .print-page {
-    max-width: 62rem;
+    max-width: 72rem;
     margin: 0 auto;
-    padding: var(--space-8) var(--space-6);
+    padding: var(--space-6);
     color: var(--text-main);
   }
   .head {
@@ -117,8 +115,7 @@
     margin: var(--space-1) 0;
     font-size: var(--text-h1);
   }
-  .meta,
-  .legend {
+  .meta {
     margin: 0;
     color: var(--text-muted);
     font-size: var(--text-small);
@@ -129,24 +126,9 @@
     flex-wrap: wrap;
     justify-content: flex-end;
   }
-  .legend {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin: var(--space-5) 0 var(--space-3);
-  }
-  .legend-mark {
-    width: 0.8rem;
-    height: 0.8rem;
-    background: var(--ludo-color);
-    border-radius: var(--radius-sm);
-    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--ludo-color) 65%, black);
-  }
-  .month {
-    margin-top: var(--space-5);
-  }
   table {
     width: 100%;
+    margin-top: var(--space-4);
     border-collapse: collapse;
     table-layout: fixed;
   }
@@ -157,33 +139,31 @@
     padding: var(--space-3);
     border-bottom: 1px solid var(--border);
   }
-  .month-title th {
-    padding: var(--space-2) var(--space-3);
-    background: var(--bg-sidebar);
-    color: var(--text-subtle);
-    font-size: var(--text-small);
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
   .columns th {
     color: var(--text-muted);
     font-size: var(--text-label);
     font-weight: var(--weight-semibold);
   }
+  .date-col {
+    width: 23%;
+  }
+  .team-col {
+    width: 52%;
+  }
+  .count-col {
+    width: 9%;
+  }
+  .status-col {
+    width: 16%;
+  }
   .date {
-    width: 25%;
     text-transform: capitalize;
   }
-  .team {
-    width: 43%;
-  }
   .count {
-    width: 12%;
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
   .status {
-    width: 20%;
     color: var(--text-muted);
   }
   tr.mine td {
@@ -193,14 +173,9 @@
     box-shadow: inset 4px 0 0 var(--ludo-color);
   }
   .mine-label {
-    display: block;
-    width: fit-content;
-    margin-top: var(--space-1);
     color: color-mix(in srgb, var(--ludo-color) 65%, black);
     font-size: var(--text-label);
     font-weight: var(--weight-bold);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
   }
   .me {
     font-weight: var(--weight-bold);
@@ -228,10 +203,11 @@
       padding: var(--space-2);
     }
   }
+
   @media print {
     @page {
-      size: A4 portrait;
-      margin: 12mm;
+      size: A4 landscape;
+      margin: 8mm;
     }
     :global(body) {
       background: #fff;
@@ -248,36 +224,40 @@
       display: none !important;
     }
     .head {
-      margin-bottom: 4mm;
+      margin-bottom: 1mm;
+      padding-bottom: 2mm;
     }
-    .month {
-      margin-top: 5mm;
+    h1 {
+      margin: 0;
+      font-size: 13pt;
     }
-    .legend {
-      margin: 3mm 0;
+    .ludo,
+    .meta {
+      font-size: 7.5pt;
     }
-    .month-title th {
-      background: #efefef;
-      color: #000;
+    .planning-table {
+      margin-top: 2mm;
     }
     .columns th {
       color: #333;
+      font-size: 7.5pt;
     }
     th,
     td {
-      padding: 2.5mm;
+      padding: 1.05mm 1.5mm;
       border-color: #b5b5b5;
+      font-size: 7.5pt;
+      line-height: 1.12;
+      white-space: nowrap;
     }
     thead {
       display: table-header-group;
     }
     tr,
-    .month-title,
     .columns {
       break-inside: avoid;
       page-break-inside: avoid;
     }
-    .month-title,
     .columns {
       break-after: avoid;
       page-break-after: avoid;
@@ -290,6 +270,7 @@
     }
     .mine-label {
       color: #174d78;
+      font-size: 7pt;
     }
     .status {
       color: #333;

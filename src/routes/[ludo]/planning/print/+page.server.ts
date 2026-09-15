@@ -1,7 +1,6 @@
 import { error } from '@sveltejs/kit'
 import { getActiveSeason, getSeasonGrid } from '$lib/server/services/planning.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
-import { groupPlanningSlotsByMonth, type PlanningSlot } from '$lib/planning/export.js'
 import { formatDateCH } from '$lib/utils/dates.js'
 import type { PageServerLoad } from './$types'
 
@@ -18,6 +17,6 @@ export const load: PageServerLoad = async (event) => {
     currentMemberId: member.id,
     currentMemberName: member.name,
     printedAt: formatDateCH(new Date()),
-    months: groupPlanningSlotsByMonth(grid.slots as PlanningSlot[]),
+    slots: grid.slots,
   }
 }
