@@ -38,7 +38,7 @@ comprendre.
 - `hidePublicTopThree` et `deleteDraftPublicTopThree` restent dans le service sans appelant UI (API du
   cycle éditorial, couverte par les tests) — ne pas les supprimer en croyant à du code mort.
 
-**Commit :** feat(site-public): simplify top three editing
+**Commit :** `736693b` feat(site-public): simplify top three editing
 
 ---
 

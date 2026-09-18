@@ -11,4 +11,4 @@
 
 20 — SITE PUBLIC : les Top 3 sont simplifiés (3 écrans plats, un seul enregistrement) ; Jonathan
 désigne le prochain écran trop complexe de la section « Site public » à traiter de la même façon.
-Commit : feat(site-public): simplify top three editing
+Commit : `736693b` feat(site-public): simplify top three editing
