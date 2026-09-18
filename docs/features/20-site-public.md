@@ -3,6 +3,75 @@
 > Statut : **EN COURS — socle, API et premier déploiement public réalisés**  
 > Spécification canonique : `../../../website-v2/docs/PHASE-2-SPEC.md`
 
+## État session 2026-09-18
+
+**Fait :**
+
+- Édition des Top 3 refondue : le modal `TopThreeDialog.svelte` (supprimé) laisse place à trois écrans
+  plats — liste, `top-3/nouveau`, `top-3/[id]` — alimentés par `TopThreeForm.svelte`, sur le pattern
+  déjà en place pour les actualités.
+- Un Top 3 se crée avec son nom, ses trois jeux **et leurs trois photos en un seul enregistrement**
+  (compression navigateur via `compressEditorialImageFields`), orchestré par
+  `src/lib/server/public-top-three-form.ts` qui propage la révision CAS à chaque écriture.
+- Simplifications assumées côté staff : slug dérivé du nom (suffixé s'il est pris), ciblage toujours
+  « tous les lieux actifs », texte alternatif déduit du nom du jeu, cycle brouillon → publié → masqué
+  retiré de l'écran (création publiée d'emblée, retrait = suppression).
+- « Sur la page d'accueil » devient une case du formulaire ; la sélection atomique existante retire
+  automatiquement l'ancienne.
+- Tests : `top-3/page-server.test.ts` et `page-ui.test.ts` réécrits, `nouveau/` et `[id]/` ajoutés,
+  service et couche db complétés (slug auto, insertion publiée, projection des slugs) →
+  `pnpm test` 674 ✅, `pnpm check` 0 erreur ✅.
+
+**Prochain :** continuer le nettoyage de la section « Site public » sur Pâquis-Sécheron — Jonathan
+désigne le prochain écran jugé trop complexe (candidats : `annonces`, `activites`, `galerie`,
+`profils`), même méthode que les Top 3 : un formulaire plat, une seule soumission, pas d'état à
+comprendre.
+
+**Pièges :**
+
+- `pnpm build` échoue localement sur `EPERM: symlink` dans l'adapter Vercel (droits Windows) —
+  préexistant ; la compile et l'analyse des routes passent avant cette étape.
+- `pnpm lint` global remonte des milliers d'issues venant de `.vercel/output`, absent des `ignores`
+  d'`eslint.config.js` : le lint utile se fait en ciblant les fichiers touchés.
+- Les Top 3 hérités encore `draft`/`hidden` n'ont plus de bouton Publier : l'action `update` les met
+  en ligne au premier enregistrement (tâche @jon posée dans le cerveau).
+- `hidePublicTopThree` et `deleteDraftPublicTopThree` restent dans le service sans appelant UI (API du
+  cycle éditorial, couverte par les tests) — ne pas les supprimer en croyant à du code mort.
+
+**Commit :** feat(site-public): simplify top three editing
+
+---
+
+## Carte du code
+
+> Mise à jour : 2026-09-18 — chaîne Top 3 (le reste de l'epic 20 n'est pas encore cartographié)
+
+| Fichier | Rôle |
+|---------|------|
+| `src/routes/[ludo]/site-public/top-3/+page.server.ts` | Liste des Top 3 du tenant + unique action `delete` (CAS, nettoyage Blob) |
+| `src/routes/[ludo]/site-public/top-3/+page.svelte` | Cartes en lecture : nom, badge accueil, 3 vignettes, Modifier / Supprimer |
+| `src/routes/[ludo]/site-public/top-3/nouveau/+page.server.ts` | Action `create` : création publiée, photos, accueil, audits |
+| `src/routes/[ludo]/site-public/top-3/[id]/+page.server.ts` | Action `update` : texte → photos → publication des lignes héritées → accueil |
+| `src/lib/components/public-site/TopThreeForm.svelte` | Formulaire unique partagé (nom, 3 jeux + photo, case accueil), aperçu local et compression |
+| `src/lib/server/public-top-three-form.ts` | Garde de contexte, lecture du formulaire, enchaînement des photos avec propagation de révision, bascule accueil, audit |
+| `src/lib/server/services/public-top-threes.ts` | Métier : slug dérivé, insertion directe en `published`, CAS, médias, lecture publique |
+| `src/lib/server/db/public-top-threes.ts` | Queries Drizzle, dont `listPublicTopThreeSlugRows` pour désambiguïser le slug |
+| `src/lib/media/editorial-image.ts` | `compressEditorialImageFields` : compresse plusieurs champs image d'un même envoi |
+
+### Décisions clés
+
+- Le contrat public est intact : l'API `/api/public/v1/[ludo]/top-threes(/[slug])` continue de lire le
+  slug et les lignes `published`. Le slug reste immuable après publication, donc renommer un Top 3 ne
+  casse pas son URL publique.
+- Aucune migration : les contraintes autorisent déjà l'insertion en `published` (`publishedAt` +
+  `publishedByMemberId`) et `is_homepage` n'exige que `status = 'published'`.
+- Le ciblage par lieu reste en base et est préservé à la mise à jour (`targetMode` absent) : les Top 3
+  déjà ciblés gardent leur ciblage, les nouveaux visent tous les lieux actifs.
+- Chaque écriture incrémente `revision` : toute séquence (texte → photos → publication → accueil) doit
+  réutiliser la révision retournée par l'étape précédente, sinon CAS en échec.
+
+---
+
 ## Objectif
 
 Ajouter à LudoHub un module de gestion et d'exposition des contenus publics, d'abord activé pour
@@ -31,7 +100,7 @@ lecture ; LudoHub demeure le back-office et la source de vérité.
 - [ ] actualités avec brouillon/publication/masquage ;
 - [ ] activités ponctuelles, récurrentes ou permanentes, exceptions, archives et corbeille ;
 - [ ] inscriptions publiques facultatives aux activités, sans compte ;
-- [ ] sélections Top 3 sans catalogue de jeux ;
+- [x] sélections Top 3 sans catalogue de jeux ;
 - [ ] galerie simple ;
 - [ ] profils publics séparés, lien facultatif vers `members` ;
 - [ ] FAQ, documents institutionnels et rapports ;

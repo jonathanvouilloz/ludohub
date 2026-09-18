@@ -4,6 +4,31 @@ Format : `Date | Décision | Contexte | Alternatives considérées`
 
 ---
 
+## 2026-09-18 | Un Top 3 n'a plus de cycle de publication ni de ciblage
+
+**Contexte :** L'écran Top 3 du back-office demandait un thème, un slug, un mode de ciblage par lieu,
+trois jeux sans photo dans un modal, puis les photos une par une depuis la liste (fichier + texte
+alternatif), avec en plus brouillon → publier → masquer et un bouton d'accueil séparé. Public cible :
+du staff de ludothèque non technique, qui s'y perdait. Le modèle utile tient en une phrase : un nom,
+trois jeux (photo, nom, description courte), et lequel s'affiche sur la page d'accueil.
+
+**Décision :** L'écran se réduit à ce modèle. Le slug se dérive du nom côté serveur (suffixé s'il est
+pris, immuable après publication pour ne pas casser l'URL publique) ; le ciblage vaut toujours « tous
+les lieux actifs » pour une création, la donnée existante étant préservée à la mise à jour ; le texte
+alternatif se déduit du nom du jeu ; la création insère directement en `published` (donc plus de
+brouillon ni de masquage — on supprime pour retirer du site) ; l'accueil devient une case du
+formulaire, appliquée par la sélection atomique existante. Nom, jeux et photos partent en une seule
+soumission `multipart`, l'action serveur enchaînant texte → photos → publication éventuelle → accueil
+en propageant la révision CAS retournée à chaque étape. Aucune migration : les contraintes
+autorisaient déjà l'insertion en `published`.
+
+**Alternatives :** Garder un interrupteur « visible sur le site » (un état de moins mais un état quand
+même) ; garder le ciblage replié dans « options avancées » (comme le slug des actualités) ; créer
+d'abord puis ajouter les photos sur l'écran d'édition (réutilisait l'upload existant tel quel, mais
+imposait deux étapes) ; laisser le choix d'accueil en bouton sur la liste.
+
+---
+
 ## 2026-08-16 | Le site public Astro lit LudoHub à la requête
 
 **Contexte :** Le site Pâquis-Sécheron était généré en statique. Les lieux et horaires affichés

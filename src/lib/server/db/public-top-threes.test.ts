@@ -22,6 +22,7 @@ vi.mock('./index.js', () => ({
 }))
 
 import {
+  listPublicTopThreeSlugRows,
   listVisiblePublicTopThreeSummaryRows,
   selectPublicTopThreeHomepageAtomic,
   updatePublicTopThreeAtomic,
@@ -174,6 +175,15 @@ describe('public-top-threes DB', () => {
       ),
     ).resolves.toBeUndefined()
     expect(mocks.findFirst).not.toHaveBeenCalled()
+  })
+
+  it('ne projette que les slugs du tenant pour dériver un slug libre', async () => {
+    mocks.where.mockReturnValueOnce(Promise.resolve([{ slug: 'pour-debuter' }]))
+    await expect(
+      listPublicTopThreeSlugRows('00000000-0000-4000-8000-000000000001'),
+    ).resolves.toEqual([{ slug: 'pour-debuter' }])
+    expect(Object.keys(mocks.select.mock.calls[0][0])).toEqual(['slug'])
+    expect(new PgDialect().sqlToQuery(mocks.where.mock.calls[0][0]).sql).toContain('ludo_id')
   })
 
   it('borne aussi les valeurs JSON dans le CHECK PostgreSQL', () => {

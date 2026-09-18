@@ -2,20 +2,55 @@ import { readFile } from 'node:fs/promises'
 import { describe, expect, it } from 'vitest'
 
 const page = () => readFile(new URL('./+page.svelte', import.meta.url), 'utf8')
+const form = () =>
+  readFile(
+    new URL('../../../../lib/components/public-site/TopThreeForm.svelte', import.meta.url),
+    'utf8',
+  )
 
-describe('sélection du Top 3 sur l’accueil', () => {
-  it('réserve l’action aux Top 3 publiés et affiche l’état sélectionné', async () => {
+describe('liste des Top 3', () => {
+  it('se limite à ouvrir, signaler l’accueil et supprimer avec CAS', async () => {
     const source = await page()
-    expect(source).toContain("{#if item.status === 'published'}")
-    expect(source).toContain('Afficher sur l’accueil')
-    expect(source).toContain('Retirer de l’accueil')
     expect(source).toContain('Sur l’accueil')
-    expect(source).toContain('action="?/homepage"')
+    expect(source).toContain('action="?/delete"')
     expect(source).toContain('name="revision"')
+    expect(source).toContain('/nouveau')
   })
 
-  it('explique le retrait atomique lors du masquage', async () => {
+  it('ne réexpose ni cycle de publication ni ciblage ni upload par jeu', async () => {
     const source = await page()
-    expect(source).toContain('Top 3 masqué et retiré de l’accueil.')
+    for (const removed of [
+      'action="?/homepage"',
+      'action="?/publication"',
+      'action="?/uploadGameImage"',
+      'action="?/removeGameImage"',
+      'Publier',
+      'Masquer',
+      'Brouillon',
+      'targetMode',
+    ]) {
+      expect(source).not.toContain(removed)
+    }
+  })
+})
+
+describe('formulaire unique du Top 3', () => {
+  it('porte le nom, les trois jeux avec photo et la case d’accueil dans un seul envoi', async () => {
+    const source = await form()
+    expect(source).toContain('enctype="multipart/form-data"')
+    expect(source).toContain('name="theme"')
+    expect(source).toContain('name={`image${index}`}')
+    expect(source).toContain('name={`name${index}`}')
+    expect(source).toContain('name={`description${index}`}')
+    expect(source).toContain('name={`removeImage${index}`}')
+    expect(source).toContain('name="isHomepage"')
+    expect(source).toContain('compressEditorialImageFields')
+  })
+
+  it('ne demande ni slug, ni texte alternatif, ni lieu', async () => {
+    const source = await form()
+    for (const removed of ['name="slug"', 'name="alt"', 'name="siteIds"', 'targetMode']) {
+      expect(source).not.toContain(removed)
+    }
   })
 })

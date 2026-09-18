@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   getPublished: vi.fn(),
   insert: vi.fn(),
   list: vi.fn(),
+  listSlugs: vi.fn(),
   listVisible: vi.fn(),
   update: vi.fn(),
   updateMedia: vi.fn(),
@@ -22,6 +23,7 @@ vi.mock('../db/public-top-threes.js', () => ({
   getPublishedPublicTopThreeRowBySlug: mocks.getPublished,
   insertPublicTopThreeAtomic: mocks.insert,
   listPublicTopThreeRows: mocks.list,
+  listPublicTopThreeSlugRows: mocks.listSlugs,
   listVisiblePublicTopThreeSummaryRows: mocks.listVisible,
   updatePublicTopThreeAtomic: mocks.update,
   updatePublicTopThreeGamesMediaRow: mocks.updateMedia,
@@ -100,6 +102,7 @@ beforeEach(() => {
   mocks.activeSites.mockResolvedValue([{ id: 'site-a', ludoId: LUDO, isActive: true }])
   mocks.validateTargets.mockResolvedValue(undefined)
   mocks.listVisible.mockResolvedValue([])
+  mocks.listSlugs.mockResolvedValue([])
 })
 
 describe('validation Top 3', () => {
@@ -172,6 +175,91 @@ describe('écriture et ciblage', () => {
       expect.objectContaining({ ludoId: LUDO, slug: 'ete', games, status: 'draft', revision: 1 }),
       ['site-a'],
     )
+  })
+
+  it('dérive le slug du nom et met en ligne dès l’insertion quand publish est demandé', async () => {
+    await createPublicTopThree(
+      LUDO,
+      MEMBER,
+      { theme: 'Pour débuter !', games, targetMode: 'all', siteIds: [], publish: true },
+      NOW,
+    )
+    expect(mocks.activeSites).toHaveBeenCalledWith(LUDO)
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'pour-debuter',
+        status: 'published',
+        publishedAt: NOW,
+        publishedByMemberId: MEMBER,
+        isHomepage: false,
+        revision: 1,
+      }),
+      [],
+    )
+  })
+
+  it('suffixe le slug dérivé déjà pris et se replie quand le nom n’en produit aucun', async () => {
+    mocks.listSlugs.mockResolvedValue([{ slug: 'pour-debuter' }, { slug: 'pour-debuter-2' }])
+    await createPublicTopThree(
+      LUDO,
+      MEMBER,
+      { theme: 'Pour débuter', games, targetMode: 'all', siteIds: [] },
+      NOW,
+    )
+    expect(mocks.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: 'pour-debuter-3' }),
+      [],
+    )
+
+    mocks.insert.mockClear()
+    mocks.listSlugs.mockResolvedValue([])
+    await createPublicTopThree(
+      LUDO,
+      MEMBER,
+      { theme: '🙂', games, targetMode: 'all', siteIds: [] },
+      NOW,
+    )
+    expect(mocks.insert).toHaveBeenCalledWith(expect.objectContaining({ slug: 'top-3' }), [])
+  })
+
+  it('refuse la mise en ligne immédiate sans lieu actif, avant toute écriture', async () => {
+    mocks.activeSites.mockResolvedValue([])
+    await expect(
+      createPublicTopThree(LUDO, MEMBER, {
+        theme: 'Pour débuter',
+        games,
+        targetMode: 'all',
+        siteIds: [],
+        publish: true,
+      }),
+    ).rejects.toThrow(/au moins un lieu actif/)
+    expect(mocks.insert).not.toHaveBeenCalled()
+  })
+
+  it('retente une seule fois avec un slug unique après une collision concurrente', async () => {
+    mocks.insert.mockRejectedValueOnce({ code: '23505' })
+    await createPublicTopThree(
+      LUDO,
+      MEMBER,
+      { theme: 'Pour débuter', games, targetMode: 'all', siteIds: [] },
+      NOW,
+    )
+    expect(mocks.insert).toHaveBeenCalledTimes(2)
+    expect(mocks.insert.mock.calls[1][0].slug).toMatch(/^pour-debuter-[0-9a-z]+$/)
+  })
+
+  it('remonte le conflit de slug quand il a été saisi explicitement', async () => {
+    mocks.insert.mockRejectedValue({ code: '23505' })
+    await expect(
+      createPublicTopThree(LUDO, MEMBER, {
+        slug: 'pour-debuter',
+        theme: 'Pour débuter',
+        games,
+        targetMode: 'all',
+        siteIds: [],
+      }),
+    ).rejects.toThrow(/déjà utilisé/)
+    expect(mocks.insert).toHaveBeenCalledTimes(1)
   })
 
   it('refuse explicit vide, all non vide et doublons', async () => {

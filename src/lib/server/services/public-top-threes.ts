@@ -7,6 +7,7 @@ import {
   getPublicTopThreeRowForLudo,
   insertPublicTopThreeAtomic,
   listPublicTopThreeRows,
+  listPublicTopThreeSlugRows,
   listVisiblePublicTopThreeSummaryRows,
   selectPublicTopThreeHomepageAtomic,
   updatePublicTopThreeAtomic,
@@ -31,9 +32,12 @@ export type PublicTopThreeGame = PublicTopThreeGameShape
 export type PublicTopThreeEditableGame = Pick<PublicTopThreeGameShape, 'name' | 'description'>
 export type PublicTopThreeTargeting = PublicAnnouncementTargeting
 export type PublicTopThreeInput = {
-  slug: string
+  /** Absent depuis le back-office : le slug se dérive alors du nom du Top 3. */
+  slug?: string
   theme: string
   games: PublicTopThreeEditableGame[]
+  /** Met le Top 3 en ligne dès l'insertion, sans passer par un brouillon. */
+  publish?: boolean
 } & PublicTopThreeTargeting
 export type PublicTopThreeUpdateInput = Partial<
   Pick<PublicTopThreeInput, 'slug' | 'theme' | 'games'>
@@ -127,6 +131,36 @@ export function normalizePublicTopThreeSlug(value: string) {
   return slug
 }
 
+const SLUG_FALLBACK = 'top-3'
+
+function slugCandidate(theme: string) {
+  try {
+    return normalizePublicTopThreeSlug(theme.slice(0, 100))
+  } catch {
+    return SLUG_FALLBACK
+  }
+}
+
+/** Le slug n'est plus saisi côté back-office : il se dérive du nom, suffixé s'il est déjà pris. */
+async function availableTopThreeSlug(ludoId: string, theme: string) {
+  const base = slugCandidate(theme)
+  const taken = new Set((await listPublicTopThreeSlugRows(ludoId)).map((row) => row.slug))
+  if (!taken.has(base)) return base
+  for (let suffix = 2; suffix <= 99; suffix += 1) {
+    const candidate = `${base}-${suffix}`
+    if (!taken.has(candidate)) return candidate
+  }
+  return uniqueSlugFallback(base)
+}
+
+function uniqueSlugFallback(base: string) {
+  return `${base.slice(0, 100)}-${Date.now().toString(36)}`
+}
+
+function isUniqueViolation(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
+}
+
 function revision(value: number) {
   if (!Number.isSafeInteger(value) || value < 1) {
     throw new PublicTopThreeServiceError('La révision du Top 3 est invalide.')
@@ -145,7 +179,7 @@ function required<T>(row: T | undefined): T {
 }
 
 function writeError(error: unknown): never {
-  if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23505') {
+  if (isUniqueViolation(error)) {
     throw new PublicTopThreeServiceError('Ce slug est déjà utilisé par un autre Top 3.')
   }
   throw error
@@ -191,31 +225,49 @@ export async function createPublicTopThree(
   now = new Date(),
 ) {
   const siteIds = await targets(ludoId, input.targetMode, input.siteIds)
-  const publication = createDraftPublicationState(now)
-  try {
-    return required(
-      await insertPublicTopThreeAtomic(
-        {
-          id: randomUUID(),
-          ludoId,
-          slug: normalizePublicTopThreeSlug(input.slug),
-          theme: text(input.theme, 'Le thème', 160),
-          games: validatePublicTopThreeGames(input.games),
-          isHomepage: false,
-          status: publication.status,
-          revision: 1,
-          authorMemberId: memberId,
-          updatedByMemberId: memberId,
-          publishedByMemberId: null,
-          publishedAt: null,
-          createdAt: now,
-          updatedAt: now,
-        },
-        siteIds,
-      ),
-    )
-  } catch (error) {
-    writeError(error)
+  const theme = text(input.theme, 'Le thème', 160)
+  const games = validatePublicTopThreeGames(input.games)
+  if (input.publish) await ensureActiveSites(ludoId, siteIds)
+  const publication = input.publish
+    ? { status: 'published' as const, publishedAt: now, publishedByMemberId: memberId }
+    : { ...createDraftPublicationState(now), publishedByMemberId: null }
+  const chosenSlug = input.slug
+  let slug =
+    chosenSlug === undefined
+      ? await availableTopThreeSlug(ludoId, theme)
+      : normalizePublicTopThreeSlug(chosenSlug)
+
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return required(
+        await insertPublicTopThreeAtomic(
+          {
+            id: randomUUID(),
+            ludoId,
+            slug,
+            theme,
+            games,
+            isHomepage: false,
+            status: publication.status,
+            revision: 1,
+            authorMemberId: memberId,
+            updatedByMemberId: memberId,
+            publishedByMemberId: publication.publishedByMemberId,
+            publishedAt: publication.publishedAt,
+            createdAt: now,
+            updatedAt: now,
+          },
+          siteIds,
+        ),
+      )
+    } catch (error) {
+      // Slug dérivé et invisible côté staff : une collision concurrente se résout seule.
+      if (chosenSlug === undefined && attempt === 0 && isUniqueViolation(error)) {
+        slug = uniqueSlugFallback(slug)
+        continue
+      }
+      writeError(error)
+    }
   }
 }
 
@@ -264,18 +316,25 @@ export async function updatePublicTopThree(
   }
 }
 
+async function ensureActiveSites(ludoId: string, siteIds: string[]) {
+  if (siteIds.length) {
+    await validatePublicSiteTargets(ludoId, siteIds)
+    return
+  }
+  const active = (await listActiveSiteRows(ludoId)).filter((site) => site.ludoId === ludoId)
+  if (!active.length) {
+    throw new PublicTopThreeServiceError('La publication exige au moins un lieu actif.')
+  }
+}
+
 async function ensurePublishable(current: NonNullable<TopThreeWithTargets>, ludoId: string) {
   if (!(await isPublicSiteEnabled(ludoId))) {
     throw new PublicTopThreeServiceError('Le module public doit être activé avant publication.')
   }
-  const siteIds = current.targets.map((target) => target.siteId)
-  if (siteIds.length) await validatePublicSiteTargets(ludoId, siteIds)
-  else {
-    const active = (await listActiveSiteRows(ludoId)).filter((site) => site.ludoId === ludoId)
-    if (!active.length) {
-      throw new PublicTopThreeServiceError('La publication exige au moins un lieu actif.')
-    }
-  }
+  await ensureActiveSites(
+    ludoId,
+    current.targets.map((target) => target.siteId),
+  )
 }
 
 async function transition(
@@ -414,7 +473,10 @@ export async function permanentlyDeletePublicTopThree(
 ) {
   revision(expectedRevision)
   const current = await getPublicTopThree(id, ludoId)
-  if (current.revision !== expectedRevision || !(await deletePublicTopThreeRow(id, ludoId, expectedRevision))) {
+  if (
+    current.revision !== expectedRevision ||
+    !(await deletePublicTopThreeRow(id, ludoId, expectedRevision))
+  ) {
     concurrent()
   }
 }

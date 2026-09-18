@@ -348,3 +348,11 @@ export async function deletePublicTopThreeRow(
     .returning({ id: publicTopThrees.id })
   return row
 }
+
+/** Projection minimale des slugs du tenant, pour dériver un slug libre sans le demander. */
+export function listPublicTopThreeSlugRows(ludoId: string) {
+  return db
+    .select({ slug: publicTopThrees.slug })
+    .from(publicTopThrees)
+    .where(eq(publicTopThrees.ludoId, ludoId))
+}
