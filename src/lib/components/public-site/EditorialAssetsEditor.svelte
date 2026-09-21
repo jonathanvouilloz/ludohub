@@ -38,7 +38,7 @@
   <div class="section-heading">
     <div>
       <h3>Image dans la publication</h3>
-      <p>Une image d’appoint, affichée dans le contenu après le premier paragraphe.</p>
+      <p>Facultative, elle s’affiche après le texte de la publication.</p>
     </div>
   </div>
 
@@ -59,7 +59,7 @@
       action="?/uploadSupportImage"
       enctype="multipart/form-data"
       use:enhance={toastEnhance({
-        success: support ? 'Image d’appoint remplacée.' : 'Image d’appoint ajoutée.',
+        success: support ? 'Image remplacée.' : 'Image ajoutée.',
         prepare: (formData) => compressEditorialImageFormData(formData, 'content'),
         onPending: (value) => (pending = value ? 'support' : null),
       })}
@@ -101,7 +101,7 @@
         <input type="hidden" name="revision" value={revision} />
         <input type="hidden" name="assetId" value={support.id} />
         <Button type="submit" size="sm" variant="outline" disabled={pending === support.id}>
-          Retirer l’image d’appoint
+          Retirer l’image
         </Button>
       </form>
     {/if}

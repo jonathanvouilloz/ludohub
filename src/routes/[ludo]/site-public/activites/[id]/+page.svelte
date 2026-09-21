@@ -1,10 +1,8 @@
 <script lang="ts">
   import { enhance } from '$app/forms'
   import ActivityDialog from '$lib/components/public-site/ActivityDialog.svelte'
-  import EditorialAssetsEditor from '$lib/components/public-site/EditorialAssetsEditor.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
-  import { compressEditorialImageFormData } from '$lib/media/editorial-image.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
   import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
@@ -183,66 +181,6 @@
       </section>
     </details>{/if}
 
-  {#if item.lifecycle === 'active'}<details class="secondary-settings">
-      <summary><span>Images et documents</span><small>Optionnel</small></summary>
-      <section class="settings-panel">
-      <div>
-        <h2>Images et documents</h2>
-        <p>Ajoutez une image de couverture et les documents utiles aux familles.</p>
-      </div>
-      {#if item.imageUrl}<img class="cover" src={item.imageUrl} alt={item.imageAlt ?? ''} />{/if}
-      <form
-        class="media"
-        method="POST"
-        action="?/uploadImage"
-        enctype="multipart/form-data"
-        use:enhance={toastEnhance({
-          success: item.imageUrl ? 'Image remplacée.' : 'Image ajoutée.',
-          prepare: (formData) => compressEditorialImageFormData(formData, 'content'),
-          onPending: (value) => (pending = value),
-        })}
-      >
-        <input type="hidden" name="id" value={item.id} /><input
-          type="hidden"
-          name="revision"
-          value={item.revision}
-        /><label
-          ><span>Choisir une image</span><input
-            type="file"
-            name="file"
-            accept="image/jpeg,image/png,image/webp"
-            required
-          /></label
-        ><label
-          ><span>Description de l’image</span><input
-            type="text"
-            name="alt"
-            value={item.imageAlt ?? ''}
-            maxlength="300"
-            required
-          /></label
-        ><Button type="submit" disabled={pending}
-          >{item.imageUrl ? 'Remplacer l’image' : 'Ajouter l’image'}</Button
-        >
-      </form>
-      {#if item.imageUrl}<form
-          method="POST"
-          action="?/removeImage"
-          use:enhance={toastEnhance({ success: 'Image retirée.' })}
-        >
-          <input type="hidden" name="id" value={item.id} /><input
-            type="hidden"
-            name="revision"
-            value={item.revision}
-          /><Button type="submit" variant="outline">Retirer l’image</Button>
-        </form>{/if}<EditorialAssetsEditor
-        ownerId={item.id}
-        revision={item.revision}
-        assets={item.assets}
-      />
-      </section>
-    </details>{/if}
-
   <details class="secondary-settings lifecycle-settings">
     <summary><span>Archiver ou supprimer cette activité</span><small>Actions avancées</small></summary>
   <section class="lifecycle settings-panel">
@@ -310,7 +248,7 @@
     </div>
   </section>
   </details>
-  <ActivityDialog bind:open={editOpen} activity={item} sites={data.sites} />
+  <ActivityDialog bind:open={editOpen} activity={item} />
 </main>
 
 <style>
@@ -386,8 +324,7 @@
     padding-left: var(--space-5);
   }
   .registration,
-  .feature,
-  .media {
+  .feature {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 1fr) auto;
     align-items: flex-end;
@@ -399,9 +336,6 @@
   }
   .feature {
     grid-template-columns: minmax(0, 1fr) auto;
-  }
-  .media {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
   }
   label {
     display: grid;
@@ -423,12 +357,6 @@
     border-radius: var(--radius-sm);
     background: var(--bg-card);
     color: var(--text-main);
-  }
-  .cover {
-    width: min(100%, 640px);
-    max-height: 380px;
-    border-radius: var(--radius-sm);
-    object-fit: cover;
   }
   .secondary-settings {
     overflow: hidden;
@@ -476,8 +404,7 @@
     .publication,
     .lifecycle,
     .registration,
-    .feature,
-    .media {
+    .feature {
       align-items: stretch;
       grid-template-columns: 1fr;
     }
@@ -492,8 +419,7 @@
     .publication :global(button),
     .actions :global(button),
     .registration :global(button),
-    .feature :global(button),
-    .media :global(button) {
+    .feature :global(button) {
       width: 100%;
     }
     .actions form {

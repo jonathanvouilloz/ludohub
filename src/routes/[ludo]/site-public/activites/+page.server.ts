@@ -11,10 +11,10 @@ import { MediaCompensationError, uploadAndRegisterMedia } from '$lib/server/medi
 import type { AuthorizedMediaScope } from '$lib/server/media/paths.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import {
+  addPublicActivitySupportImage,
   addPublicPdfAttachment,
   deletePublicEditorialAsset,
   PublicEditorialAssetServiceError,
-  upsertPublicSupportImage,
 } from '$lib/server/services/public-editorial-assets.js'
 import {
   archivePublicActivity,
@@ -129,7 +129,7 @@ function activityType(data: FormData): PublicActivityInput['type'] {
 function createInput(data: FormData): PublicActivityInput {
   const type = activityType(data)
   return {
-    slug: String(data.get('slug') ?? ''),
+    slug: String(data.get('slug') || data.get('title') || ''),
     title: String(data.get('title') ?? ''),
     summary: String(data.get('summary') ?? ''),
     body: String(data.get('body') ?? ''),
@@ -142,9 +142,17 @@ function createInput(data: FormData): PublicActivityInput {
 }
 
 function updateInput(data: FormData): PublicActivityUpdateInput {
+  const type = activityType(data)
   return {
-    ...createInput(data),
-    ...(data.has('slug') ? { slug: String(data.get('slug') ?? '') } : { slug: undefined }),
+    ...(data.has('slug') ? { slug: String(data.get('slug') ?? '') } : {}),
+    title: String(data.get('title') ?? ''),
+    summary: String(data.get('summary') ?? ''),
+    body: String(data.get('body') ?? ''),
+    location: String(data.get('location') ?? ''),
+    type,
+    recurrenceRule: type === 'recurring' ? String(data.get('recurrenceRule') ?? '') : null,
+    ...scheduleInput(data),
+    ...(data.has('targetMode') ? targetingInput(data) : {}),
   }
 }
 
@@ -212,6 +220,40 @@ const ACTIVITY_PDF_POLICY = {
   allowedTypes: ['application/pdf'] as const,
 }
 
+function optionalFile(data: FormData, name: string, label: string) {
+  const value = data.get(name)
+  if (value == null) return null
+  if (!(value instanceof File)) throw new MediaStorageError(`SÃ©lectionnez ${label}.`)
+  return value.size > 0 ? value : null
+}
+
+function optionalFiles(data: FormData, name: string, label: string) {
+  return data.getAll(name).flatMap((value) => {
+    if (!(value instanceof File)) throw new MediaStorageError(`SÃ©lectionnez ${label}.`)
+    return value.size > 0 ? [value] : []
+  })
+}
+
+function requiredText(data: FormData, name: string, label: string, maxLength: number) {
+  const value = String(data.get(name) ?? '').trim()
+  if (!value || value.length > maxLength) {
+    throw new PublicActivityServiceError(`${label} doit contenir entre 1 et ${maxLength} caractÃ¨res.`)
+  }
+  return value
+}
+
+function imageAlt(data: FormData, name: string, fallback: string) {
+  const value = String(data.get(name) ?? '').trim() || fallback
+  if (value.length > 300) {
+    throw new PublicActivityServiceError("Le texte alternatif de l'image ne peut pas dÃ©passer 300 caractÃ¨res.")
+  }
+  return value
+}
+
+function shouldBeVisible(data: FormData) {
+  return data.get('visible') === 'true'
+}
+
 async function cleanupStoredImage(input: {
   scope: AuthorizedMediaScope
   pathname: string | null
@@ -233,6 +275,135 @@ async function cleanupStoredImage(input: {
       metadata: { operation: input.operation },
     })
   }
+}
+
+async function applyActivityMedia(input: {
+  data: FormData
+  ludoId: string
+  memberId: string
+  activity: Awaited<ReturnType<typeof getPublicActivity>>
+}) {
+  const { data, ludoId, memberId } = input
+  let activity = input.activity
+  const cover = optionalFile(data, 'coverFile', 'une image de couverture')
+  if (cover) {
+    const registered = await uploadAndRegisterMedia({
+      authorize: () => authorizePublicActivityMediaScope(ludoId, activity.id, activity.revision),
+      upload: (scope) => uploadPublicSiteMedia({ scope, file: cover, policy: ACTIVITY_IMAGE_POLICY }),
+      register: async (scope, blob) => ({
+        scope,
+        result: await setPublicActivityImage(
+          ludoId,
+          activity.id,
+          memberId,
+          activity.revision,
+          scope,
+          blob,
+          imageAlt(data, 'coverAlt', activity.title),
+        ),
+      }),
+      cleanup: deletePublicSiteMedia,
+    })
+    await cleanupStoredImage({
+      scope: registered.scope,
+      pathname: registered.result.previousStorageKey,
+      ludoId,
+      memberId,
+      activityId: activity.id,
+      operation: 'replace',
+    })
+    activity = registered.result.activity
+  } else if (data.get('removeCover') === 'on') {
+    const scope = await authorizePublicActivityMediaScope(ludoId, activity.id, activity.revision)
+    const result = await clearPublicActivityImage(ludoId, activity.id, memberId, activity.revision)
+    await cleanupStoredImage({
+      scope,
+      pathname: result.previousStorageKey,
+      ludoId,
+      memberId,
+      activityId: activity.id,
+      operation: 'remove',
+    })
+    activity = result.activity
+  }
+
+  const images = optionalFiles(data, 'contentImageFiles', "les images de l'activitÃ©")
+  const removeAssetIds = data.getAll('removeAssetIds').map(String)
+  const currentImageCount = activity.assets.filter(
+    (asset) => asset.kind === 'support_image' && !removeAssetIds.includes(asset.id),
+  ).length
+  if (currentImageCount + images.length > 5) {
+    throw new PublicActivityServiceError("Une activitÃ© peut contenir au maximum 5 images.")
+  }
+  const alt = imageAlt(data, 'contentImagesAlt', activity.title)
+  for (const file of images) {
+    await uploadAndRegisterMedia({
+      authorize: () => authorizePublicActivityMediaScope(ludoId, activity.id, activity.revision),
+      upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: ACTIVITY_IMAGE_POLICY }),
+      register: (scope, blob) =>
+        addPublicActivitySupportImage({
+          ludoId,
+          owner: { type: 'activity', id: activity.id },
+          memberId,
+          scope,
+          blob,
+          alt,
+        }),
+      cleanup: deletePublicSiteMedia,
+    })
+  }
+
+  const attachment = optionalFile(data, 'attachmentFile', 'un PDF')
+  if (attachment) {
+    await uploadAndRegisterMedia({
+      authorize: () => authorizePublicActivityMediaScope(ludoId, activity.id, activity.revision),
+      upload: (scope) => uploadPublicSiteMedia({ scope, file: attachment, policy: ACTIVITY_PDF_POLICY }),
+      register: (scope, blob) =>
+        addPublicPdfAttachment({
+          ludoId,
+          owner: { type: 'activity', id: activity.id },
+          memberId,
+          scope,
+          blob,
+          title: requiredText(data, 'attachmentTitle', 'Le titre du PDF', 500),
+          fileName: attachment.name,
+        }),
+      cleanup: deletePublicSiteMedia,
+    })
+  }
+
+  for (const assetId of removeAssetIds) {
+    const scope = await authorizePublicActivityMediaScope(ludoId, activity.id, activity.revision)
+    const asset = await deletePublicEditorialAsset(assetId, ludoId, { type: 'activity', id: activity.id })
+    await cleanupStoredImage({
+      scope,
+      pathname: asset.storageKey,
+      ludoId,
+      memberId,
+      activityId: activity.id,
+      operation: 'asset-remove',
+    })
+  }
+  return activity
+}
+
+async function applyActivityVisibility(input: {
+  activity: Awaited<ReturnType<typeof getPublicActivity>>
+  ludoId: string
+  memberId: string
+  visible: boolean
+}) {
+  let activity = input.activity
+  if (input.visible && activity.status !== 'published') {
+    activity = (await publishPublicActivity(activity.id, input.ludoId, input.memberId, activity.revision)).activity
+  }
+  if (!input.visible && activity.status !== 'hidden') {
+    if (activity.status === 'draft') {
+      activity = (await publishPublicActivity(activity.id, input.ludoId, input.memberId, activity.revision)).activity
+    }
+    activity = (await hidePublicActivity(activity.id, input.ludoId, input.memberId, activity.revision)).activity
+  }
+  return activity
 }
 
 export const load: PageServerLoad = async (event) => {
@@ -318,13 +489,20 @@ export const actions: Actions = {
     const data = await event.request.formData()
     return run(async () => {
       const input = createInput(data)
-      const activity = await createPublicActivity(ludo.id, member.id, input)
+      let activity = await createPublicActivity(ludo.id, member.id, input)
+      activity = await applyActivityMedia({ data, ludoId: ludo.id, memberId: member.id, activity })
+      activity = await applyActivityVisibility({
+        activity,
+        ludoId: ludo.id,
+        memberId: member.id,
+        visible: shouldBeVisible(data),
+      })
       await audit({
         action: 'public_activity.created',
         ludoId: ludo.id,
         memberId: member.id,
         activityId: activity.id,
-        metadata: { ...targetMetadata(input), type: input.type },
+        metadata: { ...targetMetadata(input), type: input.type, visible: activity.status === 'published' },
       })
       return { success: true }
     })
@@ -336,19 +514,26 @@ export const actions: Actions = {
     const id = String(data.get('id') ?? '')
     return run(async () => {
       const input = updateInput(data)
-      const activity = await updatePublicActivity(
+      let activity = await updatePublicActivity(
         id,
         ludo.id,
         input,
         member.id,
         parseRevision(data),
       )
+      activity = await applyActivityMedia({ data, ludoId: ludo.id, memberId: member.id, activity })
+      activity = await applyActivityVisibility({
+        activity,
+        ludoId: ludo.id,
+        memberId: member.id,
+        visible: shouldBeVisible(data),
+      })
       await audit({
         action: 'public_activity.updated',
         ludoId: ludo.id,
         memberId: member.id,
         activityId: activity.id,
-        metadata: { ...targetMetadata(input as PublicActivityTargeting), type: input.type },
+        metadata: { type: input.type, visible: activity.status === 'published' },
       })
       return { success: true }
     })
@@ -560,7 +745,7 @@ export const actions: Actions = {
         upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: ACTIVITY_IMAGE_POLICY }),
         register: async (scope, blob) => ({
           scope,
-          result: await upsertPublicSupportImage({
+        result: await addPublicActivitySupportImage({
             ludoId: ludo.id,
             owner: { type: 'activity', id },
             memberId: member.id,
@@ -572,14 +757,6 @@ export const actions: Actions = {
           }),
         }),
         cleanup: deletePublicSiteMedia,
-      })
-      await cleanupStoredImage({
-        scope: registered.scope,
-        pathname: registered.result.previousStorageKey,
-        ludoId: ludo.id,
-        memberId: member.id,
-        activityId: id,
-        operation: 'support-replace',
       })
       await audit({
         action: 'public_activity.support_image_updated',

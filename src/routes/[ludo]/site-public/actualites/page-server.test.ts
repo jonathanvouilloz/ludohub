@@ -14,6 +14,15 @@ vi.mock('$lib/server/media/media-service.js', () => {
   class MediaCompensationError extends Error {}
   return { MediaCompensationError, uploadAndRegisterMedia: vi.fn() }
 })
+vi.mock('$lib/server/services/public-editorial-assets.js', () => {
+  class PublicEditorialAssetServiceError extends Error {}
+  return {
+    PublicEditorialAssetServiceError,
+    addPublicPdfAttachment: vi.fn(),
+    deletePublicEditorialAsset: vi.fn(),
+    upsertPublicSupportImage: vi.fn(),
+  }
+})
 vi.mock('$lib/server/services/public-news.js', () => {
   class PublicNewsServiceError extends Error {}
   return {
@@ -41,6 +50,10 @@ import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import { deletePublicSiteMedia, uploadPublicSiteMedia } from '$lib/server/media/blob-storage.js'
 import { uploadAndRegisterMedia } from '$lib/server/media/media-service.js'
+import {
+  addPublicPdfAttachment,
+  upsertPublicSupportImage,
+} from '$lib/server/services/public-editorial-assets.js'
 import {
   authorizePublicNewsMediaScope,
   clearPublicNewsImage,
@@ -96,6 +109,15 @@ const news = {
 function event(fields: Array<[string, string]> = []) {
   const formData = new FormData()
   for (const [name, value] of fields) formData.append(name, value)
+  return {
+    params: { ludo: 'test' },
+    locals: {},
+    cookies: {},
+    request: new Request('http://local.test', { method: 'POST', body: formData }),
+  }
+}
+
+function eventWithFormData(formData: FormData) {
   return {
     params: { ludo: 'test' },
     locals: {},
@@ -164,6 +186,11 @@ beforeEach(() => {
     news: { ...news, revision: 2 },
     previousStorageKey: OLD_PATH,
   } as never)
+  vi.mocked(upsertPublicSupportImage).mockResolvedValue({
+    asset: { id: 'support-image' },
+    previousStorageKey: null,
+  } as never)
+  vi.mocked(addPublicPdfAttachment).mockResolvedValue({ id: 'attachment' } as never)
   vi.mocked(uploadAndRegisterMedia).mockImplementation(async (input) => {
     const scope = await input.authorize()
     const blob = await input.upload(scope)
@@ -197,8 +224,15 @@ describe('load actualités', () => {
 })
 
 describe('actions actualités', () => {
-  it('crée un brouillon tenant-scopé avec auteur et ciblage tous', async () => {
-    await actions.create!(event(newsFields([['targetMode', 'all']])) as never)
+  it('crée une actualité tenant-scopée, visible par défaut dans le formulaire, avec ciblage tous', async () => {
+    await actions.create!(
+      event(
+        newsFields([
+          ['targetMode', 'all'],
+          ['visible', 'true'],
+        ]),
+      ) as never,
+    )
 
     expect(createPublicNews).toHaveBeenCalledWith(LUDO_ID, MEMBER_ID, {
       slug: 'nouvelle-actualite',
@@ -214,12 +248,65 @@ describe('actions actualités', () => {
         actorLudoId: LUDO_ID,
         actorMemberId: MEMBER_ID,
         entityId: NEWS_ID,
-        metadata: { targetMode: 'all', targetSiteIds: [] },
+        metadata: { targetMode: 'all', targetSiteIds: [], visible: true },
       }),
     )
     const metadata = vi.mocked(emitAuditEvent).mock.calls[0][0].metadata
     expect(metadata).not.toHaveProperty('summary')
     expect(metadata).not.toHaveProperty('body')
+  })
+
+  it('ajoute directement les médias facultatifs avant de rendre l’actualité visible', async () => {
+    const formData = new FormData()
+    for (const [name, value] of newsFields([
+      ['targetMode', 'all'],
+      ['visible', 'true'],
+      ['coverAlt', 'Une table de jeux'],
+      ['contentImageAlt', 'Des enfants qui jouent'],
+      ['attachmentTitle', 'Programme complet'],
+    ])) {
+      formData.set(name, value)
+    }
+    formData.set(
+      'coverFile',
+      new File([new Uint8Array([0xff, 0xd8, 0xff, 0])], 'cover.jpg', { type: 'image/jpeg' }),
+    )
+    formData.set(
+      'contentImageFile',
+      new File([new Uint8Array([0xff, 0xd8, 0xff, 0])], 'contenu.jpg', { type: 'image/jpeg' }),
+    )
+    formData.set(
+      'attachmentFile',
+      new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d])], 'programme.pdf', {
+        type: 'application/pdf',
+      }),
+    )
+
+    await actions.create!(eventWithFormData(formData) as never)
+
+    expect(setPublicNewsImage).toHaveBeenCalledWith(
+      LUDO_ID,
+      NEWS_ID,
+      MEMBER_ID,
+      1,
+      SCOPE,
+      storedBlob,
+      'Une table de jeux',
+    )
+    expect(upsertPublicSupportImage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: { type: 'news', id: NEWS_ID },
+        alt: 'Des enfants qui jouent',
+      }),
+    )
+    expect(addPublicPdfAttachment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        owner: { type: 'news', id: NEWS_ID },
+        title: 'Programme complet',
+        fileName: 'programme.pdf',
+      }),
+    )
+    expect(publishPublicNews).toHaveBeenCalledWith(NEWS_ID, LUDO_ID, MEMBER_ID, 2)
   })
 
   it('met à jour avec ciblage explicite, acteur et révision CAS', async () => {

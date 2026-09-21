@@ -18,6 +18,7 @@ vi.mock('../db/public-editorial-assets.js', () => ({
 
 import { createAuthorizedMediaScope, publicSiteMediaPath } from '../media/paths.js'
 import {
+  addPublicActivitySupportImage,
   addPublicPdfAttachment,
   deletePublicEditorialAsset,
   PublicEditorialAssetServiceError,
@@ -34,6 +35,11 @@ const newsScope = createAuthorizedMediaScope({
   ludoId: LUDO_ID,
   domain: 'news',
   entityId: NEWS_ID,
+})
+const activityScope = createAuthorizedMediaScope({
+  ludoId: LUDO_ID,
+  domain: 'activities',
+  entityId: ACTIVITY_ID,
 })
 
 function blob(type: 'image/webp' | 'application/pdf') {
@@ -140,6 +146,32 @@ describe('médias complémentaires publics', () => {
         fileName: 'trop.pdf',
       }),
     ).rejects.toThrow('Maximum 5 PDF')
+    expect(db.insert).not.toHaveBeenCalled()
+  })
+
+  it("refuse une sixième image dans une activité", async () => {
+    db.list.mockResolvedValue(
+      Array.from({ length: 5 }, (_, index) => ({ id: `image-${index}`, kind: 'support_image' })),
+    )
+    const activityBlob = {
+      ...blob('image/webp'),
+      pathname: publicSiteMediaPath({
+        scope: activityScope,
+        mediaType: 'image/webp',
+        blobId: BLOB_ID,
+      }),
+    }
+
+    await expect(
+      addPublicActivitySupportImage({
+        ludoId: LUDO_ID,
+        owner: { type: 'activity', id: ACTIVITY_ID },
+        memberId: MEMBER_ID,
+        scope: activityScope,
+        blob: activityBlob,
+        alt: 'Atelier en famille',
+      }),
+    ).rejects.toThrow('Maximum 5 images')
     expect(db.insert).not.toHaveBeenCalled()
   })
 

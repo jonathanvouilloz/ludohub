@@ -16,6 +16,14 @@
     status: 'draft' | 'published' | 'hidden'
     lifecycle: 'active' | 'archived' | 'trashed'
     featuredRank: number | null
+    assets: Array<{
+      id: string
+      kind: 'support_image' | 'pdf_attachment'
+      url: string
+      fileName: string | null
+      caption: string | null
+      alt: string | null
+    }>
     targets: Array<{ siteId: string; site: ActivitySite }>
     dates: Array<{ startsAt: Date; endsAt: Date | null }>
     exceptions: Array<{ excludedAt: Date; reason: string | null }>
@@ -28,6 +36,11 @@
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import {
+    compressEditorialImageEntries,
+    compressEditorialImageFields,
+    compressEditorialPdfFields,
+  } from '$lib/media/editorial-image.js'
   import RichTextEditor from './RichTextEditor.svelte'
   import { toastEnhance } from '$lib/utils/enhance.js'
   import { formatZurichDateTimeLocal } from '$lib/zurich-wall-clock.js'
@@ -35,27 +48,25 @@
   let {
     open = $bindable(false),
     activity = null,
-    sites,
-  }: { open?: boolean; activity?: EditableActivity | null; sites: ActivitySite[] } = $props()
+  }: { open?: boolean; activity?: EditableActivity | null } = $props()
 
   let title = $state('')
-  let slug = $state('')
   let summary = $state('')
   let body = $state('')
   let location = $state('')
   let type = $state<EditableActivity['type']>('one_off')
   let recurrenceRule = $state('')
-  let targetMode = $state<'all' | 'explicit'>('all')
-  let selectedSiteIds = $state<string[]>([])
   let dates = $state<Array<{ key: number; startsAt: string; endsAt: string }>>([])
   let exceptions = $state<Array<{ key: number; excludedAt: string; reason: string }>>([])
   let nextKey = 1
-  let slugManuallyEdited = $state(false)
+  let visible = $state(true)
   let submitting = $state(false)
   let submitError = $state('')
 
   const isEdit = $derived(activity !== null)
-  const slugEditable = $derived(!activity?.publishedAt)
+  const contentImages = $derived(
+    activity?.assets.filter((asset) => asset.kind === 'support_image') ?? [],
+  )
   const scheduleValid = $derived(
     type === 'permanent' ||
       (type === 'recurring'
@@ -66,16 +77,12 @@
   $effect(() => {
     if (open) {
       title = activity?.title ?? ''
-      slug = activity?.slug ?? ''
       summary = activity?.summary ?? ''
       body = activity?.body ?? ''
       location = activity?.location ?? ''
       type = activity?.type ?? 'one_off'
       recurrenceRule = activity?.recurrenceRule ?? ''
-      targetMode = activity && activity.targets.length > 0 ? 'explicit' : 'all'
-      selectedSiteIds =
-        activity?.targets.filter((target) => target.site.isActive).map((target) => target.siteId) ??
-        []
+      visible = activity ? activity.status === 'published' : true
       dates =
         activity?.dates.map((date) => ({
           key: nextKey++,
@@ -88,24 +95,12 @@
           excludedAt: formatZurichDateTimeLocal(exception.excludedAt),
           reason: exception.reason ?? '',
         })) ?? []
-      slugManuallyEdited = activity !== null
       submitError = ''
     }
   })
 
-  function slugify(value: string) {
-    return value
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 120)
-  }
-
   function updateTitle(value: string) {
     title = value
-    if (slugEditable && !slugManuallyEdited) slug = slugify(value)
   }
 
   function addDate() {
@@ -127,9 +122,17 @@
     <form
       method="POST"
       action={isEdit ? '?/update' : '?/create'}
+      enctype="multipart/form-data"
       use:enhance={toastEnhance({
         success: isEdit ? 'Activité mise à jour.' : 'Brouillon créé.',
         errorMode: 'inline',
+        prepare: async (formData) => {
+          await Promise.all([
+            compressEditorialImageFields(formData, ['coverFile'], 'content'),
+            compressEditorialImageEntries(formData, 'contentImageFiles', 'gallery'),
+            compressEditorialPdfFields(formData, ['attachmentFile']),
+          ])
+        },
         onPending: (pending) => {
           submitting = pending
           if (pending) submitError = ''
@@ -141,6 +144,10 @@
       {#if isEdit}
         <input type="hidden" name="id" value={activity?.id} />
         <input type="hidden" name="revision" value={activity?.revision} />
+      {/if}
+      {#if !isEdit}
+        <input type="hidden" name="targetMode" value="all" />
+        <input type="hidden" name="slug" value={title} />
       {/if}
       <input
         type="hidden"
@@ -169,26 +176,6 @@
           maxlength={180}
           required
         />
-      </div>
-
-      <div class="field">
-        <Label for="activity-slug">Adresse de la page</Label>
-        {#if slugEditable}
-          <Input
-            id="activity-slug"
-            name="slug"
-            value={slug}
-            oninput={(event) => {
-              slug = event.currentTarget.value
-              slugManuallyEdited = true
-            }}
-            maxlength={120}
-            required
-          />
-        {:else}
-          <code>/{activity?.slug}</code>
-          <p class="hint">Adresse immuable depuis la première publication.</p>
-        {/if}
       </div>
 
       <div class="field">
@@ -302,35 +289,58 @@
       {/if}
 
       <fieldset>
-        <legend>Lieux concernés</legend>
-        <div class="mode-grid">
-          <label
-            ><input type="radio" name="targetMode" value="all" bind:group={targetMode} /> Tous les lieux
-            actifs</label
-          >
-          <label
-            ><input type="radio" name="targetMode" value="explicit" bind:group={targetMode} /> Lieux précis</label
-          >
-        </div>
-        {#if targetMode === 'explicit'}
-          <div class="site-list">
-            {#each sites as site (site.id)}
-              <label class:disabled={!site.isActive}>
-                <input
-                  type="checkbox"
-                  name="siteIds"
-                  value={site.id}
-                  bind:group={selectedSiteIds}
-                  disabled={!site.isActive}
-                />
-                {site.name}{site.isActive ? '' : ' — inactif'}
-              </label>
-            {/each}
-          </div>
-          {#if selectedSiteIds.length === 0}
-            <p class="warning" role="alert">Sélectionnez au moins un lieu actif.</p>
+        <legend>Publication</legend>
+        <p class="hint">La date de publication est ajoutée automatiquement à la première mise en ligne.</p>
+        <label class="visibility-choice">
+          <input type="checkbox" name="visible" value="true" bind:checked={visible} />
+          <span>
+            <strong>Visible sur le site</strong>
+            <small>{visible
+              ? 'L’activité sera publiée dès son enregistrement.'
+              : 'L’activité sera enregistrée, mais restera cachée du site.'}</small>
+          </span>
+        </label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Images et document</legend>
+        <p class="hint">Tous ces ajouts sont facultatifs. Les images et le PDF sont optimisés avant l’envoi.</p>
+        <div class="field">
+          <Label for="activity-cover-file">Image de couverture</Label>
+          {#if activity?.imageUrl}
+            <img class="image-preview" src={activity.imageUrl} alt={activity.imageAlt ?? ''} />
           {/if}
-        {/if}
+          <input id="activity-cover-file" type="file" name="coverFile" accept="image/jpeg,image/png,image/webp" />
+          <Input name="coverAlt" value={activity?.imageAlt ?? ''} maxlength={300} placeholder="Description de l’image (facultative)" />
+          {#if activity?.imageUrl}
+            <label class="remove-choice"><input type="checkbox" name="removeCover" /> Retirer l’image de couverture</label>
+          {/if}
+        </div>
+        <div class="field">
+          <Label for="activity-content-images">Images dans l’activité</Label>
+          <input id="activity-content-images" type="file" name="contentImageFiles" accept="image/jpeg,image/png,image/webp" multiple />
+          <Input name="contentImagesAlt" maxlength={300} placeholder="Description des images (facultative)" />
+          <p class="hint">Jusqu’à 5 images, affichées sous le texte. {contentImages.length}/5 ajoutée{contentImages.length > 1 ? 's' : ''}.</p>
+          {#if contentImages.length}
+            <div class="image-list">
+              {#each contentImages as image (image.id)}
+                <label class="media-item"><img src={image.url} alt={image.alt ?? ''} /><span><input type="checkbox" name="removeAssetIds" value={image.id} /> Retirer cette image</span></label>
+              {/each}
+            </div>
+          {/if}
+        </div>
+        <div class="field">
+          <Label for="activity-attachment-file">Document PDF</Label>
+          <input id="activity-attachment-file" type="file" name="attachmentFile" accept="application/pdf" />
+          <Input name="attachmentTitle" maxlength={500} placeholder="Titre du document" />
+          {#if activity?.assets.filter((asset) => asset.kind === 'pdf_attachment').length}
+            <ul class="attachments">
+              {#each activity.assets.filter((asset) => asset.kind === 'pdf_attachment') as attachment (attachment.id)}
+                <li><label class="remove-choice"><input type="checkbox" name="removeAssetIds" value={attachment.id} /> Retirer « {attachment.caption ?? attachment.fileName} »</label></li>
+              {/each}
+            </ul>
+          {/if}
+        </div>
       </fieldset>
 
       {#if submitError}<p class="error" role="alert">{submitError}</p>{/if}
@@ -340,12 +350,10 @@
           type="submit"
           disabled={submitting ||
             !title.trim() ||
-            !slug.trim() ||
             !summary.trim() ||
             !body.trim() ||
-            !scheduleValid ||
-            (targetMode === 'explicit' && selectedSiteIds.length === 0)}
-          >{submitting ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le brouillon'}</Button
+            !scheduleValid}
+          >{submitting ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer l’activité'}</Button
         >
       </Dialog.Footer>
     </form>
@@ -388,14 +396,12 @@
   textarea {
     resize: vertical;
   }
-  .mode-grid,
-  .site-list {
+  .mode-grid {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-2);
   }
-  .mode-grid label,
-  .site-list label {
+  .mode-grid label {
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
@@ -403,10 +409,6 @@
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-  }
-  .disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
   }
   .section-head,
   .schedule-row {
@@ -437,10 +439,55 @@
     background: var(--danger-light);
     color: var(--danger);
   }
-  code {
-    padding: var(--space-2) var(--space-3);
+  .visibility-choice,
+  .remove-choice,
+  .media-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  .visibility-choice {
+    padding: var(--space-3);
+    border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    background: var(--bg-muted);
+  }
+  .visibility-choice span {
+    display: grid;
+    gap: var(--space-1);
+  }
+  .visibility-choice small {
+    color: var(--text-muted);
+  }
+  input[type='file'] {
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+  }
+  .image-preview {
+    width: min(100%, 460px);
+    max-height: 220px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+  }
+  .image-list,
+  .attachments {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .media-item {
+    align-items: center;
+  }
+  .media-item img {
+    width: 72px;
+    height: 54px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
   }
   @media (max-width: 640px) {
     .schedule-row {

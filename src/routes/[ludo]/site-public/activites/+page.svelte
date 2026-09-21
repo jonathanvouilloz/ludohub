@@ -100,7 +100,7 @@
           />{/each}
       </div>{/if}
   {/if}
-  <ActivityDialog bind:open={dialogOpen} activity={null} sites={data.sites} />
+  <ActivityDialog bind:open={dialogOpen} activity={null} />
 </main>
 
 <style>

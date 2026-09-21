@@ -1,22 +1,16 @@
 <script lang="ts">
   import NewsForm from '$lib/components/public-site/NewsForm.svelte'
   let { data } = $props()
-  const detailHref = $derived(`/${data.ludo.slug}/site-public/actualites/${data.news.id}`)
+  const listHref = $derived(`/${data.ludo.slug}/site-public/actualites`)
 </script>
 
 <svelte:head><title>Modifier {data.news.title} · Actualités</title></svelte:head>
 <main class="form-page">
   <header>
     <h1>Modifier l’actualité</h1>
-    <p>Enregistrez le contenu avant de revenir à sa fiche.</p>
+    <p>Modifiez le contenu, les images, le document ou la visibilité au même endroit.</p>
   </header>
-  <NewsForm
-    news={data.news}
-    sites={data.sites}
-    action="?/update"
-    cancelHref={detailHref}
-    successHref={detailHref}
-  />
+  <NewsForm news={data.news} action="?/update" cancelHref={listHref} successHref={listHref} />
 </main>
 
 <style>

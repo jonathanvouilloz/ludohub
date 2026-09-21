@@ -1,5 +1,4 @@
 <script lang="ts" module>
-  export type NewsFormSite = { id: string; name: string; isActive: boolean }
   export type NewsFormValue = {
     id: string
     revision: number
@@ -7,8 +6,17 @@
     title: string
     summary: string
     body: string
-    publishedAt: Date | null
-    targets: Array<{ siteId: string; site: NewsFormSite }>
+    status: 'draft' | 'published' | 'hidden'
+    imageUrl: string | null
+    imageAlt: string | null
+    assets: Array<{
+      id: string
+      kind: 'support_image' | 'pdf_attachment'
+      url: string
+      fileName: string | null
+      caption: string | null
+      alt: string | null
+    }>
   }
 </script>
 
@@ -18,31 +26,33 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
+  import {
+    compressEditorialImageFields,
+    compressEditorialPdfFields,
+  } from '$lib/media/editorial-image.js'
   import RichTextEditor from './RichTextEditor.svelte'
   import { toastEnhance } from '$lib/utils/enhance.js'
 
   let {
     news = null,
-    sites,
     action,
     cancelHref,
     successHref,
   }: {
     news?: NewsFormValue | null
-    sites: NewsFormSite[]
     action: string
     cancelHref: string
     successHref: string
   } = $props()
   const isEdit = $derived(news !== null)
-  const slugEditable = $derived(!news?.publishedAt)
+  const supportImage = $derived(
+    news?.assets.find((asset) => asset.kind === 'support_image') ?? null,
+  )
   let title = $state('')
   let slug = $state('')
   let summary = $state('')
   let body = $state('')
-  let slugManuallyEdited = $state(false)
-  let targetMode = $state<'all' | 'explicit'>('all')
-  let selectedSiteIds = $state<string[]>([])
+  let visible = $state(true)
   let initializedFor = $state<string | null>(null)
   let submitting = $state(false)
   let submitError = $state('')
@@ -54,10 +64,7 @@
     slug = news?.slug ?? ''
     summary = news?.summary ?? ''
     body = news?.body ?? ''
-    slugManuallyEdited = news !== null
-    targetMode = news && news.targets.length > 0 ? 'explicit' : 'all'
-    selectedSiteIds =
-      news?.targets.filter((target) => target.site.isActive).map((target) => target.siteId) ?? []
+    visible = news ? news.status === 'published' : true
     initializedFor = key
   })
 
@@ -72,17 +79,24 @@
   }
   function updateTitle(value: string) {
     title = value
-    if (slugEditable && !slugManuallyEdited) slug = slugify(value)
+    slug = slugify(value)
   }
 </script>
 
 <form
   method="POST"
   {action}
+  enctype="multipart/form-data"
   use:enhance={toastEnhance({
-    success: isEdit ? 'Actualité mise à jour.' : 'Brouillon créé.',
+    success: isEdit ? 'Actualité mise à jour.' : 'Actualité créée.',
     errorMode: 'inline',
     skipUpdate: true,
+    prepare: async (formData) => {
+      await Promise.all([
+        compressEditorialImageFields(formData, ['coverFile', 'contentImageFile'], 'content'),
+        compressEditorialPdfFields(formData, ['attachmentFile']),
+      ])
+    },
     onPending: (pending) => {
       submitting = pending
       if (pending) submitError = ''
@@ -96,6 +110,10 @@
       name="revision"
       value={news?.revision}
     />{/if}
+  {#if !isEdit}
+    <input type="hidden" name="targetMode" value="all" />
+    <input type="hidden" name="slug" value={slug} />
+  {/if}
 
   <section aria-labelledby="content-title">
     <div class="section-heading">
@@ -136,80 +154,101 @@
     </div>
   </section>
 
-  <section aria-labelledby="visibility-title">
+  <section aria-labelledby="publication-title">
     <div class="section-heading">
-      <h2 id="visibility-title">Lieux concernés</h2>
-      <p>Choisissez où cette actualité sera visible.</p>
+      <h2 id="publication-title">Publication</h2>
+      <p>La date de publication est ajoutée automatiquement à la première mise en ligne.</p>
     </div>
-    <div class="choice-list">
-      <label class="choice"
-        ><input type="radio" name="targetMode" value="all" bind:group={targetMode} /><span
-          ><strong>Tous les lieux actifs</strong><small
-            >Les nouveaux lieux seront automatiquement inclus.</small
-          ></span
-        ></label
-      >
-      <label class="choice"
-        ><input type="radio" name="targetMode" value="explicit" bind:group={targetMode} /><span
-          ><strong>Seulement certains lieux</strong><small
-            >Choisissez au moins un lieu ci-dessous.</small
-          ></span
-        ></label
-      >
-    </div>
-    {#if targetMode === 'explicit'}
-      <div class="site-list">
-        {#each sites as site (site.id)}<label class="site" class:disabled={!site.isActive}
-            ><input
-              type="checkbox"
-              name="siteIds"
-              value={site.id}
-              bind:group={selectedSiteIds}
-              disabled={!site.isActive}
-            /><span>{site.name}{site.isActive ? '' : ' — inactif'}</span></label
-          >{/each}
-      </div>
-      {#if selectedSiteIds.length === 0}<p class="warning" role="alert">
-          Choisissez au moins un lieu actif.
-        </p>{/if}
-    {/if}
+    <label class="visibility-choice">
+      <input type="checkbox" name="visible" value="true" bind:checked={visible} />
+      <span>
+        <strong>Visible sur le site</strong>
+        <small
+          >{visible
+            ? 'L’actualité sera publiée dès son enregistrement.'
+            : 'L’actualité sera enregistrée, mais restera cachée du site.'}</small
+        >
+      </span>
+    </label>
   </section>
 
-  <details class="advanced">
-    <summary>Options avancées</summary>
-    <div class="field">
-      <Label for="news-slug">Adresse de la page</Label>{#if slugEditable}<Input
-          id="news-slug"
-          name="slug"
-          value={slug}
-          oninput={(event) => {
-            slug = event.currentTarget.value
-            slugManuallyEdited = true
-          }}
-          maxlength={120}
-        />
-        <p class="hint">
-          Générée automatiquement depuis le titre. À modifier uniquement si nécessaire.
-        </p>{:else}<code>/{news?.slug}</code>
-        <p class="hint">Cette adresse est définitive depuis la première publication.</p>{/if}
+  <section aria-labelledby="media-title">
+    <div class="section-heading">
+      <h2 id="media-title">Images et document</h2>
+      <p>Tous ces ajouts sont facultatifs.</p>
     </div>
-  </details>
+    <div class="field">
+      <Label for="news-cover-file">Image de couverture</Label>
+      {#if news?.imageUrl}<img
+          class="image-preview"
+          src={news.imageUrl}
+          alt={news.imageAlt ?? ''}
+        />{/if}
+      <input
+        id="news-cover-file"
+        type="file"
+        name="coverFile"
+        accept="image/jpeg,image/png,image/webp"
+      />
+      <Input
+        name="coverAlt"
+        value={news?.imageAlt ?? ''}
+        maxlength={300}
+        placeholder="Description de l’image"
+      />
+      {#if news?.imageUrl}<label class="remove-choice"
+          ><input type="checkbox" name="removeCover" /> Retirer l’image de couverture</label
+        >{/if}
+    </div>
+    <div class="field">
+      <Label for="news-content-image-file">Image dans l’actualité</Label>
+      {#if supportImage}
+        <img class="image-preview" src={supportImage.url} alt={supportImage.alt ?? ''} />
+      {/if}
+      <input
+        id="news-content-image-file"
+        type="file"
+        name="contentImageFile"
+        accept="image/jpeg,image/png,image/webp"
+      />
+      <Input name="contentImageAlt" maxlength={300} placeholder="Description de l’image" />
+      <p class="hint">Elle s’affiche sous le texte de l’actualité.</p>
+      {#if supportImage}
+        <label class="remove-choice"
+          ><input type="checkbox" name="removeAssetIds" value={supportImage.id} /> Retirer cette image</label
+        >
+      {/if}
+    </div>
+    <div class="field">
+      <Label for="news-attachment-file">Document PDF</Label>
+      <input id="news-attachment-file" type="file" name="attachmentFile" accept="application/pdf" />
+      <Input name="attachmentTitle" maxlength={500} placeholder="Titre du document" />
+      <p class="hint">Le PDF est optimisé avant l’envoi.</p>
+      {#if news?.assets.filter((asset) => asset.kind === 'pdf_attachment').length}
+        <ul class="attachments">
+          {#each news.assets.filter((asset) => asset.kind === 'pdf_attachment') as attachment (attachment.id)}
+            <li>
+              <label class="remove-choice"
+                ><input type="checkbox" name="removeAssetIds" value={attachment.id} /> Retirer « {attachment.caption ??
+                  attachment.fileName} »</label
+              >
+            </li>
+          {/each}
+        </ul>
+      {/if}
+    </div>
+  </section>
 
   {#if submitError}<p class="error" role="alert">{submitError}</p>{/if}
   <footer>
     <Button href={cancelHref} variant="outline">Annuler et revenir</Button><Button
       type="submit"
-      disabled={submitting ||
-        !title.trim() ||
-        !slug.trim() ||
-        !summary.trim() ||
-        !body.trim() ||
-        (targetMode === 'explicit' && selectedSiteIds.length === 0)}
+      disabled={submitting || !title.trim() || !summary.trim() || !body.trim()}
       >{submitting
         ? 'Enregistrement…'
         : isEdit
           ? 'Enregistrer les modifications'
-          : 'Créer le brouillon'}</Button
+          : 'Créer l’actualité'}</Button
     >
   </footer>
 </form>
@@ -219,8 +258,7 @@
     display: grid;
     gap: var(--space-5);
   }
-  section,
-  .advanced {
+  section {
     display: grid;
     gap: var(--space-4);
     padding: var(--space-6);
@@ -264,13 +302,7 @@
   .hint {
     font-size: var(--text-small);
   }
-  .choice-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
-  }
-  .choice,
-  .site {
+  .visibility-choice {
     display: flex;
     align-items: flex-start;
     gap: var(--space-3);
@@ -280,47 +312,44 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
   }
-  .choice:focus-within,
-  .site:focus-within {
+  .visibility-choice:focus-within {
     box-shadow: var(--shadow-focus);
   }
-  .choice span {
+  .visibility-choice span {
     display: grid;
     gap: var(--space-1);
   }
-  .choice small {
+  .visibility-choice small {
     color: var(--text-muted);
   }
-  .site-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-  .site {
-    align-items: center;
-  }
-  .site.disabled {
-    cursor: not-allowed;
-    opacity: 0.55;
-  }
-  .advanced summary {
+  input[type='file'] {
+    width: 100%;
     min-height: 44px;
-    color: var(--primary);
-    font-weight: var(--weight-semibold);
-    cursor: pointer;
-  }
-  .advanced[open] summary {
-    margin-bottom: var(--space-3);
-  }
-  code {
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-2);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
-    background: var(--bg-muted);
+    background: var(--bg-card);
+    color: var(--text-main);
   }
-  .warning {
-    color: var(--warning);
-    font-size: var(--text-small);
-    font-weight: var(--weight-semibold);
+  .image-preview {
+    width: min(100%, 460px);
+    max-height: 260px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+  }
+  .remove-choice {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 44px;
+    color: var(--text-muted);
+  }
+  .attachments {
+    display: grid;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
   .error {
     padding: var(--space-3);
@@ -334,12 +363,8 @@
     gap: var(--space-3);
   }
   @media (max-width: 640px) {
-    section,
-    .advanced {
+    section {
       padding: var(--space-4);
-    }
-    .choice-list {
-      grid-template-columns: 1fr;
     }
     footer {
       align-items: stretch;

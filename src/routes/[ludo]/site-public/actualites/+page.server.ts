@@ -59,7 +59,7 @@ function targetingInput(data: FormData): PublicNewsTargeting {
 
 function createInput(data: FormData): PublicNewsInput {
   return {
-    slug: String(data.get('slug') ?? ''),
+    slug: String(data.get('slug') || data.get('title') || ''),
     title: String(data.get('title') ?? ''),
     summary: String(data.get('summary') ?? ''),
     body: String(data.get('body') ?? '').replace(/\r\n?/g, '\n'),
@@ -73,7 +73,7 @@ function updateInput(data: FormData): PublicNewsUpdateInput {
     title: String(data.get('title') ?? ''),
     summary: String(data.get('summary') ?? ''),
     body: String(data.get('body') ?? '').replace(/\r\n?/g, '\n'),
-    ...targetingInput(data),
+    ...(data.has('targetMode') ? targetingInput(data) : {}),
   }
 }
 
@@ -132,6 +132,25 @@ function parseImageAlt(data: FormData) {
   return alt
 }
 
+function optionalFile(data: FormData, name: string, label: string) {
+  const value = data.get(name)
+  if (value == null) return null
+  if (!(value instanceof File)) throw new MediaStorageError(`Sélectionnez ${label}.`)
+  return value.size > 0 ? value : null
+}
+
+function requiredText(data: FormData, name: string, label: string, maxLength: number) {
+  const value = String(data.get(name) ?? '').trim()
+  if (!value || value.length > maxLength) {
+    throw new PublicNewsServiceError(`${label} doit contenir entre 1 et ${maxLength} caractères.`)
+  }
+  return value
+}
+
+function shouldBeVisible(data: FormData) {
+  return data.get('visible') === 'true'
+}
+
 async function cleanupPreviousImage(input: {
   scope: AuthorizedMediaScope
   pathname: string | null
@@ -156,6 +175,142 @@ async function cleanupPreviousImage(input: {
   }
 }
 
+async function applyNewsMedia(input: {
+  data: FormData
+  ludoId: string
+  memberId: string
+  news: Awaited<ReturnType<typeof getPublicNews>>
+}) {
+  const { data, ludoId, memberId } = input
+  let news = input.news
+  const cover = optionalFile(data, 'coverFile', 'une image de couverture')
+  if (cover) {
+    const alt = requiredText(data, 'coverAlt', 'Le texte alternatif de l’image', 300)
+    const registered = await uploadAndRegisterMedia({
+      authorize: () => authorizePublicNewsMediaScope(ludoId, news.id, news.revision),
+      upload: (scope) => uploadPublicSiteMedia({ scope, file: cover, policy: NEWS_IMAGE_POLICY }),
+      register: async (scope, blob) => ({
+        scope,
+        result: await setPublicNewsImage(
+          ludoId,
+          news.id,
+          memberId,
+          news.revision,
+          scope,
+          blob,
+          alt,
+        ),
+      }),
+      cleanup: deletePublicSiteMedia,
+    })
+    await cleanupPreviousImage({
+      scope: registered.scope,
+      pathname: registered.result.previousStorageKey,
+      ludoId,
+      memberId,
+      newsId: news.id,
+      operation: 'replace',
+    })
+    news = registered.result.news
+  } else if (data.get('removeCover') === 'on') {
+    const scope = await authorizePublicNewsMediaScope(ludoId, news.id, news.revision)
+    const result = await clearPublicNewsImage(ludoId, news.id, memberId, news.revision)
+    await cleanupPreviousImage({
+      scope,
+      pathname: result.previousStorageKey,
+      ludoId,
+      memberId,
+      newsId: news.id,
+      operation: 'remove',
+    })
+    news = result.news
+  }
+
+  const contentImage = optionalFile(data, 'contentImageFile', 'une image dans l’actualité')
+  if (contentImage) {
+    const alt = requiredText(data, 'contentImageAlt', 'Le texte alternatif de l’image', 300)
+    const registered = await uploadAndRegisterMedia({
+      authorize: () => authorizePublicNewsMediaScope(ludoId, news.id, news.revision),
+      upload: (scope) =>
+        uploadPublicSiteMedia({ scope, file: contentImage, policy: NEWS_IMAGE_POLICY }),
+      register: async (scope, blob) => ({
+        scope,
+        result: await upsertPublicSupportImage({
+          ludoId,
+          owner: { type: 'news', id: news.id },
+          memberId,
+          scope,
+          blob,
+          alt,
+        }),
+      }),
+      cleanup: deletePublicSiteMedia,
+    })
+    await cleanupPreviousImage({
+      scope: registered.scope,
+      pathname: registered.result.previousStorageKey,
+      ludoId,
+      memberId,
+      newsId: news.id,
+      operation: 'support-replace',
+    })
+  }
+
+  const attachment = optionalFile(data, 'attachmentFile', 'un PDF')
+  if (attachment) {
+    const title = requiredText(data, 'attachmentTitle', 'Le titre du PDF', 500)
+    await uploadAndRegisterMedia({
+      authorize: () => authorizePublicNewsMediaScope(ludoId, news.id, news.revision),
+      upload: (scope) =>
+        uploadPublicSiteMedia({ scope, file: attachment, policy: NEWS_PDF_POLICY }),
+      register: (scope, blob) =>
+        addPublicPdfAttachment({
+          ludoId,
+          owner: { type: 'news', id: news.id },
+          memberId,
+          scope,
+          blob,
+          title,
+          fileName: attachment.name,
+        }),
+      cleanup: deletePublicSiteMedia,
+    })
+  }
+
+  for (const assetId of data.getAll('removeAssetIds').map(String)) {
+    const scope = await authorizePublicNewsMediaScope(ludoId, news.id, news.revision)
+    const asset = await deletePublicEditorialAsset(assetId, ludoId, { type: 'news', id: news.id })
+    await cleanupPreviousImage({
+      scope,
+      pathname: asset.storageKey,
+      ludoId,
+      memberId,
+      newsId: news.id,
+      operation: 'asset-remove',
+    })
+  }
+  return news
+}
+
+async function applyNewsVisibility(input: {
+  news: Awaited<ReturnType<typeof getPublicNews>>
+  ludoId: string
+  memberId: string
+  visible: boolean
+}) {
+  let news = input.news
+  if (input.visible && news.status !== 'published') {
+    news = (await publishPublicNews(news.id, input.ludoId, input.memberId, news.revision)).news
+  }
+  if (!input.visible && news.status !== 'hidden') {
+    if (news.status === 'draft') {
+      news = (await publishPublicNews(news.id, input.ludoId, input.memberId, news.revision)).news
+    }
+    news = (await hidePublicNews(news.id, input.ludoId, input.memberId, news.revision)).news
+  }
+  return news
+}
+
 export const load: PageServerLoad = async (event) => {
   const { ludo } = await requireNewsContext(event)
   const [news, sites] = await Promise.all([
@@ -171,14 +326,21 @@ export const actions: Actions = {
     const data = await event.request.formData()
     return run(async () => {
       const input = createInput(data)
-      const news = await createPublicNews(ludo.id, member.id, input)
+      let news = await createPublicNews(ludo.id, member.id, input)
+      news = await applyNewsMedia({ data, ludoId: ludo.id, memberId: member.id, news })
+      news = await applyNewsVisibility({
+        news,
+        ludoId: ludo.id,
+        memberId: member.id,
+        visible: shouldBeVisible(data),
+      })
       await emitAuditEvent({
         action: 'public_news.created',
         actorLudoId: ludo.id,
         actorMemberId: member.id,
         entityType: 'public_news',
         entityId: news.id,
-        metadata: targetMetadata(input),
+        metadata: { ...targetMetadata(input), visible: news.status === 'published' },
       })
       return { success: true }
     })
@@ -190,14 +352,24 @@ export const actions: Actions = {
     const id = String(data.get('id') ?? '')
     return run(async () => {
       const input = updateInput(data)
-      const news = await updatePublicNews(id, ludo.id, input, member.id, parseRevision(data))
+      let news = await updatePublicNews(id, ludo.id, input, member.id, parseRevision(data))
+      news = await applyNewsMedia({ data, ludoId: ludo.id, memberId: member.id, news })
+      news = await applyNewsVisibility({
+        news,
+        ludoId: ludo.id,
+        memberId: member.id,
+        visible: shouldBeVisible(data),
+      })
       await emitAuditEvent({
         action: 'public_news.updated',
         actorLudoId: ludo.id,
         actorMemberId: member.id,
         entityType: 'public_news',
         entityId: news.id,
-        metadata: targetMetadata(input as PublicNewsTargeting),
+        metadata: {
+          ...targetMetadata(input as PublicNewsTargeting),
+          visible: news.status === 'published',
+        },
       })
       return { success: true }
     })

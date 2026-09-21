@@ -8,9 +8,12 @@
 <main class="form-page">
   <header>
     <h1>Nouvelle actualité</h1>
-    <p>Commencez par créer un brouillon. Vous pourrez ajouter les images et le publier ensuite.</p>
+    <p>
+      Rédigez votre actualité, ajoutez si besoin une image ou un document, puis choisissez si elle
+      doit être visible sur le site.
+    </p>
   </header>
-  <NewsForm sites={data.sites} action="?/create" cancelHref={listHref} successHref={listHref} />
+  <NewsForm action="?/create" cancelHref={listHref} successHref={listHref} />
 </main>
 
 <style>

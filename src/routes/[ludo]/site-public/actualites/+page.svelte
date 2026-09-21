@@ -29,7 +29,9 @@
   <header>
     <div>
       <h1>Actualités</h1>
-      <p>Retrouvez les actualités du site, puis ouvrez-en une pour la modifier ou la publier.</p>
+      <p>
+        Créez ou modifiez une actualité, puis choisissez simplement si elle est visible sur le site.
+      </p>
     </div>
     <Button href={`${base}/nouveau`}
       ><PlusIcon size={16} aria-hidden="true" /> Nouvelle actualité</Button
@@ -40,7 +42,7 @@
     <EmptyState
       icon={NewspaperIcon}
       title="Aucune actualité"
-      description="Créez une première actualité. Elle restera en brouillon jusqu’à sa publication."
+      description="Créez une première actualité : elle peut être visible tout de suite ou rester cachée."
       >{#snippet action()}<Button href={`${base}/nouveau`}>Créer une actualité</Button
         >{/snippet}</EmptyState
     >
@@ -65,7 +67,7 @@
         Aucune actualité dans cette catégorie.
       </p>{:else}<div class="content-list">
         {#each filteredNews as item (item.id)}<EditorialListItem
-            href={`${base}/${item.id}`}
+            href={`${base}/${item.id}/modifier`}
             title={item.title}
             description={item.summary}
             meta={[targetLabel(item), `Adresse : /${item.slug}`]}

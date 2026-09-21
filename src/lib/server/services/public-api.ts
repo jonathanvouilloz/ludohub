@@ -124,6 +124,7 @@ export type PublicActivitySummaryItem = {
 export type PublicActivityItem = Omit<PublicActivitySummaryItem, 'schedule'> & {
   bodyMarkdown: string
   supportImage: PublicSupportImage | null
+  supportImages: PublicSupportImage[]
   attachments: PublicPdfAttachment[]
   schedule: PublicActivitySchedule
   registration: {
@@ -391,6 +392,18 @@ function publicSupportImage(assets: EditorialAsset[]): PublicSupportImage | null
     : null
 }
 
+function publicSupportImages(assets: EditorialAsset[]): PublicSupportImage[] {
+  return assets
+    .filter((asset) => asset.kind === 'support_image' && asset.alt)
+    .sort((first, second) => first.sortOrder - second.sortOrder)
+    .map((image) => ({
+      url: image.url,
+      alt: image.alt!,
+      caption: image.caption,
+      credit: image.credit,
+    }))
+}
+
 function publicPdfAttachments(assets: EditorialAsset[]): PublicPdfAttachment[] {
   return assets
     .filter(
@@ -547,6 +560,7 @@ export async function getPublicActivityDetailByLudoSlug(
       publishedAt: activity.publishedAt!.toISOString(),
       bodyMarkdown: activity.body,
       supportImage: publicSupportImage(activity.assets ?? []),
+      supportImages: publicSupportImages(activity.assets ?? []),
       attachments: publicPdfAttachments(activity.assets ?? []),
       schedule: {
         type: activity.type,

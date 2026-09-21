@@ -13,6 +13,7 @@ import { parseManagedPublicSitePath, type AuthorizedMediaScope } from '../media/
 export class PublicEditorialAssetServiceError extends Error {}
 
 export const MAX_PDF_ATTACHMENTS = 5
+export const MAX_ACTIVITY_IMAGES = 5
 const IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp'])
 const IMAGE_MAX_BYTES = 5 * 1024 * 1024
 const PDF_MAX_BYTES = 15 * 1024 * 1024
@@ -122,6 +123,53 @@ export async function upsertPublicSupportImage(input: {
     createdAt: now,
   })
   return { asset, previousStorageKey: null }
+}
+
+/** Ajoute une image au contenu d'une activité, dans l'ordre de sélection. */
+export async function addPublicActivitySupportImage(input: {
+  ludoId: string
+  owner: Extract<EditorialAssetOwner, { type: 'activity' }>
+  memberId: string
+  scope: AuthorizedMediaScope
+  blob: StoredBlob
+  alt: string
+  caption?: string | null
+  credit?: string | null
+  now?: Date
+}) {
+  const now = input.now ?? new Date()
+  assertScope(input.scope, input.owner, input.ludoId, input.blob.pathname)
+  if (!IMAGE_TYPES.has(input.blob.contentType)) {
+    throw new PublicEditorialAssetServiceError("L'image de l'activité doit être un JPEG, PNG ou WebP.")
+  }
+  assertBlobSize(input.blob, IMAGE_MAX_BYTES, "L'image")
+  const images = (await listPublicEditorialAssetRows(input.ludoId, input.owner)).filter(
+    (asset) => asset.kind === 'support_image',
+  )
+  if (images.length >= MAX_ACTIVITY_IMAGES) {
+    throw new PublicEditorialAssetServiceError(
+      `Maximum ${MAX_ACTIVITY_IMAGES} images dans le contenu d'une activité.`,
+    )
+  }
+  return insertPublicEditorialAssetRow({
+    id: randomUUID(),
+    ludoId: input.ludoId,
+    ...ownerColumns(input.owner),
+    kind: 'support_image',
+    url: required(input.blob.url, "L'URL de l'image", 2000),
+    downloadUrl: null,
+    storageKey: input.blob.pathname,
+    mimeType: input.blob.contentType,
+    fileName: null,
+    sizeBytes: input.blob.size,
+    alt: required(input.alt, 'Le texte alternatif', 300),
+    caption: optional(input.caption, 'La légende', 500),
+    credit: optional(input.credit, 'Le crédit', 200),
+    sortOrder: images.length,
+    createdByMemberId: input.memberId,
+    createdAt: now,
+    updatedAt: now,
+  })
 }
 
 export async function addPublicPdfAttachment(input: {
