@@ -55,7 +55,10 @@
   let body = $state('')
   let location = $state('')
   let type = $state<EditableActivity['type']>('one_off')
-  let recurrenceRule = $state('')
+  let recurrenceFrequency = $state<'DAILY' | 'WEEKLY' | 'MONTHLY' | 'YEARLY'>('WEEKLY')
+  let recurrenceEndMode = $state<'count' | 'until'>('count')
+  let recurrenceCount = $state(52)
+  let recurrenceUntil = $state('')
   let dates = $state<Array<{ key: number; startsAt: string; endsAt: string }>>([])
   let exceptions = $state<Array<{ key: number; excludedAt: string; reason: string }>>([])
   let nextKey = 1
@@ -70,7 +73,10 @@
   const scheduleValid = $derived(
     type === 'permanent' ||
       (type === 'recurring'
-        ? Boolean(recurrenceRule.trim()) && dates.length > 0
+        ? dates.length > 0 &&
+          (recurrenceEndMode === 'count'
+            ? Number.isSafeInteger(recurrenceCount) && recurrenceCount >= 1 && recurrenceCount <= 366
+            : Boolean(recurrenceUntil))
         : dates.length > 0),
   )
 
@@ -81,7 +87,23 @@
       body = activity?.body ?? ''
       location = activity?.location ?? ''
       type = activity?.type ?? 'one_off'
-      recurrenceRule = activity?.recurrenceRule ?? ''
+      const values = new Map(
+        (activity?.recurrenceRule ?? '')
+          .split(';')
+          .map((part) => part.split('=', 2) as [string, string]),
+      )
+      const frequency = values.get('FREQ')
+      recurrenceFrequency =
+        frequency === 'DAILY' || frequency === 'WEEKLY' || frequency === 'MONTHLY' || frequency === 'YEARLY'
+          ? frequency
+          : 'WEEKLY'
+      const count = Number(values.get('COUNT'))
+      recurrenceEndMode = Number.isSafeInteger(count) && count > 0 ? 'count' : 'until'
+      recurrenceCount = Number.isSafeInteger(count) && count > 0 ? count : 52
+      const until = values.get('UNTIL')
+      recurrenceUntil = until && /^\d{8}T\d{6}Z$/.test(until)
+        ? formatZurichDateTimeLocal(new Date(`${until.slice(0, 4)}-${until.slice(4, 6)}-${until.slice(6, 8)}T${until.slice(9, 11)}:${until.slice(11, 13)}:${until.slice(13, 15)}Z`)).slice(0, 10)
+        : ''
       visible = activity ? activity.status === 'published' : true
       dates =
         activity?.dates.map((date) => ({
@@ -116,7 +138,7 @@
   <Dialog.Content class="activity-dialog">
     <Dialog.Header>
       <Dialog.Title>{isEdit ? 'Modifier l’activité' : 'Nouvelle activité'}</Dialog.Title>
-      <Dialog.Description>Décrivez l’offre, ses dates et les lieux concernés.</Dialog.Description>
+      <Dialog.Description>Décrivez l’activité, ses dates et les informations utiles aux familles.</Dialog.Description>
     </Dialog.Header>
 
     <form
@@ -124,7 +146,7 @@
       action={isEdit ? '?/update' : '?/create'}
       enctype="multipart/form-data"
       use:enhance={toastEnhance({
-        success: isEdit ? 'Activité mise à jour.' : 'Brouillon créé.',
+        success: isEdit ? 'Activité mise à jour.' : 'Activité créée.',
         errorMode: 'inline',
         prepare: async (formData) => {
           await Promise.all([
@@ -215,24 +237,46 @@
       </fieldset>
 
       {#if type === 'recurring'}
-        <div class="field">
-          <Label for="activity-recurrence">Règle de récurrence</Label>
-          <Input
-            id="activity-recurrence"
-            name="recurrenceRule"
-            bind:value={recurrenceRule}
-            placeholder="Ex. FREQ=WEEKLY;BYDAY=WE;COUNT=52"
-            required
-          />
-        </div>
+        <fieldset class="recurrence">
+          <legend>Répétition</legend>
+          <div class="field">
+            <Label for="activity-recurrence-frequency">À quelle fréquence ?</Label>
+            <select id="activity-recurrence-frequency" name="recurrenceFrequency" bind:value={recurrenceFrequency}>
+              <option value="DAILY">Chaque jour</option>
+              <option value="WEEKLY">Chaque semaine</option>
+              <option value="MONTHLY">Chaque mois</option>
+              <option value="YEARLY">Chaque année</option>
+            </select>
+          </div>
+          <div class="field">
+            <Label>La répétition se termine</Label>
+            <div class="mode-grid">
+              <label><input type="radio" name="recurrenceEndMode" value="count" bind:group={recurrenceEndMode} /> Après un nombre de séances</label>
+              <label><input type="radio" name="recurrenceEndMode" value="until" bind:group={recurrenceEndMode} /> À une date choisie</label>
+            </div>
+          </div>
+          {#if recurrenceEndMode === 'count'}
+            <div class="field compact-field">
+              <Label for="activity-recurrence-count">Nombre de séances</Label>
+              <Input id="activity-recurrence-count" name="recurrenceCount" type="number" min="1" max="366" bind:value={recurrenceCount} required />
+            </div>
+          {:else}
+            <div class="field compact-field">
+              <Label for="activity-recurrence-until">Dernier jour</Label>
+              <Input id="activity-recurrence-until" name="recurrenceUntil" type="date" bind:value={recurrenceUntil} required />
+            </div>
+          {/if}
+          <p class="hint">Le jour et l’horaire de la première séance sont repris automatiquement.</p>
+        </fieldset>
       {/if}
 
       {#if type !== 'permanent'}
         <fieldset>
           <div class="section-head">
-            <legend>Dates et horaires</legend>
-            <Button type="button" size="sm" variant="outline" onclick={addDate}>Ajouter</Button>
+            <legend>{type === 'recurring' ? 'Première séance et horaire' : 'Dates et horaires'}</legend>
+            <Button type="button" size="sm" variant="outline" onclick={addDate}>{type === 'recurring' ? 'Ajouter un autre horaire' : 'Ajouter'}</Button>
           </div>
+          {#if type === 'recurring'}<p class="hint">Ajoutez une première séance : elle sera ensuite répétée au rythme choisi.</p>{/if}
           {#each dates as date, index (date.key)}
             <div class="schedule-row">
               <label>
@@ -384,7 +428,8 @@
   }
   textarea,
   input[type='datetime-local'],
-  input[type='text'] {
+  input[type='text'],
+  select {
     width: 100%;
     padding: var(--space-3);
     border: 1px solid var(--border);
@@ -395,6 +440,9 @@
   }
   textarea {
     resize: vertical;
+  }
+  .compact-field {
+    max-width: 20rem;
   }
   .mode-grid {
     display: flex;

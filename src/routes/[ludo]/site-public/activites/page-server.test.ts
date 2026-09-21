@@ -66,6 +66,7 @@ import {
   clearPublicActivityImage,
   createPublicActivity,
   getPublicActivity,
+  hidePublicActivity,
   listPublicActivitiesForManagement,
   permanentlyDeletePublicActivity,
   publishPublicActivity,
@@ -98,6 +99,7 @@ const activity = {
   status: 'draft',
   lifecycle: 'active',
   imageStorageKey: OLD_PATH,
+  assets: [],
 }
 
 function event(fields: Array<[string, string | File]> = []) {
@@ -158,6 +160,11 @@ beforeEach(() => {
     activity: { ...activity, status: 'published' },
     changed: true,
     previousStatus: 'draft',
+  } as never)
+  vi.mocked(hidePublicActivity).mockResolvedValue({
+    activity: { ...activity, status: 'hidden' },
+    changed: true,
+    previousStatus: 'published',
   } as never)
   for (const transition of [archivePublicActivity, trashPublicActivity, restorePublicActivity]) {
     vi.mocked(transition).mockResolvedValue({
@@ -326,6 +333,25 @@ describe('gestion des activités publiques', () => {
     )
   })
 
+  it('transforme une répétition choisie dans le formulaire en règle interne', async () => {
+    const simpleFields = fields()
+      .filter(([name]) => name !== 'recurrenceRule')
+      .concat([
+        ['targetMode', 'all'],
+        ['recurrenceFrequency', 'WEEKLY'],
+        ['recurrenceEndMode', 'until'],
+        ['recurrenceUntil', '2026-12-31'],
+      ])
+
+    await actions.create!(event(simpleFields) as never)
+
+    expect(createPublicActivity).toHaveBeenCalledWith(
+      LUDO_ID,
+      MEMBER_ID,
+      expect.objectContaining({ recurrenceRule: 'FREQ=WEEKLY;UNTIL=20261231T225900Z' }),
+    )
+  })
+
   it.each([
     ['heure inexistante de mars', '2026-03-29T02:30'],
     ['heure ambiguë d’octobre', '2026-10-25T02:30'],
@@ -353,7 +379,7 @@ describe('gestion des activités publiques', () => {
     expect(updatePublicActivity).toHaveBeenCalledWith(
       ACTIVITY_ID,
       LUDO_ID,
-      expect.objectContaining({ slug: undefined }),
+      expect.not.objectContaining({ slug: expect.anything() }),
       MEMBER_ID,
       7,
     )
