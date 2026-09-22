@@ -10,7 +10,6 @@
   import CalendarDaysIcon from '@lucide/svelte/icons/calendar-days'
   import CalendarOffIcon from '@lucide/svelte/icons/calendar-off'
   import BoxesIcon from '@lucide/svelte/icons/boxes'
-  import Share2Icon from '@lucide/svelte/icons/share-2'
   import BellIcon from '@lucide/svelte/icons/bell'
   import ClipboardCheckIcon from '@lucide/svelte/icons/clipboard-check'
   import CheckCircle2Icon from '@lucide/svelte/icons/check-circle-2'
@@ -102,14 +101,6 @@
         unit: 'au catalogue',
         hint: `${m.themes.activeInstallations} en installation`,
         badge: m.themes.checkupMissingItems,
-      },
-      {
-        href: '/reseau/aide',
-        icon: Share2Icon,
-        label: 'Réseau',
-        value: m.reseau.openRequests,
-        unit: "demandes d'aide",
-        hint: `${m.reseau.mineOpen} de ma ludo`,
       },
       {
         href: '/reseau/notifications',

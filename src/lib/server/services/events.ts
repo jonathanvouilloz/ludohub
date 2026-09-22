@@ -48,8 +48,6 @@ const SEVERITY: Record<NotificationType, NotificationSeverity> = {
   theme_request: 'action_required',
   theme_request_confirmed: 'info',
   theme_request_declined: 'info',
-  help_response: 'action_required',
-  help_confirmed: 'info',
   absence_request: 'action_required',
   absence_approved: 'info',
   absence_refused: 'info',

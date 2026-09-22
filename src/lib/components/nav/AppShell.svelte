@@ -34,7 +34,6 @@
     '/[ludo]/frequentation',
     '/[ludo]/absences',
     '/reseau/themes',
-    '/reseau/aide',
     '/reseau/notifications',
   ])
   const loadingHeavy = $derived(

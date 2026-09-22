@@ -4,21 +4,8 @@ export const section: GuideSection = {
   id: 'reseau',
   title: 'Réseau',
   intro:
-    'Le **réseau** relie toutes les ludothèques : demandez un renfort, empruntez un thème à une autre ludo, et suivez ce qui vous concerne dans vos notifications.',
+    'Le **réseau** relie les ludothèques : empruntez un thème à une autre ludo et suivez ce qui vous concerne dans vos notifications.',
   steps: [
-    {
-      shot: 'aide',
-      title: 'Demander ou offrir de l’aide',
-      body: [
-        'Ouvrez **« Aide »** dans le menu Réseau : vous voyez les demandes de **toutes les ludothèques**.',
-        'Pour aider, cliquez sur **« Je suis disponible »** sur la carte qui vous intéresse.',
-        'Pour demander un renfort, cliquez sur **« Nouvelle demande »** et indiquez la date.',
-      ],
-      tips: [
-        'Sur **vos propres** demandes, la liste des **volontaires** s’affiche directement sur la carte.',
-        'Vos demandes terminées sont rangées plus bas dans **« Mes demandes passées »**.',
-      ],
-    },
     {
       shot: 'catalogue',
       title: 'Emprunter un thème partagé',
@@ -34,7 +21,7 @@ export const section: GuideSection = {
       title: 'Suivre vos notifications',
       body: [
         'La cloche du menu mène à vos **notifications** : tout ce qui concerne votre ludothèque.',
-        'Les **filtres** en haut trient par domaine (thèmes, aide, matériel…).',
+        'Les **filtres** en haut trient par domaine (thèmes, absences, matériel…).',
         'Une notification **non lue** est surlignée ; cliquez dessus pour ouvrir l’élément concerné.',
       ],
       tips: [

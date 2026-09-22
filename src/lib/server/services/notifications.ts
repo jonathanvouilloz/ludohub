@@ -14,14 +14,12 @@ export class NotificationServiceError extends Error {}
 
 // ─── Regroupement par domaine ────────────────────────────────────────────────
 
-export type NotificationDomain = 'themes' | 'reseau' | 'absences' | 'materiel' | 'newsletter'
+export type NotificationDomain = 'themes' | 'absences' | 'materiel' | 'newsletter'
 
 const DOMAIN_OF: Record<NotificationType, NotificationDomain> = {
   theme_request: 'themes',
   theme_request_confirmed: 'themes',
   theme_request_declined: 'themes',
-  help_response: 'reseau',
-  help_confirmed: 'reseau',
   absence_request: 'absences',
   absence_approved: 'absences',
   absence_refused: 'absences',
@@ -35,7 +33,6 @@ const DOMAIN_OF: Record<NotificationType, NotificationDomain> = {
 
 const DOMAIN_ORDER: NotificationDomain[] = [
   'themes',
-  'reseau',
   'absences',
   'materiel',
   'newsletter',
@@ -43,7 +40,6 @@ const DOMAIN_ORDER: NotificationDomain[] = [
 
 const DOMAIN_LABEL: Record<NotificationDomain, string> = {
   themes: 'Thèmes',
-  reseau: 'Réseau',
   absences: 'Absences',
   materiel: 'Matériel',
   newsletter: 'Newsletter',

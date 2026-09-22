@@ -37,7 +37,7 @@ export async function createFamilyRegistrationFormRow(input: {
       intro: null,
       consentLabel: null,
       enabled: false,
-      maxMembers: 20,
+      maxMembers: 50,
       retentionDays: 30,
       annualFeeCents: 3000,
       currency: 'CHF',

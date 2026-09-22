@@ -4,6 +4,12 @@ import { FamilyRegistrationServiceError, getPublicFamilyMembershipByLudoSlug } f
 
 export const load: PageServerLoad = async ({ params, setHeaders }) => {
   setHeaders({ 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' })
-  try { return { config: await getPublicFamilyMembershipByLudoSlug(params.ludo), ludoSlug: params.ludo } }
+  try {
+    return {
+      config: await getPublicFamilyMembershipByLudoSlug(params.ludo),
+      ludoSlug: params.ludo,
+      today: new Date().toISOString().slice(0, 10),
+    }
+  }
   catch (cause) { if (cause instanceof FamilyRegistrationServiceError) throw error(404, 'Formulaire introuvable'); throw cause }
 }

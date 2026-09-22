@@ -36,6 +36,8 @@ export class FamilyRegistrationServiceError extends Error {
 }
 
 const GENDERS = new Set<FamilyRegistrationGender>(['female', 'male', 'other', 'unspecified'])
+/** Garde-fou de transport invisible : le formulaire n'affiche aucune limite familiale. */
+const TECHNICAL_MAX_FAMILY_MEMBERS = 50
 const DOCUMENT_KINDS = new Set<FamilyRegistrationDocumentKind>([
   'rules',
   'contract',
@@ -91,7 +93,6 @@ export async function getPublicFamilyMembershipByLudoSlug(ludoSlug: string) {
     annualFeeCents: config.annual_fee_cents,
     currency: config.currency,
     paymentMethods: [config.allows_twint ? 'twint' : null, config.allows_cash ? 'cash' : null].filter(Boolean),
-    maxMembers: config.max_members,
     consentLabel: config.consent_label,
     documents: config.documents.map((document) => ({
       slug: document.slug,
@@ -106,8 +107,9 @@ export async function getPublicFamilyMembershipByLudoSlug(ludoSlug: string) {
   }
 }
 
-type PersonInput = { gender?: unknown; firstName?: unknown; lastName?: unknown; birthDate?: unknown }
-export type FamilySubmissionInput = PersonInput & {
+type ResponsibleInput = { gender?: unknown; firstName?: unknown; lastName?: unknown }
+type FamilyMemberInput = { firstName?: unknown; lastName?: unknown }
+export type FamilySubmissionInput = ResponsibleInput & {
   siteId?: unknown
   address?: unknown
   postalCode?: unknown
@@ -121,18 +123,29 @@ export type FamilySubmissionInput = PersonInput & {
   members?: unknown
 }
 
-function cleanPerson(input: PersonInput, label: string, sortOrder: number) {
+function cleanResponsible(input: ResponsibleInput) {
   if (!input || typeof input !== 'object' || Array.isArray(input))
-    throw new FamilyRegistrationServiceError(`${label} invalide.`)
-  const gender = input.gender ?? 'unspecified'
-  if (!GENDERS.has(gender as FamilyRegistrationGender))
-    throw new FamilyRegistrationServiceError(`${label} : genre invalide.`)
+    throw new FamilyRegistrationServiceError('Responsable invalide.')
+  const gender = input.gender
+  if (!GENDERS.has(gender as FamilyRegistrationGender) || gender === 'unspecified')
+    throw new FamilyRegistrationServiceError('Responsable : genre invalide.')
+  return {
+    gender: gender as FamilyRegistrationGender,
+    firstName: text(input.firstName, 'Responsable : prénom', 100) as string,
+    lastName: text(input.lastName, 'Responsable : nom', 100) as string,
+    birthDate: null,
+  }
+}
+
+function cleanFamilyMember(input: FamilyMemberInput, sortOrder: number) {
+  if (!input || typeof input !== 'object' || Array.isArray(input))
+    throw new FamilyRegistrationServiceError(`Membre ${sortOrder + 1} invalide.`)
   return {
     id: randomUUID(),
-    gender: gender as FamilyRegistrationGender,
-    firstName: text(input.firstName, `${label} : prénom`, 100) as string,
-    lastName: text(input.lastName, `${label} : nom`, 100) as string,
-    birthDate: input.birthDate == null || input.birthDate === '' ? null : date(input.birthDate, `${label} : date de naissance`),
+    gender: 'unspecified' as FamilyRegistrationGender,
+    firstName: text(input.firstName, `Membre ${sortOrder + 1} : prénom`, 100) as string,
+    lastName: text(input.lastName, `Membre ${sortOrder + 1} : nom`, 100) as string,
+    birthDate: null,
     sortOrder,
   }
 }
@@ -152,9 +165,13 @@ export async function submitPublicFamilyMembership(
   if (input.consentAccepted !== true)
     throw new FamilyRegistrationServiceError('Le consentement est obligatoire.')
   const rawMembers = input.members ?? []
-  if (!Array.isArray(rawMembers) || rawMembers.length > 50)
+  if (
+    !Array.isArray(rawMembers) ||
+    rawMembers.length < 1 ||
+    rawMembers.length > TECHNICAL_MAX_FAMILY_MEMBERS
+  )
     throw new FamilyRegistrationServiceError('Le nombre de membres est invalide.')
-  const responsible = cleanPerson(input, 'Responsable', -1)
+  const responsible = cleanResponsible(input)
   const cleanPayload = {
     gender: responsible.gender,
     firstName: responsible.firstName,
@@ -168,7 +185,7 @@ export async function submitPublicFamilyMembership(
     email: (text(input.email, 'E-mail', 320) as string).toLowerCase(),
     consentFullName: text(input.consentFullName, 'Nom de consentement', 200) as string,
     consentAcceptedOn: date(input.consentAcceptedOn, "Date d'acceptation"),
-    members: rawMembers.map((member, index) => cleanPerson(member as PersonInput, `Membre ${index + 1}`, index)),
+    members: rawMembers.map((member, index) => cleanFamilyMember(member as FamilyMemberInput, index)),
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanPayload.email))
     throw new FamilyRegistrationServiceError("L'e-mail est invalide.")
@@ -204,8 +221,6 @@ export async function submitPublicFamilyMembership(
   }
   const config = await getPublishedFamilyConfigRow(ludo.id)
   if (!config) throw new FamilyRegistrationServiceError('Formulaire introuvable.', 'not_found')
-  if (cleanPayload.members.length > config.max_members)
-    throw new FamilyRegistrationServiceError('Le nombre de membres est invalide.')
   const sites = await listActiveSiteRows(ludo.id)
   const site = requestedSiteId ? sites.find((candidate) => candidate.id === requestedSiteId) : sites.length === 1 ? sites[0] : undefined
   if (!site) throw new FamilyRegistrationServiceError(sites.length > 1 ? 'Le lieu est obligatoire.' : 'Lieu invalide.')
@@ -251,14 +266,12 @@ export async function ensureFamilyForm(ludoId: string, memberId: string, now = n
 export async function updateFamilyForm(ludoId: string, memberId: string, input: Record<string, unknown>, now = new Date()) {
   const form = await ensureFamilyForm(ludoId, memberId, now)
   const annualFeeCents = input.annualFeeCents
-  const maxMembers = input.maxMembers
   const retentionDays = input.retentionDays
   if (!Number.isSafeInteger(annualFeeCents) || (annualFeeCents as number) < 0 || (annualFeeCents as number) > 1_000_000 ||
-      !Number.isSafeInteger(maxMembers) || (maxMembers as number) < 1 || (maxMembers as number) > 50 ||
       !Number.isSafeInteger(retentionDays) || (retentionDays as number) < 1 || (retentionDays as number) > 365 ||
       typeof input.enabled !== 'boolean' || typeof input.allowsTwint !== 'boolean' || typeof input.allowsCash !== 'boolean' || (!input.allowsTwint && !input.allowsCash))
     throw new FamilyRegistrationServiceError('Configuration invalide.')
-  const updated = await updateFamilyRegistrationFormRow({ id: form.id, ludoId, memberId, expectedRevision: revision(input.revision), title: text(input.title, 'Titre', 200) as string, intro: text(input.intro, 'Introduction', 5000, true), consentLabel: text(input.consentLabel, 'Consentement', 1000, true), enabled: input.enabled, maxMembers: maxMembers as number, retentionDays: retentionDays as number, annualFeeCents: annualFeeCents as number, allowsTwint: input.allowsTwint, allowsCash: input.allowsCash, now })
+  const updated = await updateFamilyRegistrationFormRow({ id: form.id, ludoId, memberId, expectedRevision: revision(input.revision), title: text(input.title, 'Titre', 200) as string, intro: text(input.intro, 'Introduction', 5000, true), consentLabel: text(input.consentLabel, 'Consentement', 1000, true), enabled: input.enabled, maxMembers: TECHNICAL_MAX_FAMILY_MEMBERS, retentionDays: retentionDays as number, annualFeeCents: annualFeeCents as number, allowsTwint: input.allowsTwint, allowsCash: input.allowsCash, now })
   if (!updated) throw new FamilyRegistrationServiceError('Configuration modifiée simultanément.', 'conflict')
   await emitAuditEvent({ action: 'family_membership.configuration_updated', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_form', entityId: form.id, metadata: { revision: updated.revision } })
   return updated

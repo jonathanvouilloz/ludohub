@@ -33,6 +33,15 @@
   <p class="banner banner-error" role="alert">{form.error}</p>
 {/if}
 
+{#if form?.passwordError}
+  <p class="banner banner-error" role="alert">{form.passwordError}</p>
+{/if}
+{#if form?.passwordSuccess}
+  <p class="banner banner-success" role="status">
+    Mot de passe mis à jour. Les autres sessions devront se reconnecter.
+  </p>
+{/if}
+
 <section class="card logo-card">
   <div class="logo-head">
     <div>
@@ -71,6 +80,33 @@
       </form>
     {/if}
   </div>
+</section>
+
+<section class="card password-card">
+  <div>
+    <h2>Mot de passe de la ludothèque</h2>
+    <p class="muted">
+      Il est partagé par l’équipe. Le modifier déconnecte les autres sessions et postes
+      d’extension.
+    </p>
+  </div>
+  <form method="POST" action="?/changePassword" use:enhance={toastEnhance({ errorMode: 'inline' })}>
+    <div class="field">
+      <Label for="current-password">Mot de passe actuel</Label>
+      <Input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required />
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <Label for="next-password">Nouveau mot de passe</Label>
+        <Input id="next-password" name="nextPassword" type="password" autocomplete="new-password" minlength={6} required />
+      </div>
+      <div class="field">
+        <Label for="confirm-password">Confirmer le nouveau mot de passe</Label>
+        <Input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" minlength={6} required />
+      </div>
+    </div>
+    <div class="actions"><Button type="submit">Modifier le mot de passe</Button></div>
+  </form>
 </section>
 
 <section class="card">
@@ -178,6 +214,7 @@
     flex-direction: column;
     gap: var(--space-4);
   }
+  .password-card { display: grid; gap: var(--space-4); margin-top: var(--space-4); }
   .logo-head {
     display: flex;
     align-items: flex-start;
@@ -210,6 +247,7 @@
     background: var(--danger-light);
     color: var(--danger);
   }
+  .banner-success { background: var(--success-light); color: var(--success); }
   form {
     display: flex;
     flex-direction: column;

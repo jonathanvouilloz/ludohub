@@ -36,7 +36,7 @@ const LUDO = '10000000-0000-4000-8000-000000000001'
 const SITE = '20000000-0000-4000-8000-000000000001'
 const RECEIPT = '30000000-0000-4000-8000-000000000001'
 const input = {
-  gender: 'female', firstName: ' Ada ', lastName: ' Lovelace ', address: 'Rue 1', postalCode: '1200', city: 'Genève', phone: '+41 22 000 00 00', secondaryPhone: '', email: 'ADA@example.ch', consentAccepted: true, consentFullName: 'Ada Lovelace', consentAcceptedOn: '2026-08-06', members: [{ gender: 'male', firstName: 'Charles', lastName: 'Lovelace', birthDate: '2020-02-29' }],
+  gender: 'female', firstName: ' Ada ', lastName: ' Lovelace ', address: 'Rue 1', postalCode: '1200', city: 'Genève', phone: '+41 22 000 00 00', secondaryPhone: '', email: 'ADA@example.ch', consentAccepted: true, consentFullName: 'Ada Lovelace', consentAcceptedOn: '2026-08-06', members: [{ firstName: 'Charles', lastName: 'Lovelace' }],
 }
 const config = { form_id: '40000000-0000-4000-8000-000000000001', form_version_id: '50000000-0000-4000-8000-000000000001', version: 1, max_members: 20, consent_label: 'Texte validé', documents: [{ id: 'd', title: 'Règles', requiredAcceptance: true }] }
 
@@ -49,6 +49,10 @@ describe('soumission familiale idempotente', () => {
     const result = await submitPublicFamilyMembership('demo', 'request-0000000001', input)
     expect(result.created).toBe(true)
     expect(db.insert).toHaveBeenCalledWith(expect.objectContaining({ ludoId: LUDO, siteId: SITE, email: 'ada@example.ch', fingerprint: expect.stringMatching(/^[a-f0-9]{64}$/) }))
+    expect(db.insert).toHaveBeenCalledWith(expect.objectContaining({
+      birthDate: null,
+      members: [expect.objectContaining({ gender: 'unspecified', birthDate: null })],
+    }))
     expect(JSON.stringify(result)).not.toMatch(/Ada|example\.ch/)
   })
 
@@ -71,6 +75,12 @@ describe('soumission familiale idempotente', () => {
     await expect(submitPublicFamilyMembership('demo', 'request-0000000001', invalid as never)).rejects.toMatchObject({ code: 'invalid' })
   })
 
+  it('exige au moins un membre de la famille', async () => {
+    await expect(
+      submitPublicFamilyMembership('demo', 'request-0000000001', { ...input, members: [] }),
+    ).rejects.toMatchObject({ code: 'invalid' })
+  })
+
   it('exige un site explicite lorsqu’il y en a plusieurs', async () => {
     listActiveSiteRows.mockResolvedValue([{ id: SITE }, { id: 'another' }])
     await expect(submitPublicFamilyMembership('demo', 'request-0000000001', input)).rejects.toMatchObject({ code: 'invalid' })
@@ -85,7 +95,7 @@ describe('gestion responsable', () => {
   })
   it('audite une configuration sans inclure son texte', async () => {
     db.getForm.mockResolvedValue({ id: 'form', revision: 1 }); db.updateForm.mockResolvedValue({ id: 'form', revision: 2 })
-    await updateFamilyForm(LUDO, 'member', { revision: 1, title: 'Adhésion secrète', intro: null, consentLabel: 'Texte privé', enabled: true, maxMembers: 20, retentionDays: 30, annualFeeCents: 3000, allowsTwint: true, allowsCash: true })
+    await updateFamilyForm(LUDO, 'member', { revision: 1, title: 'Adhésion secrète', intro: null, consentLabel: 'Texte privé', enabled: true, retentionDays: 30, annualFeeCents: 3000, allowsTwint: true, allowsCash: true })
     expect(emitAuditEvent).toHaveBeenCalled(); expect(JSON.stringify(emitAuditEvent.mock.calls)).not.toMatch(/secrète|Texte privé/)
   })
 

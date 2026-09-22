@@ -400,11 +400,11 @@
     <div class="sg-empty-demo">
       <EmptyState
         icon={InboxIcon}
-        title="Aucune demande pour le moment"
-        description="Les demandes d'aide du réseau apparaîtront ici."
+          title="Aucun élément pour le moment"
+          description="Les éléments à traiter apparaîtront ici."
       >
         {#snippet action()}
-          <Button>Créer une demande</Button>
+            <Button>Créer un élément</Button>
         {/snippet}
       </EmptyState>
     </div>

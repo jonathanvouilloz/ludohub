@@ -93,8 +93,8 @@ export function buildNavConfig(slug: string): NavDest[] {
       zones: ['sidebar', 'sheet'],
     },
     {
-      label: 'Réseau',
-      href: '/reseau/aide',
+      label: 'Thèmes partagés',
+      href: '/reseau/themes',
       icon: Share2Icon,
       match: (p) => p.startsWith('/reseau') && !p.startsWith('/reseau/notifications'),
       zones: ['sidebar', 'sheet'],

@@ -2,11 +2,13 @@ import { fail } from '@sveltejs/kit'
 import { del, put } from '@vercel/blob'
 import { env } from '$env/dynamic/private'
 import {
+  changeLudoPassword,
   LudothequeServiceError,
   setLudoLogo,
   updateLudoInfo,
 } from '$lib/server/services/ludotheque.js'
 import { requireResponsableContext } from '$lib/server/ludo-context.js'
+import { setLudoSessionCookie } from '$lib/server/services/auth.js'
 import type { Actions, PageServerLoad } from './$types'
 
 const LOGO_TYPES: Record<string, string> = {
@@ -45,6 +47,26 @@ export const actions: Actions = {
       return { success: true }
     } catch (err) {
       if (err instanceof LudothequeServiceError) return fail(400, { error: err.message })
+      throw err
+    }
+  },
+
+  changePassword: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    const nextPassword = String(data.get('nextPassword') ?? '')
+    if (nextPassword !== String(data.get('confirmPassword') ?? ''))
+      return fail(400, { passwordError: 'Les deux nouveaux mots de passe ne correspondent pas.' })
+    try {
+      const updated = await changeLudoPassword(
+        ludo,
+        String(data.get('currentPassword') ?? ''),
+        nextPassword,
+      )
+      await setLudoSessionCookie(event.cookies, { ludoId: ludo.id, memberId: member.id }, updated.passwordHash)
+      return { passwordSuccess: true }
+    } catch (err) {
+      if (err instanceof LudothequeServiceError) return fail(400, { passwordError: err.message })
       throw err
     }
   },

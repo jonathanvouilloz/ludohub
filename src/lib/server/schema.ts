@@ -2682,62 +2682,6 @@ export const themeCheckupItemsRelations = relations(themeCheckupItems, ({ one })
   }),
 }))
 
-// ─── Cross-ludo (demandes d'aide) ────────────────────────────────────────────
-
-export const helpRequestStatus = pgEnum('help_request_status', ['ouverte', 'pourvue', 'annulee'])
-
-export const helpRequests = pgTable('help_requests', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  ludoId: uuid('ludo_id')
-    .notNull()
-    .references(() => ludotheques.id, { onDelete: 'cascade' }),
-  date: date('date').notNull(),
-  slotInfo: text('slot_info'),
-  notes: text('notes'),
-  status: helpRequestStatus('status').notNull().default('ouverte'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-})
-
-export const helpResponseStatus = pgEnum('help_response_status', ['propose', 'confirme', 'refuse'])
-
-export const helpResponses = pgTable('help_responses', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  helpRequestId: uuid('help_request_id')
-    .notNull()
-    .references(() => helpRequests.id, { onDelete: 'cascade' }),
-  memberId: uuid('member_id')
-    .notNull()
-    .references(() => members.id),
-  ludoId: uuid('ludo_id')
-    .notNull()
-    .references(() => ludotheques.id),
-  status: helpResponseStatus('status').notNull().default('propose'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-})
-
-export const helpRequestsRelations = relations(helpRequests, ({ one, many }) => ({
-  ludo: one(ludotheques, {
-    fields: [helpRequests.ludoId],
-    references: [ludotheques.id],
-  }),
-  responses: many(helpResponses),
-}))
-
-export const helpResponsesRelations = relations(helpResponses, ({ one }) => ({
-  request: one(helpRequests, {
-    fields: [helpResponses.helpRequestId],
-    references: [helpRequests.id],
-  }),
-  member: one(members, {
-    fields: [helpResponses.memberId],
-    references: [members.id],
-  }),
-  ludo: one(ludotheques, {
-    fields: [helpResponses.ludoId],
-    references: [ludotheques.id],
-  }),
-}))
-
 // ─── Interne ludo ────────────────────────────────────────────────────────────
 
 export const gameWishStatus = pgEnum('game_wish_status', ['souhaite', 'achete'])
@@ -2817,8 +2761,6 @@ export const notificationType = pgEnum('notification_type', [
   'theme_request',
   'theme_request_confirmed',
   'theme_request_declined',
-  'help_response',
-  'help_confirmed',
   'absence_request',
   'absence_approved',
   'absence_refused',
@@ -3089,8 +3031,6 @@ export type ThemeCheckupRow = typeof themeCheckups.$inferSelect
 export type ThemeCheckupInsert = typeof themeCheckups.$inferInsert
 export type ThemeCheckupItemRow = typeof themeCheckupItems.$inferSelect
 export type ThemeCheckupItemInsert = typeof themeCheckupItems.$inferInsert
-export type HelpRequestRow = typeof helpRequests.$inferSelect
-export type HelpResponseRow = typeof helpResponses.$inferSelect
 export type GameWishRow = typeof gameWishes.$inferSelect
 export type GameWishInsert = typeof gameWishes.$inferInsert
 export type SupplyRequestRow = typeof supplyRequests.$inferSelect

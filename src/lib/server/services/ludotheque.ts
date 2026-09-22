@@ -1,5 +1,7 @@
 import { updateLudoById } from '../db/ludotheques.js'
 import type { LudothequeRow } from '../schema.js'
+import { hashLudoPassword } from './auth.js'
+import { verifyPassword } from 'better-auth/crypto'
 
 /** Erreur métier (message destiné à l'UI responsable). */
 export class LudothequeServiceError extends Error {}
@@ -47,6 +49,14 @@ function parseWebsite(value: string | undefined): string | null {
   return url
 }
 
+function parsePassword(value: string): string {
+  if (value.length < 6) {
+    throw new LudothequeServiceError('Le mot de passe doit faire au moins 6 caractères.')
+  }
+  if (value.length > 200) throw new LudothequeServiceError('Le mot de passe est trop long.')
+  return value
+}
+
 // ─── Mutations ──────────────────────────────────────────────────────────────────
 
 export interface LudoInfoInput {
@@ -61,7 +71,7 @@ export interface LudoInfoInput {
 
 /**
  * Met à jour les informations publiques d'une ludothèque (côté responsable).
- * Le slug et le mot de passe restent réservés au super-admin.
+ * Le slug reste réservé au super-admin.
  */
 export async function updateLudoInfo(ludoId: string, data: LudoInfoInput): Promise<LudothequeRow> {
   return updateLudoById(ludoId, {
@@ -72,6 +82,19 @@ export async function updateLudoInfo(ludoId: string, data: LudoInfoInput): Promi
     phone: parseOptional(data.phone),
     email: parseEmail(data.email),
     website: parseWebsite(data.website),
+  })
+}
+
+/** Un responsable change le mot de passe partagé de sa propre ludothèque. */
+export async function changeLudoPassword(
+  ludo: Pick<LudothequeRow, 'id' | 'passwordHash'>,
+  currentPassword: string,
+  nextPassword: string,
+): Promise<LudothequeRow> {
+  const valid = await verifyPassword({ hash: ludo.passwordHash, password: currentPassword })
+  if (!valid) throw new LudothequeServiceError('Le mot de passe actuel est incorrect.')
+  return updateLudoById(ludo.id, {
+    passwordHash: await hashLudoPassword(parsePassword(nextPassword)),
   })
 }
 

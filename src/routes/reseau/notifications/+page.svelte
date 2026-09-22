@@ -26,8 +26,6 @@
       theme_request: n.entityId ? `/${slug}/themes/${n.entityId}` : `/${slug}/themes`,
       theme_request_confirmed: '/reseau/themes',
       theme_request_declined: '/reseau/themes',
-      help_response: '/reseau/aide',
-      help_confirmed: '/reseau/aide',
       absence_request: `/${slug}/absences`,
       absence_approved: `/${slug}/absences`,
       absence_refused: `/${slug}/absences`,

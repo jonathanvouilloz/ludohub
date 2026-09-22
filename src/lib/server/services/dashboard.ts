@@ -3,7 +3,6 @@ import { listSupplyRequests } from './supplies.js'
 import { listGameWishes } from './wishes.js'
 import { getActiveSeason, getMyUpcomingSaturdays } from './planning.js'
 import { listThemes } from './themes.js'
-import { getFeed } from './help.js'
 import { getActiveMembersByLudo, countResponsablesActifs } from '../db/members.js'
 import { getPendingAbsencesByLudo, getApprovedAbsencesInRange } from '../db/absences.js'
 import { isResponsable } from '$lib/utils/permissions.js'
@@ -19,7 +18,6 @@ export type ReminderModule =
   | 'planning'
   | 'absences'
   | 'themes'
-  | 'reseau'
   | 'notifs'
 
 export type Reminder = {
@@ -50,7 +48,6 @@ export type DashboardData = {
     }
     absences: { pending: number; approvedUpcoming: number }
     themes: { total: number; activeInstallations: number; checkupMissingItems: number }
-    reseau: { openRequests: number; mineOpen: number }
     notifs: { unread: number }
     team: { activeMembers: number; responsables: number }
   }
@@ -96,7 +93,6 @@ export async function getDashboardData(
     activeSeason,
     myUpcoming,
     themes,
-    feed,
     activeMembers,
     responsables,
     approvedUpcoming,
@@ -108,7 +104,6 @@ export async function getDashboardData(
     getActiveSeason(ludo.id),
     getMyUpcomingSaturdays(member.id),
     listThemes(ludo.id),
-    getFeed(ludo.id, member.id),
     getActiveMembersByLudo(ludo.id),
     countResponsablesActifs(ludo.id),
     getApprovedAbsencesInRange(ludo.id, today, in30),
@@ -144,9 +139,6 @@ export async function getDashboardData(
   // où c'est installé (inclut les thèmes empruntés).
   const activeInstallations = themes.filter((t) => t.installations.length > 0).length
   const checkupMissingItems = problematicCount
-
-  // ─── Réseau ───────────────────────────────────────────────────────────────
-  const mineOpen = feed.filter((f) => f.isMine).length
 
   // ─── Rappels « à faire » ──────────────────────────────────────────────────
   const base = ludo.slug
@@ -203,17 +195,6 @@ export async function getDashboardData(
       href: `/${base}/planning`,
     })
   }
-  if (feed.length > 0) {
-    reminders.push({
-      id: 'reseau',
-      module: 'reseau',
-      tone: 'info',
-      label: `${feed.length} demande${feed.length > 1 ? 's' : ''} d'aide ouverte${feed.length > 1 ? 's' : ''} sur le réseau`,
-      href: '/reseau/aide',
-      count: feed.length,
-    })
-  }
-
   reminders.sort((a, b) => TONE_RANK[a.tone] - TONE_RANK[b.tone])
 
   return {
@@ -235,7 +216,6 @@ export async function getDashboardData(
       },
       absences: { pending: pendingAbsences.length, approvedUpcoming: approvedUpcoming.length },
       themes: { total: themes.length, activeInstallations, checkupMissingItems },
-      reseau: { openRequests: feed.length, mineOpen },
       notifs: { unread: notifCount },
       team: { activeMembers: activeMembers.length, responsables },
     },

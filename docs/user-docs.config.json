@@ -211,14 +211,6 @@
       "title": "Réseau",
       "shots": [
         {
-          "id": "aide",
-          "route": "/reseau/aide",
-          "waitFor": "h1",
-          "label": "Les demandes d’aide du réseau",
-          "caption": "Chaque carte est une demande de renfort d’une ludothèque ; vous pouvez vous proposer.",
-          "highlights": [{ "selector": "article.card", "label": "1" }]
-        },
-        {
           "id": "catalogue",
           "route": "/reseau/themes",
           "waitFor": "h1",
