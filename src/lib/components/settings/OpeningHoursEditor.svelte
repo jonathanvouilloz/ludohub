@@ -48,6 +48,7 @@
               <input
                 type="time"
                 value={entry.row.opensAt}
+                step="900"
                 oninput={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}
                 required
               />
@@ -58,6 +59,7 @@
               <input
                 type="time"
                 value={entry.row.closesAt}
+                step="900"
                 oninput={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}
                 required
               />

@@ -10,7 +10,7 @@ describe('navigation éditoriale du site public', () => {
     expect(home).toContain('Informations du site')
     expect(home).toContain('Messages et demandes')
     expect(home).toContain('/lieux-horaires`')
-    expect(home).toContain('/inscriptions`')
+    expect(home).not.toContain('/inscriptions`')
   })
 
   it('sépare la liste, la fiche et le formulaire des actualités', async () => {

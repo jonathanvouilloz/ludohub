@@ -1,5 +1,4 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit'
-import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import {
   deletePublicSiteMedia,
@@ -11,10 +10,8 @@ import type { AuthorizedMediaScope } from '$lib/server/media/paths.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import {
   authorizePublicGalleryMediaScope,
-  clearPublicGalleryImageFile,
   createPublicGalleryImage,
   permanentlyDeletePublicGalleryImage,
-  hidePublicGalleryImage,
   listPublicGalleryForManagement,
   publishPublicGalleryImage,
   PublicGalleryServiceError,
@@ -29,26 +26,21 @@ async function context(e: RequestEvent) {
   if (!(await isPublicSiteEnabled(c.ludo.id))) throw error(404, 'Module indisponible')
   return c
 }
-function targets(d: FormData) {
-  const targetMode = d.get('targetMode'),
-    siteIds = d.getAll('siteIds').map(String)
-  if (targetMode === 'all') {
-    if (siteIds.length) throw new PublicGalleryServiceError('Ciblage invalide.')
-    return { targetMode, siteIds: [] } as const
-  }
-  if (targetMode === 'explicit') {
-    if (!siteIds.length) throw new PublicGalleryServiceError('Sélectionnez un lieu actif.')
-    return { targetMode, siteIds } as const
-  }
-  throw new PublicGalleryServiceError('Ciblage requis.')
-}
-function input(d: FormData): PublicGalleryInput {
+function createInput(d: FormData): PublicGalleryInput {
+  const caption = String(d.get('caption') ?? '').trim()
+  if (!caption) throw new PublicGalleryServiceError('Ajoutez une légende.')
   return {
-    caption: String(d.get('caption') ?? '').trim() || null,
-    alt: String(d.get('alt') ?? '').trim() || null,
-    sortOrder: Number(d.get('sortOrder')),
-    ...targets(d),
+    caption,
+    alt: caption,
+    sortOrder: 0,
+    targetMode: 'all',
+    siteIds: [],
   }
+}
+function updateInput(d: FormData) {
+  const caption = String(d.get('caption') ?? '').trim()
+  if (!caption) throw new PublicGalleryServiceError('Ajoutez une légende.')
+  return { caption, alt: caption }
 }
 function rev(d: FormData) {
   const v = Number(d.get('revision'))
@@ -107,25 +99,44 @@ const POLICY = {
 }
 export const load: PageServerLoad = async (e) => {
   const { ludo } = await context(e)
-  const [galleryItems, sites] = await Promise.all([
-    listPublicGalleryForManagement(ludo.id),
-    listSiteRowsWithOpeningHours(ludo.id),
-  ])
-  return { galleryItems, sites }
+  return { galleryItems: await listPublicGalleryForManagement(ludo.id) }
 }
 export const actions: Actions = {
   create: async (e) => {
     const { ludo, member } = await context(e),
       d = await e.request.formData()
     return run(async () => {
-      const x = input(d),
-        item = await createPublicGalleryImage(ludo.id, member.id, x)
+      const x = createInput(d),
+        file = d.get('file')
+      if (!(file instanceof File) || file.size < 1)
+        throw new MediaStorageError('Sélectionnez une image.')
+      const item = await createPublicGalleryImage(ludo.id, member.id, x)
+      const registered = await uploadAndRegisterMedia({
+        authorize: () => authorizePublicGalleryMediaScope(ludo.id, item.id, item.revision),
+        upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: POLICY }),
+        register: async (scope, blob) => ({
+          scope,
+          result: await setPublicGalleryImageFile(
+            ludo.id,
+            item.id,
+            member.id,
+            item.revision,
+            scope,
+            blob,
+            x.alt ?? x.caption ?? '',
+          ),
+        }),
+        cleanup: deletePublicSiteMedia,
+      })
+      await publishPublicGalleryImage(
+        item.id,
+        ludo.id,
+        member.id,
+        registered.result.image.revision,
+      )
       await audit('public_gallery.created', ludo.id, member.id, item.id, {
-        sortOrder: x.sortOrder,
-        targetMode: x.targetMode,
-        targetSiteIds: x.siteIds,
-        hasCaption: x.caption !== null,
-        hasAlt: x.alt !== null,
+        hasCaption: true,
+        uploaded: true,
       })
       return { success: true }
     })
@@ -135,14 +146,10 @@ export const actions: Actions = {
       d = await e.request.formData(),
       id = String(d.get('id') ?? '')
     return run(async () => {
-      const x = input(d),
+      const x = updateInput(d),
         item = await updatePublicGalleryImage(id, ludo.id, x, member.id, rev(d))
       await audit('public_gallery.updated', ludo.id, member.id, item.id, {
-        sortOrder: x.sortOrder,
-        targetMode: x.targetMode,
-        targetSiteIds: x.siteIds,
-        hasCaption: x.caption !== null,
-        hasAlt: x.alt !== null,
+        hasCaption: true,
       })
       return { success: true }
     })
@@ -152,21 +159,8 @@ export const actions: Actions = {
       d = await e.request.formData(),
       id = String(d.get('id') ?? '')
     return run(async () => {
-      const next = d.get('status')
-      if (next !== 'published' && next !== 'hidden')
-        throw new PublicGalleryServiceError('Transition invalide.')
-      const t =
-        next === 'published'
-          ? await publishPublicGalleryImage(id, ludo.id, member.id, rev(d))
-          : await hidePublicGalleryImage(id, ludo.id, member.id, rev(d))
-      if (t.changed)
-        await audit(
-          next === 'published' ? 'public_gallery.published' : 'public_gallery.hidden',
-          ludo.id,
-          member.id,
-          t.image.id,
-          { fromStatus: t.previousStatus, toStatus: t.image.status },
-        )
+      const t = await publishPublicGalleryImage(id, ludo.id, member.id, rev(d))
+      if (t.changed) await audit('public_gallery.published', ludo.id, member.id, t.image.id)
       return { success: true }
     })
   },
@@ -190,10 +184,9 @@ export const actions: Actions = {
     return run(async () => {
       const r = rev(d),
         file = d.get('file'),
-        alt = String(d.get('alt') ?? '').trim()
+        alt = String(d.get('caption') ?? '').trim()
       if (!(file instanceof File)) throw new MediaStorageError('Sélectionnez une image.')
-      if (!alt || alt.length > 300)
-        throw new PublicGalleryServiceError('Le texte alternatif est requis pour cette image.')
+      if (!alt || alt.length > 300) throw new PublicGalleryServiceError('Ajoutez une légende.')
       const registered = await uploadAndRegisterMedia({
         authorize: () => authorizePublicGalleryMediaScope(ludo.id, id, r),
         upload: (s) => uploadPublicSiteMedia({ scope: s, file, policy: POLICY }),
@@ -212,19 +205,6 @@ export const actions: Actions = {
         'replace',
       )
       await audit('public_gallery.image_updated', ludo.id, member.id, id)
-      return { success: true }
-    })
-  },
-  removeImage: async (e) => {
-    const { ludo, member } = await context(e),
-      d = await e.request.formData(),
-      id = String(d.get('id') ?? '')
-    return run(async () => {
-      const r = rev(d),
-        s = await authorizePublicGalleryMediaScope(ludo.id, id, r),
-        x = await clearPublicGalleryImageFile(ludo.id, id, member.id, r)
-      await cleanup(s, x.previousStorageKey, ludo.id, member.id, id, 'remove')
-      await audit('public_gallery.image_removed', ludo.id, member.id, id)
       return { success: true }
     })
   },

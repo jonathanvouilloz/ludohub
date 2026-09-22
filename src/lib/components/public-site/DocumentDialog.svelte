@@ -109,7 +109,7 @@
             name="kind"
             bind:value={kind}
             ><option value="mission">Mission</option><option value="statutes">Statuts</option
-            ><option value="annual_report">Rapport annuel</option><option value="other"
+            ><option value="annual_report">Rapport d’activité</option><option value="other"
               >Autre</option
             ></select
           >

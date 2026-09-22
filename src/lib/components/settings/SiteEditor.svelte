@@ -42,7 +42,7 @@
   })
 </script>
 
-<details class="editor" open={!multiSite || site.isPrimary}>
+<details class="editor" open>
   <summary>
     <div>
       <span class="site-name">{site.name}</span>
@@ -171,7 +171,7 @@
 
     <fieldset>
       <legend>Horaires hebdomadaires</legend>
-      <p class="hint">Ajoutez plusieurs plages pour indiquer une fermeture à midi.</p>
+      <p class="hint">Ajoutez une seconde plage en cas de fermeture à midi. Les heures se règlent par quarts d’heure.</p>
       <OpeningHoursEditor bind:value={openingHours} onDirty={() => (dirty = true)} />
     </fieldset>
 

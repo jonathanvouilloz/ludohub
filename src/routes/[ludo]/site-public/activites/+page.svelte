@@ -46,23 +46,13 @@
     <div>
       <h1>Activités</h1>
       <p>
-        Choisissez une activité pour gérer son contenu, ses dates, sa publication et ses
-        inscriptions.
+        Choisissez une activité pour gérer son contenu, ses dates et sa publication.
       </p>
     </div>
     <Button onclick={() => (dialogOpen = true)}
       ><PlusIcon size={16} aria-hidden="true" /> Nouvelle activité</Button
     >
   </header>
-  {#if data.canManageRegistrations}<aside>
-      <div>
-        <strong>Inscriptions reçues</strong>
-        <p>Les demandes des familles sont maintenant regroupées dans leur propre rubrique.</p>
-      </div>
-      <Button href={`/${data.ludo.slug}/site-public/inscriptions`} variant="outline"
-        >Voir les inscriptions</Button
-      >
-    </aside>{/if}
   {#if data.activities.length === 0}<EmptyState
       icon={CalendarIcon}
       title="Aucune activité"
@@ -111,8 +101,7 @@
     padding: var(--space-4) var(--space-6) var(--space-12);
     gap: var(--space-5);
   }
-  header,
-  aside {
+  header {
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -126,21 +115,10 @@
     color: var(--text-main);
     font-size: var(--text-h1);
   }
-  header p,
-  aside p {
+  header p {
     margin-top: var(--space-2);
     color: var(--text-muted);
     line-height: 1.5;
-  }
-  aside {
-    align-items: center;
-    padding: var(--space-4) var(--space-5);
-    border: 1px solid var(--primary-light);
-    border-radius: var(--radius-md);
-    background: var(--bg-card);
-  }
-  aside strong {
-    color: var(--text-main);
   }
   .filters {
     display: flex;
@@ -186,13 +164,11 @@
     .index-page {
       padding: var(--space-3) var(--space-4) var(--space-10);
     }
-    header,
-    aside {
+    header {
       align-items: stretch;
       flex-direction: column;
     }
-    header :global(button),
-    aside :global(a) {
+    header :global(button) {
       width: 100%;
     }
   }

@@ -15,7 +15,6 @@
   import NewspaperIcon from '@lucide/svelte/icons/newspaper'
   import TrophyIcon from '@lucide/svelte/icons/trophy'
   import UserRoundIcon from '@lucide/svelte/icons/user-round'
-  import UsersIcon from '@lucide/svelte/icons/users'
 
   let { data } = $props()
   const enabled = $derived(data.publicSiteState.enabled)
@@ -127,14 +126,6 @@
           description="Lire et traiter les demandes de contact."
           icon={InboxIcon}
         />
-        {#if data.canConfigure}
-          <PublicSiteSectionCard
-            href={`${base}/inscriptions`}
-            title="Inscriptions aux activités"
-            description="Consulter les inscriptions et mettre à jour leur statut."
-            icon={UsersIcon}
-          />
-        {/if}
       </div>
     </section>
   {:else}

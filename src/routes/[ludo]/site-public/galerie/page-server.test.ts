@@ -103,30 +103,29 @@ describe('route galerie', () => {
     await expect(load(event() as never)).resolves.toMatchObject({ galleryItems: [item] })
     expect(listPublicGalleryForManagement).toHaveBeenCalledWith(L)
   })
-  it('crée sans album avec ciblage', async () => {
+  it('crée, ajoute et publie une photo avec une légende unique', async () => {
+    const f = new File(['jpg'], 'x.jpg', { type: 'image/jpeg' })
     await actions.create!(
       event([
         ['caption', 'Jeux en fête'],
-        ['alt', 'Des joueurs'],
-        ['sortOrder', '1'],
-        ['targetMode', 'all'],
+        ['file', f],
       ]) as never,
     )
     expect(createPublicGalleryImage).toHaveBeenCalledWith(L, M, {
       caption: 'Jeux en fête',
-      alt: 'Des joueurs',
-      sortOrder: 1,
+      alt: 'Jeux en fête',
+      sortOrder: 0,
       targetMode: 'all',
       siteIds: [],
     })
   })
-  it('transmet l’alt courant au remplacement sécurisé 8 MiB', async () => {
+  it('utilise la légende comme texte alternatif pour les contenus existants', async () => {
     const f = new File(['jpg'], 'x.jpg', { type: 'image/jpeg' })
     await actions.uploadImage!(
       event([
         ['id', ID],
         ['revision', '1'],
-        ['alt', 'Des joueurs'],
+        ['caption', 'Des joueurs'],
         ['file', f],
       ]) as never,
     )
@@ -149,7 +148,7 @@ describe('route galerie', () => {
     )
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD)
   })
-  it('rejette un alt manquant avant upload', async () => {
+  it('rejette une légende manquante avant upload', async () => {
     const f = new File(['jpg'], 'x.jpg', { type: 'image/jpeg' })
     const result = await actions.uploadImage!(
       event([

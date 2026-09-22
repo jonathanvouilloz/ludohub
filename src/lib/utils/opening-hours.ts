@@ -45,6 +45,9 @@ export function normalizeOpeningHours(value: unknown): OpeningHourInput[] {
     if (!TIME_PATTERN.test(opensAt) || !TIME_PATTERN.test(closesAt)) {
       throw new OpeningHoursValidationError("L'heure doit être au format HH:mm.")
     }
+    if (minutes(opensAt) % 15 !== 0 || minutes(closesAt) % 15 !== 0) {
+      throw new OpeningHoursValidationError("Les horaires doivent être indiqués par quarts d’heure.")
+    }
     if (minutes(opensAt) >= minutes(closesAt)) {
       throw new OpeningHoursValidationError("L'heure de fermeture doit suivre l'heure d'ouverture.")
     }
@@ -87,5 +90,6 @@ export function parseOpeningHours(value: FormDataEntryValue | null): OpeningHour
 }
 
 export function formatTime(value: string): string {
-  return value.replace(':', 'h')
+  const [hours, minutes] = value.split(':')
+  return `${hours}h${minutes}`
 }

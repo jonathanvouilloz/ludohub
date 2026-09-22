@@ -10,7 +10,6 @@
     annonces: 'Annonces',
     actualites: 'Actualités',
     activites: 'Activités',
-    inscriptions: 'Inscriptions',
     'top-3': 'Top 3',
     faq: 'Questions fréquentes',
     documents: 'Documents',

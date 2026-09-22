@@ -108,43 +108,6 @@
       </ul>{/if}
   </section>
 
-  {#if data.canManageRegistrations && item.lifecycle === 'active'}<section>
-      <div>
-        <h2>Inscriptions</h2>
-        <p>Activez les inscriptions publiques et indiquez une capacité si nécessaire.</p>
-      </div>
-      <form
-        class="registration"
-        method="POST"
-        action="?/registrationSettings"
-        use:enhance={toastEnhance({
-          success: 'Réglages d’inscription mis à jour.',
-          onPending: (value) => (pending = value),
-        })}
-      >
-        <input type="hidden" name="id" value={item.id} /><input
-          type="hidden"
-          name="revision"
-          value={item.revision}
-        /><label class="toggle"
-          ><input type="checkbox" name="enabled" checked={item.registrationEnabled} /> Accepter les inscriptions</label
-        ><label
-          ><span>Nombre maximum de participants</span><input
-            type="number"
-            name="capacity"
-            min="1"
-            max="10000"
-            value={item.registrationCapacity ?? ''}
-            placeholder="Sans limite"
-          /></label
-        ><Button type="submit" variant="outline" disabled={pending}>Enregistrer</Button>
-      </form>
-      <Button
-        href={`/${data.ludo.slug}/site-public/inscriptions?registrationActivity=${item.id}`}
-        variant="outline">Voir les inscriptions à cette activité</Button
-      >
-    </section>{/if}
-
   {#if item.lifecycle === 'active'}<details class="secondary-settings">
       <summary><span>Mettre l’activité en avant</span><small>Optionnel</small></summary>
       <section class="settings-panel">
@@ -323,16 +286,11 @@
     margin: 0;
     padding-left: var(--space-5);
   }
-  .registration,
   .feature {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(15rem, 1fr) auto;
     align-items: flex-end;
     gap: var(--space-3);
-  }
-  .registration .toggle {
-    align-self: end;
-    min-width: 14rem;
   }
   .feature {
     grid-template-columns: minmax(0, 1fr) auto;
@@ -343,11 +301,6 @@
     gap: var(--space-1);
     color: var(--text-muted);
     font-size: var(--text-small);
-  }
-  .toggle {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
   }
   input,
   select {
@@ -403,7 +356,6 @@
     header,
     .publication,
     .lifecycle,
-    .registration,
     .feature {
       align-items: stretch;
       grid-template-columns: 1fr;
@@ -418,7 +370,6 @@
     header :global(button),
     .publication :global(button),
     .actions :global(button),
-    .registration :global(button),
     .feature :global(button) {
       width: 100%;
     }

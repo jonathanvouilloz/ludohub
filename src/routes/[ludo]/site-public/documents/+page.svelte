@@ -38,7 +38,7 @@
   const kindLabels = {
     mission: 'Mission',
     statutes: 'Statuts',
-    annual_report: 'Rapport annuel',
+    annual_report: 'Rapport d’activité',
     other: 'Autre',
   } as const
 </script>
@@ -49,7 +49,7 @@
     <div>
       <p class="eyebrow">Site public</p>
       <h1>Documents</h1>
-      <p class="intro">Publiez les textes institutionnels et leurs fichiers PDF.</p>
+      <p class="intro">Publiez les rapports d’activité et les documents officiels de l’association. Les rapports apparaissent dans la section Comité du site public.</p>
     </div>
     <Button onclick={openCreate}>Nouveau document</Button>
   </header>
