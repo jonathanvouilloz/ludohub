@@ -9,12 +9,14 @@ describe('édition des horaires', () => {
     )
   })
 
-  it('met à jour les plages dès la saisie avant la soumission', () => {
+  it('propose uniquement des créneaux par quarts d’heure', () => {
+    expect(hoursEditorSource).toContain('const TIME_OPTIONS = Array.from({ length: 96 }')
+    expect(hoursEditorSource).toContain('<select')
     expect(hoursEditorSource).toContain(
-      "oninput={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}",
+      "onchange={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}",
     )
     expect(hoursEditorSource).toContain(
-      "oninput={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}",
+      "onchange={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}",
     )
   })
 })

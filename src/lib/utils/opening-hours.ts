@@ -18,6 +18,12 @@ export const WEEK_DAYS = [
 ] as const
 
 const TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d$/
+const LEGACY_TIME_PATTERN = /^(?:[01]\d|2[0-3]):[0-5]\d:00$/
+
+/** Les anciennes valeurs PostgreSQL peuvent contenir des secondes à zéro. */
+function canonicalTime(value: string): string {
+  return LEGACY_TIME_PATTERN.test(value) ? value.slice(0, 5) : value
+}
 
 function minutes(value: string): number {
   const [hours, mins] = value.split(':').map(Number)
@@ -36,8 +42,8 @@ export function normalizeOpeningHours(value: unknown): OpeningHourInput[] {
     }
     const row = item as Record<string, unknown>
     const dayOfWeek = Number(row.dayOfWeek)
-    const opensAt = String(row.opensAt ?? '')
-    const closesAt = String(row.closesAt ?? '')
+    const opensAt = canonicalTime(String(row.opensAt ?? ''))
+    const closesAt = canonicalTime(String(row.closesAt ?? ''))
 
     if (!Number.isInteger(dayOfWeek) || dayOfWeek < 1 || dayOfWeek > 7) {
       throw new OpeningHoursValidationError('Le jour choisi est invalide.')

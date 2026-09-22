@@ -2,12 +2,21 @@
   import PlusIcon from '@lucide/svelte/icons/plus'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import { Button } from '$lib/components/ui/button/index.js'
-  import { WEEK_DAYS, type OpeningHourInput } from '$lib/utils/opening-hours.js'
+  import { WEEK_DAYS, formatTime, type OpeningHourInput } from '$lib/utils/opening-hours.js'
 
   let {
     value = $bindable(),
     onDirty = () => {},
   }: { value: OpeningHourInput[]; onDirty?: () => void } = $props()
+  const TIME_OPTIONS = Array.from({ length: 96 }, (_, index) => {
+    const hours = String(Math.floor(index / 4)).padStart(2, '0')
+    const minutes = String((index % 4) * 15).padStart(2, '0')
+    return `${hours}:${minutes}`
+  })
+
+  function displayTime(value: string) {
+    return value.slice(0, 5)
+  }
 
   function rowsFor(dayOfWeek: number) {
     return value
@@ -45,24 +54,22 @@
           <div class="range">
             <label>
               <span>Ouverture</span>
-              <input
-                type="time"
-                value={entry.row.opensAt}
-                step="900"
-                oninput={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}
-                required
-              />
+              <select
+                value={displayTime(entry.row.opensAt)}
+                onchange={(event) => update(entry.index, 'opensAt', event.currentTarget.value)}
+              >
+                {#each TIME_OPTIONS as time}<option value={time}>{formatTime(time)}</option>{/each}
+              </select>
             </label>
             <span class="separator" aria-hidden="true">–</span>
             <label>
               <span>Fermeture</span>
-              <input
-                type="time"
-                value={entry.row.closesAt}
-                step="900"
-                oninput={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}
-                required
-              />
+              <select
+                value={displayTime(entry.row.closesAt)}
+                onchange={(event) => update(entry.index, 'closesAt', event.currentTarget.value)}
+              >
+                {#each TIME_OPTIONS as time}<option value={time}>{formatTime(time)}</option>{/each}
+              </select>
             </label>
             <Button
               type="button"
@@ -129,7 +136,7 @@
     flex-direction: column;
     gap: var(--space-1);
   }
-  input {
+  select {
     min-height: 38px;
     padding: var(--space-2) var(--space-3);
     border: 1px solid var(--border);
@@ -138,7 +145,7 @@
     color: var(--text-main);
     font: inherit;
   }
-  input:focus-visible {
+  select:focus-visible {
     outline: 2px solid var(--ludo-color);
     outline-offset: 2px;
   }
@@ -178,7 +185,7 @@
       min-width: 0;
       flex: 1;
     }
-    input {
+    select {
       width: 100%;
     }
     .separator {

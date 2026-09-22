@@ -29,6 +29,18 @@ describe('normalizeOpeningHours', () => {
     ).toHaveLength(2)
   })
 
+  it('normalise les secondes ajoutées par les anciennes valeurs de base de données', () => {
+    expect(
+      normalizeOpeningHours([{ dayOfWeek: 1, opensAt: '09:30:00', closesAt: '11:45:00' }]),
+    ).toEqual([{ dayOfWeek: 1, opensAt: '09:30', closesAt: '11:45' }])
+  })
+
+  it('refuse les horaires qui ne tombent pas sur un quart d’heure', () => {
+    expect(() =>
+      normalizeOpeningHours([{ dayOfWeek: 1, opensAt: '09:10', closesAt: '11:45' }]),
+    ).toThrow('quarts d’heure')
+  })
+
   it('refuse les chevauchements', () => {
     expect(() =>
       normalizeOpeningHours([
