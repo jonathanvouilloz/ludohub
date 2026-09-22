@@ -115,13 +115,14 @@
       </div>
 
       <div class="field">
-        <Label for={`access-${site.id}`}>Informations d’accès</Label>
+        <Label for={`access-${site.id}`}>Informations d’accès et transports</Label>
         <textarea
           id={`access-${site.id}`}
           name="accessInfo"
           rows="3"
           placeholder="Entrée, étage, transports publics…">{site.accessInfo ?? ''}</textarea
         >
+        <p class="field-hint">Un bouton Google Maps est créé automatiquement à partir de l’adresse ou des coordonnées du lieu.</p>
       </div>
 
       <details class="optional">
