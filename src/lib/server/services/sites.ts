@@ -27,6 +27,7 @@ export type SiteInput = {
   phone?: string | null
   email?: string | null
   accessInfo?: string | null
+  directionsUrl?: string | null
   latitude?: number | null
   longitude?: number | null
   isPrimary?: boolean
@@ -81,6 +82,20 @@ function normalizeCoordinates(latitude?: number | null, longitude?: number | nul
   return { latitude: lat, longitude: lng }
 }
 
+function normalizeDirectionsUrl(value: string | null | undefined): string | null {
+  const url = optional(value, 2000, "Le lien Google Maps")
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new Error('Unsupported protocol')
+    }
+    return parsed.toString()
+  } catch {
+    throw new SiteServiceError('Le lien Google Maps doit être une adresse web valide.')
+  }
+}
+
 export function normalizeOpeningIntervals(
   intervals: OpeningIntervalInput[],
 ): Array<OpeningIntervalInput & { sortOrder: number }> {
@@ -117,6 +132,7 @@ function normalizeSite(input: SiteInput) {
     phone: optional(input.phone, 40, 'Le téléphone'),
     email: optional(input.email, 200, "L'adresse e-mail"),
     accessInfo: optional(input.accessInfo, 1000, "Les informations d'accès"),
+    directionsUrl: normalizeDirectionsUrl(input.directionsUrl),
     ...normalizeCoordinates(input.latitude, input.longitude),
     isActive: input.isActive,
     isPrimary: input.isPrimary,
@@ -213,6 +229,7 @@ export async function updateSiteWithOpeningHours(
         phone: fields.phone,
         email: fields.email,
         accessInfo: fields.accessInfo,
+        directionsUrl: fields.directionsUrl,
         latitude: fields.latitude,
         longitude: fields.longitude,
         isActive,
@@ -244,6 +261,7 @@ export async function updateSiteOpeningHours(
     phone: current.phone,
     email: current.email,
     accessInfo: current.accessInfo,
+    directionsUrl: current.directionsUrl,
     latitude: current.latitude,
     longitude: current.longitude,
     isPrimary: current.isPrimary,

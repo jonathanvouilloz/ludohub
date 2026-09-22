@@ -112,6 +112,7 @@ export const ludoSites = pgTable(
     phone: text('phone'),
     email: text('email'),
     accessInfo: text('access_info'),
+    directionsUrl: text('directions_url'),
     latitude: doublePrecision('latitude'),
     longitude: doublePrecision('longitude'),
     isPrimary: boolean('is_primary').notNull().default(false),

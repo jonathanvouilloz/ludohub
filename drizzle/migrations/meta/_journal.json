@@ -120,6 +120,13 @@
       "when": 1788331201815,
       "tag": "0016_safe_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790063664076,
+      "tag": "0017_steady_randall_flagg",
+      "breakpoints": true
     }
   ]
 }

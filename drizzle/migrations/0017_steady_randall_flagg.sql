@@ -1,0 +1,1 @@
+ALTER TABLE "ludo_sites" ADD COLUMN "directions_url" text;

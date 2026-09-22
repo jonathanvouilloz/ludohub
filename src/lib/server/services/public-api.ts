@@ -35,6 +35,7 @@ export type PublicLudoSite = {
   phone: string | null
   email: string | null
   accessInfo: string | null
+  directionsUrl: string | null
   latitude: number | null
   longitude: number | null
   isPrimary: boolean
@@ -283,6 +284,7 @@ export async function getPublicSitesByLudoSlug(slug: string): Promise<PublicSite
       phone: site.phone,
       email: site.email,
       accessInfo: site.accessInfo,
+      directionsUrl: site.directionsUrl,
       latitude: site.latitude,
       longitude: site.longitude,
       isPrimary: site.isPrimary,

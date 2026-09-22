@@ -5,10 +5,11 @@
   import PencilIcon from '@lucide/svelte/icons/pencil'
   import { Button } from '$lib/components/ui/button/index.js'
   import { WEEK_DAYS, formatTime, type OpeningHourInput } from '$lib/utils/opening-hours.js'
-  import InlineOpeningHoursEditor from './InlineOpeningHoursEditor.svelte'
+  import InlineSiteEditor from './InlineSiteEditor.svelte'
 
   type PreviewSite = {
     id: string
+    slug: string
     name: string
     address: string | null
     postalCode: string | null
@@ -16,6 +17,11 @@
     phone: string | null
     email: string | null
     accessInfo: string | null
+    directionsUrl: string | null
+    latitude: number | string | null
+    longitude: number | string | null
+    isPrimary: boolean
+    isActive: boolean
     openingHours: OpeningHourInput[]
   }
 
@@ -49,25 +55,23 @@
         </div>
         {#if editable && editingSiteId !== site.id}
           <Button size="sm" variant="outline" onclick={() => (editingSiteId = site.id)}>
-            <PencilIcon size={15} aria-hidden="true" /> Modifier les horaires
+            <PencilIcon size={15} aria-hidden="true" /> Modifier le lieu
           </Button>
         {/if}
       </div>
 
-      {#if address(site)}
-        <p class="contact"><MapPinIcon size={16} /> {address(site)}</p>
-      {/if}
-      {#if site.phone}<p class="contact"><PhoneIcon size={16} /> {site.phone}</p>{/if}
-      {#if site.email}<p class="contact"><MailIcon size={16} /> {site.email}</p>{/if}
-
       {#if editingSiteId === site.id}
-        <InlineOpeningHoursEditor
-          siteId={site.id}
-          openingHours={site.openingHours}
+        <InlineSiteEditor
+          {site}
           onDone={() => (editingSiteId = null)}
           onCancel={() => (editingSiteId = null)}
         />
       {:else}
+        {#if address(site)}
+          <p class="contact"><MapPinIcon size={16} /> {address(site)}</p>
+        {/if}
+        {#if site.phone}<p class="contact"><PhoneIcon size={16} /> {site.phone}</p>{/if}
+        {#if site.email}<p class="contact"><MailIcon size={16} /> {site.email}</p>{/if}
         <dl>
           {#each WEEK_DAYS as day (day.value)}
             <div>

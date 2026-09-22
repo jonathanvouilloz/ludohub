@@ -18,6 +18,7 @@
     phone: string | null
     email: string | null
     accessInfo: string | null
+    directionsUrl: string | null
     latitude: number | string | null
     longitude: number | string | null
     isPrimary: boolean
@@ -122,7 +123,19 @@
           rows="3"
           placeholder="Entrée, étage, transports publics…">{site.accessInfo ?? ''}</textarea
         >
-        <p class="field-hint">Un bouton Google Maps est créé automatiquement à partir de l’adresse ou des coordonnées du lieu.</p>
+      </div>
+
+      <div class="field">
+        <Label for={`directions-${site.id}`}>Lien Google Maps</Label>
+        <Input
+          id={`directions-${site.id}`}
+          name="directionsUrl"
+          type="url"
+          inputmode="url"
+          value={site.directionsUrl ?? ''}
+          placeholder="Collez le lien partagé depuis Google Maps"
+        />
+        <p class="field-hint">Facultatif. S’il est vide, un itinéraire est créé à partir de l’adresse.</p>
       </div>
 
       <details class="optional">

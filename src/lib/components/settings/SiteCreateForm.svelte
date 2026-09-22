@@ -41,10 +41,11 @@
         <div class="field"><Label for="create-phone">Téléphone</Label><Input id="create-phone" name="phone" type="tel" /></div>
         <div class="field"><Label for="create-email">E-mail</Label><Input id="create-email" name="email" type="email" /></div>
       </div>
-      <div class="field"><Label for="create-access">Informations d’accès</Label><textarea id="create-access" name="accessInfo" rows="3"></textarea></div>
-      <div class="grid">
-        <div class="field"><Label for="create-latitude">Latitude (facultatif)</Label><Input id="create-latitude" name="latitude" type="number" step="any" min="-90" max="90" /></div>
-        <div class="field"><Label for="create-longitude">Longitude (facultatif)</Label><Input id="create-longitude" name="longitude" type="number" step="any" min="-180" max="180" /></div>
+      <div class="field"><Label for="create-access">Informations d’accès et transports</Label><textarea id="create-access" name="accessInfo" rows="3"></textarea></div>
+      <div class="field">
+        <Label for="create-directions">Lien Google Maps</Label>
+        <Input id="create-directions" name="directionsUrl" type="url" inputmode="url" placeholder="Collez le lien partagé depuis Google Maps" />
+        <p>Facultatif. Sans lien, un itinéraire est créé à partir de l’adresse.</p>
       </div>
       <div class="toggles">
         <label><input type="checkbox" name="isPrimary" /> Lieu principal</label>
