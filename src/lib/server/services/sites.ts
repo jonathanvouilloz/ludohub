@@ -227,6 +227,31 @@ export async function updateSiteWithOpeningHours(
   }
 }
 
+/** Met à jour uniquement les horaires, sans exposer les autres réglages du lieu. */
+export async function updateSiteOpeningHours(
+  ludoId: string,
+  siteId: string,
+  openingIntervals: OpeningIntervalInput[],
+): Promise<SiteWithOpeningHours> {
+  const current = await getSiteRowForLudo(siteId, ludoId)
+  if (!current) throw new SiteServiceError('Lieu introuvable.')
+  return updateSiteWithOpeningHours(ludoId, siteId, {
+    slug: current.slug,
+    name: current.name,
+    address: current.address,
+    postalCode: current.postalCode,
+    city: current.city,
+    phone: current.phone,
+    email: current.email,
+    accessInfo: current.accessInfo,
+    latitude: current.latitude,
+    longitude: current.longitude,
+    isPrimary: current.isPrimary,
+    isActive: current.isActive,
+    openingIntervals,
+  })
+}
+
 export async function deleteSite(ludoId: string, siteId: string) {
   const current = await getSiteRowForLudo(siteId, ludoId)
   if (!current) throw new SiteServiceError('Lieu introuvable.')

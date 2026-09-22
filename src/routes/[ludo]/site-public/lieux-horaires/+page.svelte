@@ -56,7 +56,7 @@
         : undefined}
       onclick={() => (mode = mode === 'preview' ? 'edit' : 'preview')}
     >
-      {#if mode === 'preview'}<PencilIcon size={16} /> Modifier{:else}<EyeIcon size={16} /> Voir l’aperçu{/if}
+      {#if mode === 'preview'}<PencilIcon size={16} /> Gérer les lieux{:else}<EyeIcon size={16} /> Terminer{/if}
     </Button>
   {/if}
 </header>
@@ -83,7 +83,7 @@
         <h2 id="preview-title">Ce que verront vos visiteurs</h2>
       </div>
     </div>
-    <HoursPreview sites={previewSites} />
+    <HoursPreview sites={previewSites} editable={data.canEdit} />
   </section>
 {:else}
   <section aria-labelledby="edit-title">

@@ -2,7 +2,10 @@
   import MapPinIcon from '@lucide/svelte/icons/map-pin'
   import PhoneIcon from '@lucide/svelte/icons/phone'
   import MailIcon from '@lucide/svelte/icons/mail'
+  import PencilIcon from '@lucide/svelte/icons/pencil'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { WEEK_DAYS, formatTime, type OpeningHourInput } from '$lib/utils/opening-hours.js'
+  import InlineOpeningHoursEditor from './InlineOpeningHoursEditor.svelte'
 
   type PreviewSite = {
     id: string
@@ -16,7 +19,11 @@
     openingHours: OpeningHourInput[]
   }
 
-  let { sites }: { sites: PreviewSite[] } = $props()
+  let {
+    sites,
+    editable = false,
+  }: { sites: PreviewSite[]; editable?: boolean } = $props()
+  let editingSiteId = $state<string | null>(null)
 
   function ranges(site: PreviewSite, dayOfWeek: number): string {
     const rows = site.openingHours.filter((row) => row.dayOfWeek === dayOfWeek)
@@ -40,6 +47,11 @@
           <p class="eyebrow">Ludothèque</p>
           <h3>{site.name}</h3>
         </div>
+        {#if editable && editingSiteId !== site.id}
+          <Button size="sm" variant="outline" onclick={() => (editingSiteId = site.id)}>
+            <PencilIcon size={15} aria-hidden="true" /> Modifier les horaires
+          </Button>
+        {/if}
       </div>
 
       {#if address(site)}
@@ -48,14 +60,23 @@
       {#if site.phone}<p class="contact"><PhoneIcon size={16} /> {site.phone}</p>{/if}
       {#if site.email}<p class="contact"><MailIcon size={16} /> {site.email}</p>{/if}
 
-      <dl>
-        {#each WEEK_DAYS as day (day.value)}
-          <div>
-            <dt>{day.label}</dt>
-            <dd class:closed={ranges(site, day.value) === 'Fermé'}>{ranges(site, day.value)}</dd>
-          </div>
-        {/each}
-      </dl>
+      {#if editingSiteId === site.id}
+        <InlineOpeningHoursEditor
+          siteId={site.id}
+          openingHours={site.openingHours}
+          onDone={() => (editingSiteId = null)}
+          onCancel={() => (editingSiteId = null)}
+        />
+      {:else}
+        <dl>
+          {#each WEEK_DAYS as day (day.value)}
+            <div>
+              <dt>{day.label}</dt>
+              <dd class:closed={ranges(site, day.value) === 'Fermé'}>{ranges(site, day.value)}</dd>
+            </div>
+          {/each}
+        </dl>
+      {/if}
 
       {#if site.accessInfo}
         <p class="access"><strong>À savoir&nbsp;:</strong> {site.accessInfo}</p>
@@ -80,6 +101,10 @@
     background: var(--bg-card);
   }
   .preview-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
     margin-bottom: var(--space-4);
   }
   .eyebrow {

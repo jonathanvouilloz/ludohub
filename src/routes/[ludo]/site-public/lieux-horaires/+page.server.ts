@@ -8,6 +8,7 @@ import {
   listSitesWithOpeningHours,
   reorderSites,
   SiteServiceError,
+  updateSiteOpeningHours,
   updateSiteWithOpeningHours,
 } from '$lib/server/services/sites.js'
 import { isResponsable } from '$lib/utils/permissions.js'
@@ -92,6 +93,18 @@ export const actions: Actions = {
         isActive: data.has('isActive'),
         openingIntervals: parseOpeningHours(data.get('openingHours')),
       }),
+    )
+  },
+
+  updateHours: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(() =>
+      updateSiteOpeningHours(
+        ludo.id,
+        String(data.get('siteId') ?? ''),
+        parseOpeningHours(data.get('openingHours')),
+      ),
     )
   },
 
