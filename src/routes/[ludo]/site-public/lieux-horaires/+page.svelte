@@ -42,6 +42,7 @@
   <title>Lieux et horaires · Site public</title>
 </svelte:head>
 
+<main class="page-shell">
 <header class="head">
   <div>
     <h1>Lieux et horaires</h1>
@@ -162,8 +163,14 @@
     {/if}
   </section>
 {/if}
+</main>
 
 <style>
+  .page-shell {
+    max-width: var(--max-content);
+    margin: 0 auto;
+    padding: var(--space-4) var(--space-6) var(--space-12);
+  }
   .head {
     display: flex;
     align-items: flex-start;
@@ -244,6 +251,9 @@
     text-align: center;
   }
   @media (max-width: 640px) {
+    .page-shell {
+      padding: var(--space-3) var(--space-4) var(--space-10);
+    }
     .head {
       flex-direction: column;
     }

@@ -90,7 +90,6 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
     align-items: start;
-    max-width: 1100px;
     gap: var(--space-4);
   }
   .preview-card {
