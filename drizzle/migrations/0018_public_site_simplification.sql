@@ -1,3 +1,6 @@
+-- Neon HTTP n’accepte qu’une instruction préparée par migration. Le bloc DO conserve
+-- cette évolution atomique tout en laissant Drizzle enregistrer la migration normalement.
+DO $$ BEGIN
 ALTER TABLE "ludo_sites" ADD COLUMN "important_info" text;
 
 CREATE TABLE "public_faq_categories" (
@@ -68,3 +71,4 @@ DROP TABLE "public_activity_exceptions";
 DROP TABLE "public_activity_dates";
 ALTER TABLE "public_activities" DROP CONSTRAINT "public_activities_recurrence_check";
 ALTER TABLE "public_activities" DROP COLUMN "recurrence_rule";
+END $$;
