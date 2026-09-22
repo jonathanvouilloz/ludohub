@@ -3,6 +3,9 @@
 > Statut : **EN COURS — socle, API et premier déploiement public réalisés**  
 > Spécification canonique : `../../../website-v2/docs/PHASE-2-SPEC.md`
 
+> Plan de simplification validé le 23 septembre 2026 :
+> [20-site-public-simplification.md](20-site-public-simplification.md)
+
 ## État session 2026-09-18
 
 **Fait :**

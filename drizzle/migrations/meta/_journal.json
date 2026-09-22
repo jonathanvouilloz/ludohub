@@ -127,6 +127,13 @@
       "when": 1790063664076,
       "tag": "0017_steady_randall_flagg",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790150000000,
+      "tag": "0018_public_site_simplification",
+      "breakpoints": true
     }
   ]
 }

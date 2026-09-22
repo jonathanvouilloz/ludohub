@@ -89,127 +89,121 @@
     <div class="body">{item.body}</div>
   </section>
   <section>
-    <h2>Dates et horaires</h2>
-    {#if item.type === 'permanent'}<p>
-        Cette activité est permanente.
-      </p>{:else if item.dates.length === 0}<p>Aucune date renseignée.</p>{:else}<ul>
-        {#each item.dates as date}<li>
-            {new Date(date.startsAt).toLocaleString('fr-CH')}{date.endsAt
-              ? ` – ${new Date(date.endsAt).toLocaleString('fr-CH')}`
-              : ''}
-          </li>{/each}
-      </ul>{/if}{#if item.exceptions.length > 0}<h3>Exceptions</h3>
-      <ul>
-        {#each item.exceptions as exception}<li>
-            {new Date(exception.excludedAt).toLocaleString('fr-CH')}{exception.reason
-              ? ` · ${exception.reason}`
-              : ''}
-          </li>{/each}
-      </ul>{/if}
+    <h2>Rythme</h2>
+    <p>
+      {item.type === 'one_off'
+        ? 'Ponctuelle'
+        : item.type === 'recurring'
+          ? 'Récurrente'
+          : 'Permanente'}
+    </p>
+    <p class="muted">Les dates, horaires et exceptions sont indiqués dans la description.</p>
   </section>
 
   {#if item.lifecycle === 'active'}<details class="secondary-settings">
       <summary><span>Mettre l’activité en avant</span><small>Optionnel</small></summary>
       <section class="settings-panel">
-      <div>
-        <h2>Mise en avant sur la page d’accueil</h2>
-        <p>Choisissez une position seulement si cette activité doit être mise en avant.</p>
-      </div>
-      <form
-        class="feature"
-        method="POST"
-        action="?/feature"
-        use:enhance={toastEnhance({
-          success: 'Mise en avant mise à jour.',
-          onPending: (value) => (pending = value),
-        })}
-      >
-        <input type="hidden" name="id" value={item.id} /><input
-          type="hidden"
-          name="revision"
-          value={item.revision}
-        /><label
-          ><span>Position sur la page d’accueil</span><select
-            name="rank"
-            disabled={item.status !== 'published' || pending}
-            ><option value="" selected={item.featuredRank === null}>Ne pas mettre à la une</option
-            >{#each [1, 2, 3] as rank}<option value={rank} selected={item.featuredRank === rank}
-                >Position {rank}</option
-              >{/each}</select
-          ></label
-        ><Button type="submit" variant="outline" disabled={item.status !== 'published' || pending}
-          >Appliquer</Button
+        <div>
+          <h2>Mise en avant sur la page d’accueil</h2>
+          <p>Choisissez une position seulement si cette activité doit être mise en avant.</p>
+        </div>
+        <form
+          class="feature"
+          method="POST"
+          action="?/feature"
+          use:enhance={toastEnhance({
+            success: 'Mise en avant mise à jour.',
+            onPending: (value) => (pending = value),
+          })}
         >
-      </form>
+          <input type="hidden" name="id" value={item.id} /><input
+            type="hidden"
+            name="revision"
+            value={item.revision}
+          /><label
+            ><span>Position sur la page d’accueil</span><select
+              name="rank"
+              disabled={item.status !== 'published' || pending}
+              ><option value="" selected={item.featuredRank === null}>Ne pas mettre à la une</option
+              >{#each [1, 2, 3] as rank}<option value={rank} selected={item.featuredRank === rank}
+                  >Position {rank}</option
+                >{/each}</select
+            ></label
+          ><Button type="submit" variant="outline" disabled={item.status !== 'published' || pending}
+            >Appliquer</Button
+          >
+        </form>
       </section>
     </details>{/if}
 
   <details class="secondary-settings lifecycle-settings">
-    <summary><span>Archiver ou supprimer cette activité</span><small>Actions avancées</small></summary>
-  <section class="lifecycle settings-panel">
-    <div>
-      <h2>Classement</h2>
-      <p>Archivez une ancienne activité ou placez-la dans la corbeille.</p>
-    </div>
-    <div class="actions">
-      {#if item.lifecycle !== 'active'}<form
+    <summary
+      ><span>Archiver ou supprimer cette activité</span><small>Actions avancées</small></summary
+    >
+    <section class="lifecycle settings-panel">
+      <div>
+        <h2>Classement</h2>
+        <p>Archivez une ancienne activité ou placez-la dans la corbeille.</p>
+      </div>
+      <div class="actions">
+        {#if item.lifecycle !== 'active'}<form
+            method="POST"
+            action="?/lifecycle"
+            use:enhance={toastEnhance({ success: 'Activité restaurée.' })}
+          >
+            <input type="hidden" name="id" value={item.id} /><input
+              type="hidden"
+              name="revision"
+              value={item.revision}
+            /><input type="hidden" name="lifecycle" value="active" /><Button
+              type="submit"
+              variant="outline">Restaurer</Button
+            >
+          </form>{:else}<form
+            method="POST"
+            action="?/lifecycle"
+            use:enhance={toastEnhance({ success: 'Activité archivée.' })}
+          >
+            <input type="hidden" name="id" value={item.id} /><input
+              type="hidden"
+              name="revision"
+              value={item.revision}
+            /><input type="hidden" name="lifecycle" value="archived" /><Button
+              type="submit"
+              variant="outline">Archiver</Button
+            >
+          </form>{/if}{#if item.lifecycle !== 'trashed'}<form
+            method="POST"
+            action="?/lifecycle"
+            use:enhance={toastEnhance({ success: 'Activité placée dans la corbeille.' })}
+          >
+            <input type="hidden" name="id" value={item.id} /><input
+              type="hidden"
+              name="revision"
+              value={item.revision}
+            /><input type="hidden" name="lifecycle" value="trashed" /><Button
+              type="submit"
+              variant="destructive">Mettre à la corbeille</Button
+            >
+          </form>{/if}
+        <form
           method="POST"
-          action="?/lifecycle"
-          use:enhance={toastEnhance({ success: 'Activité restaurée.' })}
+          action="?/delete"
+          onsubmit={(event) => {
+            if (!confirm('Supprimer définitivement cette activité et ses médias ?')) {
+              event.preventDefault()
+            }
+          }}
+          use:enhance={toastEnhance({ redirect: 'Activité supprimée.' })}
         >
           <input type="hidden" name="id" value={item.id} /><input
             type="hidden"
             name="revision"
             value={item.revision}
-          /><input type="hidden" name="lifecycle" value="active" /><Button
-            type="submit"
-            variant="outline">Restaurer</Button
-          >
-        </form>{:else}<form
-          method="POST"
-          action="?/lifecycle"
-          use:enhance={toastEnhance({ success: 'Activité archivée.' })}
-        >
-          <input type="hidden" name="id" value={item.id} /><input
-            type="hidden"
-            name="revision"
-            value={item.revision}
-          /><input type="hidden" name="lifecycle" value="archived" /><Button
-            type="submit"
-            variant="outline">Archiver</Button
-          >
-        </form>{/if}{#if item.lifecycle !== 'trashed'}<form
-          method="POST"
-          action="?/lifecycle"
-          use:enhance={toastEnhance({ success: 'Activité placée dans la corbeille.' })}
-        >
-          <input type="hidden" name="id" value={item.id} /><input
-            type="hidden"
-            name="revision"
-            value={item.revision}
-          /><input type="hidden" name="lifecycle" value="trashed" /><Button
-            type="submit"
-            variant="destructive">Mettre à la corbeille</Button
-          >
-        </form>{/if}
-      <form
-        method="POST"
-        action="?/delete"
-        onsubmit={(event) => {
-          if (!confirm('Supprimer définitivement cette activité et ses médias ?')) {
-            event.preventDefault()
-          }
-        }}
-        use:enhance={toastEnhance({ redirect: 'Activité supprimée.' })}
-      >
-        <input type="hidden" name="id" value={item.id} /><input
-          type="hidden"
-          name="revision"
-          value={item.revision}
-        /><Button type="submit" variant="destructive">Supprimer définitivement</Button>
-      </form>
-    </div>
-  </section>
+          /><Button type="submit" variant="destructive">Supprimer définitivement</Button>
+        </form>
+      </div>
+    </section>
   </details>
   <ActivityDialog bind:open={editOpen} activity={item} />
 </main>
@@ -242,7 +236,6 @@
   }
   h1,
   h2,
-  h3,
   p {
     margin: 0;
   }
@@ -279,12 +272,6 @@
   .body {
     line-height: 1.7;
     white-space: pre-wrap;
-  }
-  ul {
-    display: grid;
-    gap: var(--space-2);
-    margin: 0;
-    padding-left: var(--space-5);
   }
   .feature {
     display: grid;

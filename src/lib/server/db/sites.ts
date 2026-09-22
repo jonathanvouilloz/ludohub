@@ -17,6 +17,7 @@ export type SiteUpdateData = Partial<
     | 'phone'
     | 'email'
     | 'accessInfo'
+    | 'importantInfo'
     | 'directionsUrl'
     | 'latitude'
     | 'longitude'

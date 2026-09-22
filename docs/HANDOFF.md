@@ -1,4 +1,4 @@
-# HANDOFF — 2026-09-18
+# HANDOFF — 2026-09-23
 
 ## Features actives
 
@@ -9,6 +9,7 @@
 
 ## Reprendre ici
 
-20 — SITE PUBLIC : les Top 3 sont simplifiés (3 écrans plats, un seul enregistrement) ; Jonathan
-désigne le prochain écran trop complexe de la section « Site public » à traiter de la même façon.
-Commit : `736693b` feat(site-public): simplify top three editing
+20 — SITE PUBLIC : poursuivre avec le plan validé de simplification du dashboard dans
+`docs/features/20-site-public-simplification.md`. Les données actuelles ne sont pas importantes :
+aucun backfill ni mécanisme de migration de contenu n'est requis. Commencer par le schéma simplifié
+et la correction de la suppression des actualités.

@@ -2,8 +2,6 @@ import { and, asc, desc, eq, inArray, ne, sql } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   publicActivities,
-  publicActivityDates,
-  publicActivityExceptions,
   publicActivitySites,
   type PublicActivityInsert,
   type PublicActivityLifecycle,
@@ -16,15 +14,10 @@ const managementRelations = {
   updatedBy: true as const,
   publishedBy: true as const,
   targets: { with: { site: true as const } },
-  dates: { orderBy: [asc(publicActivityDates.startsAt)] },
-  exceptions: { orderBy: [asc(publicActivityExceptions.excludedAt)] },
   assets: true as const,
 }
 
-const publicRelations = {
-  dates: { orderBy: [asc(publicActivityDates.startsAt)] },
-  exceptions: { orderBy: [asc(publicActivityExceptions.excludedAt)] },
-}
+const publicRelations = {}
 
 const publicDetailRelations = {
   ...publicRelations,
@@ -40,7 +33,6 @@ const publicColumns = {
   summary: true,
   location: true,
   type: true,
-  recurrenceRule: true,
   imageUrl: true,
   imageAlt: true,
   lifecycle: true,
@@ -50,7 +42,6 @@ const publicColumns = {
   publishedAt: true,
 } as const
 
-export type PublicActivitySummaryDate = { startsAt: string; endsAt: string | null }
 export type PublicActivitySummaryRow = Pick<
   PublicActivityRow,
   | 'id'
@@ -60,16 +51,12 @@ export type PublicActivitySummaryRow = Pick<
   | 'summary'
   | 'location'
   | 'type'
-  | 'recurrenceRule'
   | 'imageUrl'
   | 'imageAlt'
   | 'lifecycle'
   | 'featuredRank'
   | 'publishedAt'
-> & { dates: PublicActivitySummaryDate[] }
-
-export type ActivityDateInput = { startsAt: Date; endsAt: Date | null }
-export type ActivityExceptionInput = { excludedAt: Date; reason: string | null }
+>
 export type PublicActivityUpdateData = Pick<
   PublicActivityInsert,
   | 'slug'
@@ -78,7 +65,6 @@ export type PublicActivityUpdateData = Pick<
   | 'body'
   | 'location'
   | 'type'
-  | 'recurrenceRule'
   | 'updatedByMemberId'
 >
 
@@ -140,26 +126,11 @@ export function listVisiblePublicActivitySummaryRows(
       summary: publicActivities.summary,
       location: publicActivities.location,
       type: publicActivities.type,
-      recurrenceRule: publicActivities.recurrenceRule,
       imageUrl: publicActivities.imageUrl,
       imageAlt: publicActivities.imageAlt,
       lifecycle: publicActivities.lifecycle,
       featuredRank: publicActivities.featuredRank,
       publishedAt: publicActivities.publishedAt,
-      dates: sql<PublicActivitySummaryDate[]>`coalesce((
-        SELECT jsonb_agg(
-          jsonb_build_object('startsAt', occurrence.starts_at, 'endsAt', occurrence.ends_at)
-          ORDER BY occurrence.starts_at
-        )
-        FROM (
-          SELECT starts_at, ends_at
-          FROM public_activity_dates
-          WHERE activity_id = ${publicActivities.id}
-            AND ludo_id = ${publicActivities.ludoId}
-          ORDER BY starts_at
-          LIMIT 3
-        ) AS occurrence
-      ), '[]'::jsonb)`,
     })
     .from(publicActivities)
     .where(and(publicVisibility(ludoId, siteId), eq(publicActivities.lifecycle, lifecycle)))
@@ -190,8 +161,8 @@ export function getVisiblePublicActivityRowBySlug(
 export async function insertPublicActivityAtomic(
   data: PublicActivityInsert & { id: string },
   siteIds: string[],
-  dates: ActivityDateInput[],
-  exceptions: ActivityExceptionInput[],
+  _legacyDates?: unknown,
+  _legacyExceptions?: unknown,
 ) {
   const queries = [db.insert(publicActivities).values(data)]
   if (siteIds.length) {
@@ -203,40 +174,20 @@ export async function insertPublicActivityAtomic(
         ) as never,
     )
   }
-  if (dates.length) {
-    queries.push(
-      db
-        .insert(publicActivityDates)
-        .values(
-          dates.map((date) => ({ ...date, activityId: data.id, ludoId: data.ludoId })),
-        ) as never,
-    )
-  }
-  if (exceptions.length) {
-    queries.push(
-      db.insert(publicActivityExceptions).values(
-        exceptions.map((exception) => ({
-          ...exception,
-          activityId: data.id,
-          ludoId: data.ludoId,
-        })),
-      ) as never,
-    )
-  }
   if (queries.length === 1) await queries[0]
   else await db.batch(queries as never)
   return getPublicActivityRowForLudo(data.id, data.ludoId)
 }
 
-/** CAS parent + set-diff atomique des sites, occurrences et exceptions. */
+/** CAS parent + set-diff atomique des lieux ciblés. */
 export async function updatePublicActivityAtomic(
   activityId: string,
   ludoId: string,
   expectedRevision: number,
   data: PublicActivityUpdateData & { updatedAt: Date },
   siteIds: string[],
-  dates: ActivityDateInput[],
-  exceptions: ActivityExceptionInput[],
+  _legacyDates?: unknown,
+  _legacyExceptions?: unknown,
 ) {
   const desiredSites =
     siteIds.length === 0
@@ -245,32 +196,12 @@ export async function updatePublicActivityAtomic(
           siteIds.map((siteId) => sql`(${siteId}::uuid)`),
           sql`, `,
         )}`
-  const desiredDates =
-    dates.length === 0
-      ? sql`SELECT null::timestamptz AS starts_at, null::timestamptz AS ends_at WHERE false`
-      : sql`VALUES ${sql.join(
-          dates.map((date) => sql`(${date.startsAt}::timestamptz, ${date.endsAt}::timestamptz)`),
-          sql`, `,
-        )}`
-  const desiredExceptions =
-    exceptions.length === 0
-      ? sql`SELECT null::timestamptz AS excluded_at, null::text AS reason WHERE false`
-      : sql`VALUES ${sql.join(
-          exceptions.map(
-            (exception) => sql`(${exception.excludedAt}::timestamptz, ${exception.reason}::text)`,
-          ),
-          sql`, `,
-        )}`
-
   const result = await db.execute<{ id: string }>(sql`
     WITH desired_sites(site_id) AS (${desiredSites}),
-    desired_dates(starts_at, ends_at) AS (${desiredDates}),
-    desired_exceptions(excluded_at, reason) AS (${desiredExceptions}),
     updated AS (
       UPDATE public_activities
       SET slug = ${data.slug}, title = ${data.title}, summary = ${data.summary},
           body = ${data.body}, location = ${data.location}, type = ${data.type},
-          recurrence_rule = ${data.recurrenceRule},
           updated_by_member_id = ${data.updatedByMemberId}::uuid,
           updated_at = ${data.updatedAt}, revision = revision + 1
       WHERE id = ${activityId}::uuid AND ludo_id = ${ludoId}::uuid
@@ -284,25 +215,6 @@ export async function updatePublicActivityAtomic(
       INSERT INTO public_activity_sites (activity_id, ludo_id, site_id)
       SELECT updated.id, updated.ludo_id, desired_sites.site_id FROM updated CROSS JOIN desired_sites
       ON CONFLICT (activity_id, site_id) DO NOTHING
-    ), deleted_dates AS (
-      DELETE FROM public_activity_dates AS existing USING updated
-      WHERE existing.activity_id = updated.id AND existing.ludo_id = updated.ludo_id
-        AND NOT EXISTS (SELECT 1 FROM desired_dates d WHERE d.starts_at = existing.starts_at)
-    ), inserted_dates AS (
-      INSERT INTO public_activity_dates (activity_id, ludo_id, starts_at, ends_at)
-      SELECT updated.id, updated.ludo_id, d.starts_at, d.ends_at FROM updated CROSS JOIN desired_dates d
-      ON CONFLICT (activity_id, starts_at) DO UPDATE SET ends_at = excluded.ends_at
-    ), deleted_exceptions AS (
-      DELETE FROM public_activity_exceptions AS existing USING updated
-      WHERE existing.activity_id = updated.id AND existing.ludo_id = updated.ludo_id
-        AND NOT EXISTS (
-          SELECT 1 FROM desired_exceptions d WHERE d.excluded_at = existing.excluded_at
-        )
-    ), inserted_exceptions AS (
-      INSERT INTO public_activity_exceptions (activity_id, ludo_id, excluded_at, reason)
-      SELECT updated.id, updated.ludo_id, d.excluded_at, d.reason
-      FROM updated CROSS JOIN desired_exceptions d
-      ON CONFLICT (activity_id, excluded_at) DO UPDATE SET reason = excluded.reason
     )
     SELECT id FROM updated
   `)

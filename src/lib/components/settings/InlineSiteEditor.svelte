@@ -17,6 +17,7 @@
     phone: string | null
     email: string | null
     accessInfo: string | null
+    importantInfo: string | null
     directionsUrl: string | null
     latitude: number | string | null
     longitude: number | string | null
@@ -103,6 +104,8 @@
         rows="3"
         placeholder="Entrée, étage, transports publics…">{site.accessInfo ?? ''}</textarea
       >
+      <Label for="important-info">Information importante sur ce lieu</Label>
+      <textarea id="important-info" name="importantInfo" maxlength="500" rows="3">{site.importantInfo ?? ''}</textarea>
     </div>
 
     <div class="field">

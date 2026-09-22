@@ -18,6 +18,7 @@
     phone: string | null
     email: string | null
     accessInfo: string | null
+    importantInfo: string | null
     directionsUrl: string | null
     latitude: number | string | null
     longitude: number | string | null
@@ -75,6 +76,11 @@
       <div class="field">
         <Label for={`name-${site.id}`}>Nom du lieu</Label>
         <Input id={`name-${site.id}`} name="name" value={site.name} required />
+      </div>
+
+      <div class="field">
+        <Label for={`important-${site.id}`}>Information importante sur ce lieu</Label>
+        <textarea id={`important-${site.id}`} name="importantInfo" rows="3" maxlength="500">{site.importantInfo ?? ''}</textarea>
       </div>
 
       <div class="field">

@@ -144,8 +144,7 @@ describe('galerie et profils publics', () => {
         section: 'team',
         displayName: 'Alice',
         roleTitle: 'Ludothécaire',
-        bioMarkdown: null,
-        sortOrder: 1,
+        bioText: null,
         photoUrl: null,
         photoAlt: null,
         memberId: 'internal',
@@ -159,14 +158,13 @@ describe('galerie et profils publics', () => {
 })
 
 describe('FAQ et documents publics', () => {
-  it('projette la FAQ dans son ordre public sans métadonnées internes', async () => {
+  it('projette la FAQ texte sans métadonnées internes', async () => {
     listVisibleFaqs.mockResolvedValue([
       {
         id: '90000000-0000-4000-8000-000000000001',
         question: 'Comment adhérer ?',
-        answerMarkdown: 'Sur place.',
+        answerText: 'Sur place.',
         category: 'Adhésion',
-        sortOrder: 10,
       },
     ])
     const result = await getPublicFaqsByLudoSlug('demo', undefined, 25)
@@ -174,9 +172,8 @@ describe('FAQ et documents publics', () => {
     expect(result?.faqs[0]).toEqual({
       id: '90000000-0000-4000-8000-000000000001',
       question: 'Comment adhérer ?',
-      answerMarkdown: 'Sur place.',
+      answerText: 'Sur place.',
       category: 'Adhésion',
-      sortOrder: 10,
     })
   })
 
@@ -283,30 +280,14 @@ const activityRow = {
   body: '**Bienvenue**',
   location: 'Pâquis',
   type: 'recurring' as const,
-  recurrenceRule: 'FREQ=WEEKLY;BYDAY=FR',
   imageUrl: null,
   imageAlt: null,
   lifecycle: 'active' as const,
   featuredRank: 1,
   publishedAt: new Date('2026-08-05T09:00:00.000Z'),
-  dates: [
-    {
-      startsAt: new Date('2026-10-23T17:00:00.000Z'),
-      endsAt: new Date('2026-10-23T20:00:00.000Z'),
-    },
-  ],
-  exceptions: [{ excludedAt: new Date('2026-10-30T18:00:00.000Z'), reason: 'Vacances' }],
 }
 
-const activitySummaryRow = {
-  ...activityRow,
-  dates: [
-    {
-      startsAt: '2026-10-23T17:00:00.000Z',
-      endsAt: '2026-10-23T20:00:00.000Z',
-    },
-  ],
-}
+const activitySummaryRow = { ...activityRow }
 
 describe('activités publiques', () => {
   it('sépare la liste actuelle des archives et borne en base', async () => {
@@ -322,10 +303,7 @@ describe('activités publiques', () => {
     expect(current?.activities[0]).toMatchObject({
       slug: 'soiree-jeux',
       lifecycle: 'active',
-      schedule: {
-        type: 'recurring',
-        dates: [{ startsAt: '2026-10-23T17:00:00.000Z' }],
-      },
+      rhythm: 'recurring',
     })
     expect(current?.activities[0]).not.toHaveProperty('bodyMarkdown')
     expect(archived?.activities[0].lifecycle).toBe('archived')
@@ -443,7 +421,6 @@ describe('actualités publiques', () => {
         slug: 'nouvelle',
         bodyMarkdown: '**Contenu**',
         sites: [],
-        supportImage: null,
         attachments: [
           {
             id: 'asset-pdf',

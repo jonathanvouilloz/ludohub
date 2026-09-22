@@ -14,8 +14,7 @@
   const selectedId = $derived(page.url.searchParams.get('item'))
   let open = $state(false),
     editing = $state<EditableProfile | null>(null),
-    pending = $state<string | null>(null),
-    mediaPending = $state<string | null>(null)
+    pending = $state<string | null>(null)
   function create() {
     editing = null
     open = true
@@ -23,9 +22,6 @@
   function edit(x: EditableProfile) {
     editing = x
     open = true
-  }
-  function inactive(x: EditableProfile) {
-    return x.targets.some((t) => !t.site.isActive)
   }
 </script>
 
@@ -57,7 +53,7 @@
               <p>
                 {item.roleTitle || 'Sans fonction'} · {item.section === 'team'
                   ? 'Équipe'
-                  : 'Comité'} · ordre {item.sortOrder}
+                  : 'Comité'}
               </p>
             </div>
             <div>
@@ -66,7 +62,7 @@
                 >{:else}<Badge variant="outline">Brouillon</Badge>{/if}
             </div>
           </div>
-          <p>{item.bioMarkdown || ''}</p>
+          <p>{item.bioText || ''}</p>
           <footer>
             <Button size="sm" variant="outline" onclick={() => edit(item)}
               ><PencilIcon size={16} /> Modifier</Button
@@ -87,77 +83,28 @@
                 type="hidden"
                 name="status"
                 value={item.status === 'published' ? 'hidden' : 'published'}
-              /><Button
-                type="submit"
-                size="sm"
-                disabled={pending === item.id || (item.status !== 'published' && inactive(item))}
+              /><Button type="submit" size="sm" disabled={pending === item.id}
                 >{item.status === 'published' ? 'Masquer' : 'Publier'}</Button
               >
             </form>
             <form
-                method="POST"
-                action="?/delete"
-                onsubmit={(event) => {
-                  if (!confirm('Supprimer définitivement ce profil et sa photo ?')) event.preventDefault()
-                }}
-                use:enhance={toastEnhance({ success: 'Profil supprimé.' })}
-              >
-                <input type="hidden" name="id" value={item.id} /><input
-                  type="hidden"
-                  name="revision"
-                  value={item.revision}
-                /><Button type="submit" size="sm" variant="destructive">Supprimer</Button>
-            </form>
-          </footer>
-          <section>
-            <form
               method="POST"
-              action="?/uploadPhoto"
-              enctype="multipart/form-data"
-              use:enhance={toastEnhance({
-                success: item.photoUrl ? 'Photo remplacée.' : 'Photo ajoutée.',
-                onPending: (v) => (mediaPending = v ? item.id : null),
-              })}
+              action="?/delete"
+              onsubmit={(event) => {
+                if (!confirm('Supprimer définitivement ce profil et sa photo ?'))
+                  event.preventDefault()
+              }}
+              use:enhance={toastEnhance({ success: 'Profil supprimé.' })}
             >
               <input type="hidden" name="id" value={item.id} /><input
                 type="hidden"
                 name="revision"
                 value={item.revision}
-              /><input
-                type="file"
-                name="file"
-                accept="image/jpeg,image/png,image/webp"
-                required
-              /><input
-                type="text"
-                name="alt"
-                value={item.photoAlt ?? item.displayName}
-                maxlength="300"
-                aria-label="Texte alternatif de la photo"
-                required
-              /><Button type="submit" size="sm" disabled={mediaPending === item.id}
-                >{item.photoUrl ? 'Remplacer' : 'Ajouter'}</Button
-              >
+              /><Button type="submit" size="sm" variant="destructive">Supprimer</Button>
             </form>
-            {#if item.photoUrl}<form
-                method="POST"
-                action="?/removePhoto"
-                use:enhance={toastEnhance({ success: 'Photo supprimée.' })}
-              >
-                <input type="hidden" name="id" value={item.id} /><input
-                  type="hidden"
-                  name="revision"
-                  value={item.revision}
-                /><Button type="submit" size="sm" variant="outline">Retirer</Button>
-              </form>{/if}
-          </section>
+          </footer>
         </article>{/each}
-    </div>{/if}<ProfileDialog
-    bind:open
-    profile={editing}
-    sites={data.sites}
-    members={data.members}
-  />
+    </div>{/if}<ProfileDialog bind:open profile={editing} />
 </main>
 
 <style>
@@ -168,8 +115,7 @@
   }
   header,
   .head,
-  footer,
-  section {
+  footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -201,15 +147,10 @@
     border-radius: 50%;
     object-fit: cover;
   }
-  footer,
-  section {
+  footer {
     justify-content: flex-end;
     padding-top: var(--space-3);
     border-top: 1px solid var(--border);
-  }
-  section form {
-    display: flex;
-    gap: var(--space-2);
   }
   .error {
     padding: var(--space-3);

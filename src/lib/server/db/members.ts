@@ -162,7 +162,6 @@ export async function memberHasDependencies(id: string): Promise<boolean> {
   if (gallery) return true
   const profile = await db.query.publicProfiles.findFirst({
     where: or(
-      eq(publicProfiles.memberId, id),
       eq(publicProfiles.authorMemberId, id),
       eq(publicProfiles.updatedByMemberId, id),
       eq(publicProfiles.publishedByMemberId, id),

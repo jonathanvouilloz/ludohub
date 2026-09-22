@@ -20,84 +20,35 @@ import {
 import { createDraftPublicationState, transitionPublicContent } from '../public-content.js'
 import type { PublicProfileSection } from '../schema.js'
 import {
-  ensurePublicEditorialTargets,
-  PublicFaqServiceError,
-  type PublicFaqTargeting,
-  resolvePublicEditorialTargets,
-  validatePublicEditorialMarkdown,
   validatePublicEditorialText,
-  validatePublicSortOrder,
 } from './public-faqs.js'
 import { isPublicSiteEnabled } from './public-site.js'
 export class PublicProfileServiceError extends Error {}
 export type PublicProfileInput = {
-  memberId?: string | null
   section: PublicProfileSection
   displayName: string
   roleTitle?: string | null
-  bioMarkdown?: string | null
-  sortOrder: number
-} & PublicFaqTargeting
+  bioText?: string | null
+}
 export type PublicProfileUpdateInput = Partial<
-  Pick<
-    PublicProfileInput,
-    'memberId' | 'section' | 'displayName' | 'roleTitle' | 'bioMarkdown' | 'sortOrder'
-  >
-> &
-  (PublicFaqTargeting | { targetMode?: undefined; siteIds?: undefined })
+  Pick<PublicProfileInput, 'section' | 'displayName' | 'roleTitle' | 'bioText'>
+>
 const SECTIONS = new Set<PublicProfileSection>(['team', 'committee']),
   MAX = 5 * 1024 * 1024,
   TYPES = ['image/jpeg', 'image/png', 'image/webp']
-function translate(e: unknown): never {
-  if (e instanceof PublicFaqServiceError) throw new PublicProfileServiceError(e.message)
-  throw e
-}
 function text(v: string, l: string, m: number) {
   try {
     return validatePublicEditorialText(v, l, m)
-  } catch (e) {
-    translate(e)
-  }
-}
-function markdown(v: string) {
-  try {
-    return validatePublicEditorialMarkdown(v, 'La biographie', 10000)
-  } catch (e) {
-    translate(e)
+  } catch (error) {
+    throw new PublicProfileServiceError(error instanceof Error ? error.message : 'Texte invalide.')
   }
 }
 function optional(v: string | null | undefined, l: string, m: number) {
   return v == null ? null : text(v, l, m)
 }
-function order(v: number) {
-  try {
-    return validatePublicSortOrder(v)
-  } catch (e) {
-    translate(e)
-  }
-}
 function section(v: PublicProfileSection) {
   if (!SECTIONS.has(v)) throw new PublicProfileServiceError('Section invalide.')
   return v
-}
-async function targets(
-  l: string,
-  m: 'all' | 'explicit' | undefined,
-  s: readonly string[] | undefined,
-  p?: readonly string[],
-) {
-  try {
-    return await resolvePublicEditorialTargets(l, m, s, p)
-  } catch (e) {
-    translate(e)
-  }
-}
-async function publishable(l: string, s: string[]) {
-  try {
-    await ensurePublicEditorialTargets(l, s)
-  } catch (e) {
-    translate(e)
-  }
 }
 function rev(v: number) {
   if (!Number.isSafeInteger(v) || v < 1) throw new PublicProfileServiceError('Révision invalide.')
@@ -119,19 +70,16 @@ export async function createPublicProfile(
   input: PublicProfileInput,
   now = new Date(),
 ) {
-  const siteIds = await targets(l, input.targetMode, input.siteIds),
-    state = createDraftPublicationState(now)
+  const state = createDraftPublicationState(now)
   return required(
     await insertPublicProfileAtomic(
       {
         id: randomUUID(),
         ludoId: l,
-        memberId: input.memberId ?? null,
         section: section(input.section),
         displayName: text(input.displayName, 'Le nom affiché', 160),
         roleTitle: optional(input.roleTitle, 'Le rôle', 200),
-        bioMarkdown: input.bioMarkdown == null ? null : markdown(input.bioMarkdown),
-        sortOrder: order(input.sortOrder),
+        bioText: input.bioText == null ? null : text(input.bioText, 'La biographie', 255),
         photoUrl: null,
         photoStorageKey: null,
         photoAlt: null,
@@ -144,7 +92,6 @@ export async function createPublicProfile(
         createdAt: now,
         updatedAt: now,
       },
-      siteIds,
     ),
   )
 }
@@ -159,18 +106,11 @@ export async function updatePublicProfile(
   rev(r)
   const current = await getPublicProfile(id, l)
   if (current.revision !== r) concurrent()
-  const siteIds = await targets(
-    l,
-    input.targetMode,
-    input.siteIds,
-    current.targets.map((x) => x.siteId),
-  )
   const updated = await updatePublicProfileAtomic(
     id,
     l,
     r,
     {
-      memberId: input.memberId === undefined ? current.memberId : input.memberId,
       section: input.section === undefined ? current.section : section(input.section),
       displayName:
         input.displayName === undefined
@@ -180,20 +120,18 @@ export async function updatePublicProfile(
         input.roleTitle === undefined
           ? current.roleTitle
           : optional(input.roleTitle, 'Le rôle', 200),
-      bioMarkdown:
-        input.bioMarkdown === undefined
-          ? current.bioMarkdown
-          : input.bioMarkdown === null
+      bioText:
+        input.bioText === undefined
+          ? current.bioText
+          : input.bioText === null
             ? null
-            : markdown(input.bioMarkdown),
-      sortOrder: input.sortOrder === undefined ? current.sortOrder : order(input.sortOrder),
+            : text(input.bioText, 'La biographie', 255),
       photoUrl: current.photoUrl,
       photoStorageKey: current.photoStorageKey,
       photoAlt: current.photoAlt,
       updatedByMemberId: m,
       updatedAt: now,
     },
-    siteIds,
   )
   if (!updated) concurrent()
   return updated
@@ -215,10 +153,8 @@ async function transition(
   if (next === 'published') {
     if (!current.displayName.trim())
       throw new PublicProfileServiceError('Le nom affiché est requis.')
-    await publishable(
-      l,
-      current.targets.map((x) => x.siteId),
-    )
+    if (!(await isPublicSiteEnabled(l)) || !(await listActiveSiteRows(l)).length)
+      throw new PublicProfileServiceError('La publication exige un site public actif avec un lieu actif.')
   }
   const state = transitionPublicContent(current, next, now)
   const updated = await updatePublicProfilePublicationRow(id, l, current.status, r, {

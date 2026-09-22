@@ -27,6 +27,7 @@ export type SiteInput = {
   phone?: string | null
   email?: string | null
   accessInfo?: string | null
+  importantInfo?: string | null
   directionsUrl?: string | null
   latitude?: number | null
   longitude?: number | null
@@ -132,6 +133,7 @@ function normalizeSite(input: SiteInput) {
     phone: optional(input.phone, 40, 'Le téléphone'),
     email: optional(input.email, 200, "L'adresse e-mail"),
     accessInfo: optional(input.accessInfo, 1000, "Les informations d'accès"),
+    importantInfo: optional(input.importantInfo, 500, "L'information importante"),
     directionsUrl: normalizeDirectionsUrl(input.directionsUrl),
     ...normalizeCoordinates(input.latitude, input.longitude),
     isActive: input.isActive,
@@ -229,6 +231,7 @@ export async function updateSiteWithOpeningHours(
         phone: fields.phone,
         email: fields.email,
         accessInfo: fields.accessInfo,
+        importantInfo: fields.importantInfo,
         directionsUrl: fields.directionsUrl,
         latitude: fields.latitude,
         longitude: fields.longitude,
@@ -261,6 +264,7 @@ export async function updateSiteOpeningHours(
     phone: current.phone,
     email: current.email,
     accessInfo: current.accessInfo,
+    importantInfo: current.importantInfo,
     directionsUrl: current.directionsUrl,
     latitude: current.latitude,
     longitude: current.longitude,

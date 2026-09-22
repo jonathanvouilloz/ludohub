@@ -1,6 +1,4 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit'
-import { getActiveMembersByLudo } from '$lib/server/db/members.js'
-import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import {
   deletePublicSiteMedia,
@@ -30,19 +28,6 @@ async function context(e: RequestEvent) {
   if (!(await isPublicSiteEnabled(c.ludo.id))) throw error(404, 'Module indisponible')
   return c
 }
-function targets(d: FormData) {
-  const targetMode = d.get('targetMode'),
-    siteIds = d.getAll('siteIds').map(String)
-  if (targetMode === 'all') {
-    if (siteIds.length) throw new PublicProfileServiceError('Ciblage invalide.')
-    return { targetMode, siteIds: [] } as const
-  }
-  if (targetMode === 'explicit') {
-    if (!siteIds.length) throw new PublicProfileServiceError('Sélectionnez un lieu actif.')
-    return { targetMode, siteIds } as const
-  }
-  throw new PublicProfileServiceError('Ciblage requis.')
-}
 function section(d: FormData): PublicProfileInput['section'] {
   const v = d.get('section')
   if (v !== 'team' && v !== 'committee') throw new PublicProfileServiceError('Section invalide.')
@@ -50,13 +35,10 @@ function section(d: FormData): PublicProfileInput['section'] {
 }
 function input(d: FormData): PublicProfileInput {
   return {
-    memberId: String(d.get('memberId') ?? '').trim() || null,
     section: section(d),
     displayName: String(d.get('displayName') ?? ''),
     roleTitle: String(d.get('roleTitle') ?? '').trim() || null,
-    bioMarkdown: String(d.get('bioMarkdown') ?? '').trim() || null,
-    sortOrder: Number(d.get('sortOrder')),
-    ...targets(d),
+    bioText: String(d.get('bioText') ?? '').trim() || null,
   }
 }
 function rev(d: FormData) {
@@ -114,30 +96,42 @@ const POLICY = {
   maxBytes: 5 * 1024 * 1024,
   allowedTypes: ['image/jpeg', 'image/png', 'image/webp'] as const,
 }
+async function applyPhoto(data: FormData, profile: Awaited<ReturnType<typeof createPublicProfile>>, ludoId: string, memberId: string) {
+  const file = data.get('photoFile')
+  if (file instanceof File && file.size > 0) {
+    const registered = await uploadAndRegisterMedia({
+      authorize: () => authorizePublicProfileMediaScope(ludoId, profile.id, profile.revision),
+      upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: POLICY }),
+      register: async (scope, blob) => ({ scope, result: await setPublicProfilePhoto(ludoId, profile.id, memberId, profile.revision, scope, blob, profile.displayName) }),
+      cleanup: deletePublicSiteMedia,
+    })
+    await cleanup(registered.scope, registered.result.previousStorageKey, ludoId, memberId, profile.id, 'replace')
+    return registered.result.profile
+  }
+  if (data.get('removePhoto') === 'on' && profile.photoUrl) {
+    const scope = await authorizePublicProfileMediaScope(ludoId, profile.id, profile.revision)
+    const result = await clearPublicProfilePhoto(ludoId, profile.id, memberId, profile.revision)
+    await cleanup(scope, result.previousStorageKey, ludoId, memberId, profile.id, 'remove')
+    return result.profile
+  }
+  return profile
+}
 export const load: PageServerLoad = async (e) => {
   const { ludo } = await context(e)
-  const [profiles, sites, rows] = await Promise.all([
-    listPublicProfilesForManagement(ludo.id),
-    listSiteRowsWithOpeningHours(ludo.id),
-    getActiveMembersByLudo(ludo.id),
-  ])
-  return { profiles, sites, members: rows.map((x) => ({ id: x.id, displayName: x.name })) }
+  return { profiles: await listPublicProfilesForManagement(ludo.id) }
 }
 export const actions: Actions = {
   create: async (e) => {
     const { ludo, member } = await context(e),
       d = await e.request.formData()
     return run(async () => {
-      const x = input(d),
-        p = await createPublicProfile(ludo.id, member.id, x)
+      const x = input(d)
+      let p = await createPublicProfile(ludo.id, member.id, x)
+      p = await applyPhoto(d, p, ludo.id, member.id)
       await audit('public_profile.created', ludo.id, member.id, p.id, {
         section: x.section,
-        sortOrder: x.sortOrder,
-        targetMode: x.targetMode,
-        targetSiteIds: x.siteIds,
-        hasMemberLink: x.memberId !== null,
         hasRole: x.roleTitle !== null,
-        hasBio: x.bioMarkdown !== null,
+        hasBio: x.bioText !== null,
       })
       return { success: true }
     })
@@ -147,16 +141,13 @@ export const actions: Actions = {
       d = await e.request.formData(),
       id = String(d.get('id') ?? '')
     return run(async () => {
-      const x = input(d),
-        p = await updatePublicProfile(id, ludo.id, x, member.id, rev(d))
+      const x = input(d)
+      let p = await updatePublicProfile(id, ludo.id, x, member.id, rev(d))
+      p = await applyPhoto(d, p, ludo.id, member.id)
       await audit('public_profile.updated', ludo.id, member.id, p.id, {
         section: x.section,
-        sortOrder: x.sortOrder,
-        targetMode: x.targetMode,
-        targetSiteIds: x.siteIds,
-        hasMemberLink: x.memberId !== null,
         hasRole: x.roleTitle !== null,
-        hasBio: x.bioMarkdown !== null,
+        hasBio: x.bioText !== null,
       })
       return { success: true }
     })

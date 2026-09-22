@@ -42,6 +42,7 @@
         <div class="field"><Label for="create-email">E-mail</Label><Input id="create-email" name="email" type="email" /></div>
       </div>
       <div class="field"><Label for="create-access">Informations d’accès et transports</Label><textarea id="create-access" name="accessInfo" rows="3"></textarea></div>
+      <div class="field"><Label for="create-important">Information importante sur ce lieu</Label><textarea id="create-important" name="importantInfo" rows="3" maxlength="500"></textarea></div>
       <div class="field">
         <Label for="create-directions">Lien Google Maps</Label>
         <Input id="create-directions" name="directionsUrl" type="url" inputmode="url" placeholder="Collez le lien partagé depuis Google Maps" />

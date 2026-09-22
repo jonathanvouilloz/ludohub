@@ -2,11 +2,16 @@ import { randomUUID } from 'node:crypto'
 import {
   deleteDraftPublicFaqRow,
   deletePublicFaqRow,
+  ensureDefaultPublicFaqCategories,
   getPublicFaqRowForLudo,
   insertPublicFaqAtomic,
+  getPublicFaqCategoryRowForLudo,
+  insertPublicFaqCategoryRow,
+  listPublicFaqCategoryRows,
   listPublicFaqRows,
   listVisiblePublicFaqRows,
   updatePublicFaqAtomic,
+  updatePublicFaqCategoryRow,
   updatePublicFaqPublicationRow,
 } from '../db/public-faqs.js'
 import { listActiveSiteRows } from '../db/sites.js'
@@ -19,12 +24,11 @@ export type PublicFaqTargeting =
   | { targetMode: 'explicit'; siteIds: readonly string[] }
 export type PublicFaqInput = {
   question: string
-  answerMarkdown: string
-  category?: string | null
-  sortOrder: number
+  answerText: string
+  categoryId: string
 } & PublicFaqTargeting
 export type PublicFaqUpdateInput = Partial<
-  Pick<PublicFaqInput, 'question' | 'answerMarkdown' | 'category' | 'sortOrder'>
+  Pick<PublicFaqInput, 'question' | 'answerText' | 'categoryId'>
 > &
   (PublicFaqTargeting | { targetMode?: undefined; siteIds?: undefined })
 
@@ -34,23 +38,11 @@ export function validatePublicEditorialText(value: string, label: string, max: n
     throw new PublicFaqServiceError(`${label} doit contenir entre 1 et ${max} caractères.`)
   return normalized
 }
+/** Validation commune pour les autres contenus éditoriaux qui conservent Markdown et ordre. */
 export function validatePublicEditorialMarkdown(value: string, label: string, max: number) {
   const normalized = validatePublicEditorialText(value, label, max)
   if (/[<>]/.test(normalized))
     throw new PublicFaqServiceError("Le HTML brut n'est pas autorisé dans le Markdown.")
-  const matches = [
-    ...normalized.matchAll(/\]\(\s*([^\s)]+)/g),
-    ...normalized.matchAll(/\]:\s*(?:<([^>\n]*)>|(\S+))/g),
-  ]
-  for (const match of matches) {
-    const raw = (match[1] ?? match[2]).trim()
-    if (/&(?:#\d+|#x[\da-f]+|[a-z][a-z\d]+);/i.test(raw))
-      throw new PublicFaqServiceError('Le Markdown contient un lien non autorisé.')
-    const url = raw.replace(/\\([!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~])/g, '$1')
-    const scheme = /^([a-z][a-z0-9+.-]*):/i.exec(url)?.[1]?.toLowerCase()
-    if (scheme && !['http', 'https', 'mailto'].includes(scheme))
-      throw new PublicFaqServiceError('Le Markdown contient un lien non autorisé.')
-  }
   return normalized
 }
 export function validatePublicSortOrder(value: number) {
@@ -100,6 +92,44 @@ export const listPublicFaqsForManagement = (ludoId: string) => listPublicFaqRows
 export async function getPublicFaq(id: string, ludoId: string) {
   return required(await getPublicFaqRowForLudo(id, ludoId))
 }
+async function activeCategory(ludoId: string, categoryId: string | undefined) {
+  if (!categoryId) throw new PublicFaqServiceError('Choisissez une catégorie.')
+  const category = await getPublicFaqCategoryRowForLudo(categoryId, ludoId)
+  if (!category || !category.isActive) throw new PublicFaqServiceError('La catégorie est invalide ou désactivée.')
+  return category.id
+}
+export async function listPublicFaqCategoriesForManagement(ludoId: string) {
+  await ensureDefaultPublicFaqCategories(ludoId)
+  return listPublicFaqCategoryRows(ludoId)
+}
+export async function createPublicFaqCategory(ludoId: string, name: string, now = new Date()) {
+  await ensureDefaultPublicFaqCategories(ludoId)
+  const categories = await listPublicFaqCategoryRows(ludoId)
+  const normalized = validatePublicEditorialText(name, 'Le nom de la catégorie', 100)
+  const [row] = await insertPublicFaqCategoryRow({
+    id: randomUUID(), ludoId, name: normalized, sortOrder: categories.length, isActive: true,
+    createdAt: now, updatedAt: now,
+  })
+  return row
+}
+export async function updatePublicFaqCategory(
+  id: string, ludoId: string,
+  input: { name?: string; isActive?: boolean; sortOrder?: number }, now = new Date(),
+) {
+  await ensureDefaultPublicFaqCategories(ludoId)
+  if (input.name === undefined && input.isActive === undefined && input.sortOrder === undefined)
+    throw new PublicFaqServiceError('Aucune modification de catégorie fournie.')
+  if (input.sortOrder !== undefined && (!Number.isSafeInteger(input.sortOrder) || input.sortOrder < 0))
+    throw new PublicFaqServiceError("L'ordre de catégorie est invalide.")
+  const [row] = await updatePublicFaqCategoryRow(id, ludoId, {
+    ...(input.name === undefined ? {} : { name: validatePublicEditorialText(input.name, 'Le nom de la catégorie', 100) }),
+    ...(input.isActive === undefined ? {} : { isActive: input.isActive }),
+    ...(input.sortOrder === undefined ? {} : { sortOrder: input.sortOrder }),
+    updatedAt: now,
+  })
+  if (!row) throw new PublicFaqServiceError('Catégorie introuvable.')
+  return row
+}
 export async function createPublicFaq(
   ludoId: string,
   memberId: string,
@@ -114,12 +144,8 @@ export async function createPublicFaq(
         id: randomUUID(),
         ludoId,
         question: validatePublicEditorialText(input.question, 'La question', 300),
-        answerMarkdown: validatePublicEditorialMarkdown(input.answerMarkdown, 'La réponse', 20000),
-        category:
-          input.category == null
-            ? null
-            : validatePublicEditorialText(input.category, 'La catégorie', 100),
-        sortOrder: validatePublicSortOrder(input.sortOrder),
+        answerText: validatePublicEditorialText(input.answerText, 'La réponse', 20000),
+        categoryId: await activeCategory(ludoId, input.categoryId),
         status: state.status,
         revision: 1,
         authorMemberId: memberId,
@@ -159,20 +185,14 @@ export async function updatePublicFaq(
         input.question === undefined
           ? current.question
           : validatePublicEditorialText(input.question, 'La question', 300),
-      answerMarkdown:
-        input.answerMarkdown === undefined
-          ? current.answerMarkdown
-          : validatePublicEditorialMarkdown(input.answerMarkdown, 'La réponse', 20000),
-      category:
-        input.category === undefined
-          ? current.category
-          : input.category === null
-            ? null
-            : validatePublicEditorialText(input.category, 'La catégorie', 100),
-      sortOrder:
-        input.sortOrder === undefined
-          ? current.sortOrder
-          : validatePublicSortOrder(input.sortOrder),
+      answerText:
+        input.answerText === undefined
+          ? current.answerText
+          : validatePublicEditorialText(input.answerText, 'La réponse', 20000),
+      categoryId:
+        input.categoryId === undefined
+          ? current.categoryId
+          : await activeCategory(ludoId, input.categoryId),
       updatedByMemberId: memberId,
       updatedAt: now,
     },

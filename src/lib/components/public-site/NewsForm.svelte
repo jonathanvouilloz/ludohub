@@ -45,9 +45,6 @@
     successHref: string
   } = $props()
   const isEdit = $derived(news !== null)
-  const supportImage = $derived(
-    news?.assets.find((asset) => asset.kind === 'support_image') ?? null,
-  )
   let title = $state('')
   let slug = $state('')
   let summary = $state('')
@@ -93,7 +90,7 @@
     skipUpdate: true,
     prepare: async (formData) => {
       await Promise.all([
-        compressEditorialImageFields(formData, ['coverFile', 'contentImageFile'], 'content'),
+        compressEditorialImageFields(formData, ['coverFile'], 'content'),
         compressEditorialPdfFields(formData, ['attachmentFile']),
       ])
     },
@@ -178,7 +175,7 @@
       <p>Tous ces ajouts sont facultatifs.</p>
     </div>
     <div class="field">
-      <Label for="news-cover-file">Image de couverture</Label>
+      <Label for="news-cover-file">Image de l’actualité</Label>
       {#if news?.imageUrl}<img
           class="image-preview"
           src={news.imageUrl}
@@ -199,25 +196,6 @@
       {#if news?.imageUrl}<label class="remove-choice"
           ><input type="checkbox" name="removeCover" /> Retirer l’image de couverture</label
         >{/if}
-    </div>
-    <div class="field">
-      <Label for="news-content-image-file">Image dans l’actualité</Label>
-      {#if supportImage}
-        <img class="image-preview" src={supportImage.url} alt={supportImage.alt ?? ''} />
-      {/if}
-      <input
-        id="news-content-image-file"
-        type="file"
-        name="contentImageFile"
-        accept="image/jpeg,image/png,image/webp"
-      />
-      <Input name="contentImageAlt" maxlength={300} placeholder="Description de l’image" />
-      <p class="hint">Elle s’affiche sous le texte de l’actualité.</p>
-      {#if supportImage}
-        <label class="remove-choice"
-          ><input type="checkbox" name="removeAssetIds" value={supportImage.id} /> Retirer cette image</label
-        >
-      {/if}
     </div>
     <div class="field">
       <Label for="news-attachment-file">Document PDF</Label>

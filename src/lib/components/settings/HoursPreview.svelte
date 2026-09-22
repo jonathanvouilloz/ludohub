@@ -17,6 +17,7 @@
     phone: string | null
     email: string | null
     accessInfo: string | null
+    importantInfo: string | null
     directionsUrl: string | null
     latitude: number | string | null
     longitude: number | string | null
@@ -84,6 +85,9 @@
 
       {#if site.accessInfo}
         <p class="access"><strong>À savoir&nbsp;:</strong> {site.accessInfo}</p>
+      {/if}
+      {#if site.importantInfo}
+        <p class="important"><strong>Information importante&nbsp;:</strong> {site.importantInfo}</p>
       {/if}
     </article>
   {/each}
@@ -162,6 +166,12 @@
     color: var(--text-muted);
     font-size: var(--text-small);
     white-space: pre-line;
+  }
+  .important {
+    margin: var(--space-3) 0 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--warning-light);
   }
   .access strong {
     color: var(--text-main);

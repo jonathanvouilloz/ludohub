@@ -11,8 +11,6 @@ import {
   updatePublicActivityImageRow,
   updatePublicActivityLifecycleRow,
   updatePublicActivityPublicationRow,
-  type ActivityDateInput,
-  type ActivityExceptionInput,
 } from '../db/public-activities.js'
 import { listActiveSiteRows } from '../db/sites.js'
 import type { StoredBlob } from '../media/blob-storage.js'
@@ -30,9 +28,6 @@ import { isPublicSiteEnabled, validatePublicSiteTargets } from './public-site.js
 export class PublicActivityServiceError extends Error {}
 
 export type PublicActivityTargeting = PublicAnnouncementTargeting
-export type PublicActivityDateInput = { startsAt: Date; endsAt?: Date | null }
-export type PublicActivityExceptionInput = { excludedAt: Date; reason?: string | null }
-
 type PublicActivityFields = {
   slug: string
   title: string
@@ -40,9 +35,6 @@ type PublicActivityFields = {
   body: string
   location?: string | null
   type: PublicActivityType
-  recurrenceRule?: string | null
-  dates: PublicActivityDateInput[]
-  exceptions: PublicActivityExceptionInput[]
 }
 
 export type PublicActivityInput = PublicActivityFields & PublicActivityTargeting
@@ -92,162 +84,6 @@ function writeError(error: unknown): never {
   throw error
 }
 
-function normalizeRule(value: string | null | undefined) {
-  if (value == null) return null
-  const normalized = value.trim().toUpperCase()
-  if (!normalized || normalized.length > 1000 || /[\r\n]/.test(value)) {
-    throw new PublicActivityServiceError('La règle de récurrence est invalide.')
-  }
-  const allowed = new Set(['FREQ', 'INTERVAL', 'BYDAY', 'COUNT', 'UNTIL'])
-  const values = new Map<string, string>()
-  for (const segment of normalized.split(';')) {
-    const [key, segmentValue, ...extra] = segment.split('=')
-    if (!key || !segmentValue || extra.length || !allowed.has(key) || values.has(key)) {
-      throw new PublicActivityServiceError(
-        'La règle de récurrence contient une clé invalide ou dupliquée.',
-      )
-    }
-    values.set(key, segmentValue)
-  }
-  const frequency = values.get('FREQ')
-  if (!frequency || !['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(frequency)) {
-    throw new PublicActivityServiceError('La fréquence de récurrence est invalide.')
-  }
-  const interval = values.get('INTERVAL')
-  if (interval && (!/^\d+$/.test(interval) || Number(interval) < 1 || Number(interval) > 365)) {
-    throw new PublicActivityServiceError(
-      "L'intervalle de récurrence doit être compris entre 1 et 365.",
-    )
-  }
-  const byDay = values.get('BYDAY')
-  if (byDay) {
-    const days = byDay.split(',')
-    if (
-      frequency === 'DAILY' ||
-      days.some((day) => !['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU'].includes(day)) ||
-      new Set(days).size !== days.length
-    ) {
-      throw new PublicActivityServiceError('Les jours de récurrence sont invalides.')
-    }
-  }
-  const count = values.get('COUNT')
-  if (count && (!/^\d+$/.test(count) || Number(count) < 1 || Number(count) > 366)) {
-    throw new PublicActivityServiceError(
-      'Le nombre de récurrences doit être compris entre 1 et 366.',
-    )
-  }
-  const until = values.get('UNTIL')
-  if (until) {
-    const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(until)
-    if (!match)
-      throw new PublicActivityServiceError('La date de fin RRULE doit être un instant UTC.')
-    const [, year, month, day, hour, minute, second] = match.map(Number)
-    const parsed = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
-    if (
-      parsed.getUTCFullYear() !== year ||
-      parsed.getUTCMonth() !== month - 1 ||
-      parsed.getUTCDate() !== day ||
-      parsed.getUTCHours() !== hour ||
-      parsed.getUTCMinutes() !== minute ||
-      parsed.getUTCSeconds() !== second
-    ) {
-      throw new PublicActivityServiceError("La date de fin RRULE n'existe pas.")
-    }
-  }
-  if ((!count && !until) || (count && until)) {
-    throw new PublicActivityServiceError('La récurrence exige exactement COUNT ou UNTIL.')
-  }
-  return ['FREQ', 'INTERVAL', 'BYDAY', 'COUNT', 'UNTIL']
-    .filter((key) => values.has(key))
-    .map((key) => `${key}=${values.get(key)}`)
-    .join(';')
-}
-
-function validDate(value: Date, label: string) {
-  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
-    throw new PublicActivityServiceError(`${label} est invalide.`)
-  }
-  return value
-}
-
-function normalizeSchedule(
-  type: PublicActivityType,
-  recurrenceRule: string | null | undefined,
-  dates: PublicActivityDateInput[],
-  exceptions: PublicActivityExceptionInput[],
-) {
-  if (dates.length > 366 || exceptions.length > 366) {
-    throw new PublicActivityServiceError(
-      'Une activité accepte au maximum 366 dates et 366 exceptions.',
-    )
-  }
-  const normalizedDates: ActivityDateInput[] = dates.map((date) => {
-    const startsAt = validDate(date.startsAt, 'La date de début')
-    const endsAt = date.endsAt == null ? null : validDate(date.endsAt, 'La date de fin')
-    if (endsAt && endsAt <= startsAt) {
-      throw new PublicActivityServiceError('La date de fin doit suivre la date de début.')
-    }
-    return { startsAt, endsAt }
-  })
-  if (
-    new Set(normalizedDates.map((date) => date.startsAt.getTime())).size !== normalizedDates.length
-  ) {
-    throw new PublicActivityServiceError('Les dates contiennent un doublon.')
-  }
-  const normalizedExceptions: ActivityExceptionInput[] = exceptions.map((exception) => ({
-    excludedAt: validDate(exception.excludedAt, "La date d'exception"),
-    reason: optionalText(exception.reason, "Le motif de l'exception", 500),
-  }))
-  if (
-    new Set(normalizedExceptions.map((exception) => exception.excludedAt.getTime())).size !==
-    normalizedExceptions.length
-  ) {
-    throw new PublicActivityServiceError('Les exceptions contiennent un doublon.')
-  }
-
-  if (type === 'permanent') {
-    if (dates.length || exceptions.length || recurrenceRule != null) {
-      throw new PublicActivityServiceError(
-        'Une activité permanente ne porte ni dates, ni récurrence, ni exceptions.',
-      )
-    }
-    return { recurrenceRule: null, dates: [], exceptions: [] }
-  }
-  if (normalizedDates.length === 0) {
-    throw new PublicActivityServiceError('Cette activité exige au moins une date explicite.')
-  }
-  if (type === 'one_off') {
-    if (recurrenceRule != null || exceptions.length) {
-      throw new PublicActivityServiceError(
-        'Une activité ponctuelle ne porte ni règle de récurrence, ni exception.',
-      )
-    }
-    return { recurrenceRule: null, dates: normalizedDates, exceptions: [] }
-  }
-  const normalizedRule = normalizeRule(recurrenceRule)
-  const untilValue = normalizedRule?.match(/(?:^|;)UNTIL=(\d{8}T\d{6}Z)(?:;|$)/)?.[1]
-  if (untilValue) {
-    const match = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(untilValue)!
-    const [, year, month, day, hour, minute, second] = match.map(Number)
-    const until = new Date(Date.UTC(year, month - 1, day, hour, minute, second))
-    const firstOccurrence = new Date(
-      Math.min(...normalizedDates.map((date) => date.startsAt.getTime())),
-    )
-    const fiveYearsAfterFirst = new Date(firstOccurrence)
-    fiveYearsAfterFirst.setUTCFullYear(fiveYearsAfterFirst.getUTCFullYear() + 5)
-    if (until < firstOccurrence || until > fiveYearsAfterFirst) {
-      throw new PublicActivityServiceError(
-        'UNTIL doit être compris entre la première occurrence et cinq années UTC après celle-ci.',
-      )
-    }
-  }
-  return {
-    recurrenceRule: normalizedRule,
-    dates: normalizedDates,
-    exceptions: normalizedExceptions,
-  }
-}
-
 async function targeting(
   ludoId: string,
   mode: 'all' | 'explicit' | undefined,
@@ -286,12 +122,6 @@ export async function createPublicActivity(
   now = new Date(),
 ) {
   const siteIds = await targeting(ludoId, input.targetMode, input.siteIds)
-  const schedule = normalizeSchedule(
-    input.type,
-    input.recurrenceRule,
-    input.dates,
-    input.exceptions,
-  )
   const publication = createDraftPublicationState(now)
   try {
     return required(
@@ -305,7 +135,6 @@ export async function createPublicActivity(
           body: validatePublicNewsMarkdown(input.body),
           location: optionalText(input.location, 'Le lieu', 500),
           type: input.type,
-          recurrenceRule: schedule.recurrenceRule,
           imageUrl: null,
           imageStorageKey: null,
           imageAlt: null,
@@ -323,8 +152,6 @@ export async function createPublicActivity(
           updatedAt: now,
         },
         siteIds,
-        schedule.dates,
-        schedule.exceptions,
       ),
     )
   } catch (error) {
@@ -355,12 +182,6 @@ export async function updatePublicActivity(
     current.targets.map((target) => target.siteId),
   )
   const type = input.type ?? current.type
-  const schedule = normalizeSchedule(
-    type,
-    input.recurrenceRule === undefined ? current.recurrenceRule : input.recurrenceRule,
-    input.dates ?? current.dates,
-    input.exceptions ?? current.exceptions,
-  )
   const slug = input.slug === undefined ? current.slug : normalizePublicNewsSlug(input.slug)
   if (current.publishedAt && slug !== current.slug) {
     throw new PublicActivityServiceError('Le slug ne peut plus être modifié après publication.')
@@ -381,13 +202,10 @@ export async function updatePublicActivity(
             ? current.location
             : optionalText(input.location, 'Le lieu', 500),
         type,
-        recurrenceRule: schedule.recurrenceRule,
         updatedByMemberId: memberId,
         updatedAt: now,
       },
       siteIds,
-      schedule.dates,
-      schedule.exceptions,
     )
     if (!updated) conflict()
     return updated

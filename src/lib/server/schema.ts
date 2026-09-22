@@ -112,6 +112,7 @@ export const ludoSites = pgTable(
     phone: text('phone'),
     email: text('email'),
     accessInfo: text('access_info'),
+    importantInfo: text('important_info'),
     directionsUrl: text('directions_url'),
     latitude: doublePrecision('latitude'),
     longitude: doublePrecision('longitude'),
@@ -444,7 +445,30 @@ export const publicTopThreeSites = pgTable(
   ],
 )
 
-/** Question fréquente ordonnée manuellement sur le site public. */
+/** Catégorie de FAQ administrable, ordonnée par ludothèque. */
+export const publicFaqCategories = pgTable(
+  'public_faq_categories',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    ludoId: uuid('ludo_id')
+      .notNull()
+      .references(() => ludotheques.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    isActive: boolean('is_active').notNull().default(true),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  (t) => [
+    unique('public_faq_categories_id_ludo_id_unique').on(t.id, t.ludoId),
+    unique('public_faq_categories_ludo_name_unique').on(t.ludoId, t.name),
+    check('public_faq_categories_name_check', sql`char_length(trim(${t.name})) between 1 and 100`),
+    check('public_faq_categories_sort_order_check', sql`${t.sortOrder} between 0 and 1000000`),
+    index('public_faq_categories_ludo_order_idx').on(t.ludoId, t.sortOrder, t.createdAt),
+  ],
+)
+
+/** Question fréquente en texte simple, classée dans une catégorie administrable. */
 export const publicFaqs = pgTable(
   'public_faqs',
   {
@@ -453,9 +477,8 @@ export const publicFaqs = pgTable(
       .notNull()
       .references(() => ludotheques.id, { onDelete: 'cascade' }),
     question: text('question').notNull(),
-    answerMarkdown: text('answer_markdown').notNull(),
-    category: text('category'),
-    sortOrder: integer('sort_order').notNull().default(0),
+    answerText: text('answer_text').notNull(),
+    categoryId: uuid('category_id').notNull(),
     status: publicContentStatus('status').notNull().default('draft'),
     revision: integer('revision').notNull().default(1),
     authorMemberId: uuid('author_member_id').notNull(),
@@ -467,6 +490,11 @@ export const publicFaqs = pgTable(
   },
   (t) => [
     unique('public_faqs_id_ludo_id_unique').on(t.id, t.ludoId),
+    foreignKey({
+      columns: [t.categoryId, t.ludoId],
+      foreignColumns: [publicFaqCategories.id, publicFaqCategories.ludoId],
+      name: 'public_faqs_category_tenant_fk',
+    }),
     foreignKey({
       columns: [t.authorMemberId, t.ludoId],
       foreignColumns: [members.id, members.ludoId],
@@ -489,14 +517,9 @@ export const publicFaqs = pgTable(
     check('public_faqs_question_check', sql`char_length(trim(${t.question})) between 1 and 300`),
     check(
       'public_faqs_answer_check',
-      sql`char_length(trim(${t.answerMarkdown})) between 1 and 20000`,
+      sql`char_length(trim(${t.answerText})) between 1 and 20000`,
     ),
-    check(
-      'public_faqs_category_check',
-      sql`${t.category} is null or char_length(trim(${t.category})) between 1 and 100`,
-    ),
-    check('public_faqs_sort_order_check', sql`${t.sortOrder} between 0 and 1000000`),
-    index('public_faqs_public_order_idx').on(t.ludoId, t.status, t.sortOrder, t.id),
+    index('public_faqs_public_order_idx').on(t.ludoId, t.status, t.categoryId, t.createdAt),
   ],
 )
 
@@ -715,7 +738,7 @@ export const publicGalleryImageSites = pgTable(
 
 export const publicProfileSection = pgEnum('public_profile_section', ['team', 'committee'])
 
-/** Profil public éditorial ; le membre lié reste une référence interne optionnelle. */
+/** Profil public éditorial, commun à tous les lieux actifs. */
 export const publicProfiles = pgTable(
   'public_profiles',
   {
@@ -723,12 +746,10 @@ export const publicProfiles = pgTable(
     ludoId: uuid('ludo_id')
       .notNull()
       .references(() => ludotheques.id, { onDelete: 'cascade' }),
-    memberId: uuid('member_id'),
     section: publicProfileSection('section').notNull(),
     displayName: text('display_name').notNull(),
     roleTitle: text('role_title'),
-    bioMarkdown: text('bio_markdown'),
-    sortOrder: integer('sort_order').notNull().default(0),
+    bioText: text('bio_text'),
     photoUrl: text('photo_url'),
     photoStorageKey: text('photo_storage_key'),
     photoAlt: text('photo_alt'),
@@ -743,11 +764,6 @@ export const publicProfiles = pgTable(
   },
   (t) => [
     unique('public_profiles_id_ludo_id_unique').on(t.id, t.ludoId),
-    foreignKey({
-      columns: [t.memberId, t.ludoId],
-      foreignColumns: [members.id, members.ludoId],
-      name: 'public_profiles_member_tenant_fk',
-    }).onDelete('restrict'),
     foreignKey({
       columns: [t.authorMemberId, t.ludoId],
       foreignColumns: [members.id, members.ludoId],
@@ -777,36 +793,13 @@ export const publicProfiles = pgTable(
     ),
     check(
       'public_profiles_bio_check',
-      sql`${t.bioMarkdown} is null or char_length(trim(${t.bioMarkdown})) between 1 and 10000`,
+      sql`${t.bioText} is null or char_length(trim(${t.bioText})) between 1 and 255`,
     ),
-    check('public_profiles_sort_check', sql`${t.sortOrder} between 0 and 1000000`),
     check(
       'public_profiles_photo_check',
       sql`(${t.photoUrl} is null and ${t.photoStorageKey} is null and ${t.photoAlt} is null) or (${t.photoUrl} is not null and char_length(trim(${t.photoUrl})) between 1 and 2000 and ${t.photoStorageKey} is not null and char_length(trim(${t.photoStorageKey})) between 1 and 1000 and ${t.photoAlt} is not null and char_length(trim(${t.photoAlt})) between 1 and 300)`,
     ),
-    index('public_profiles_public_order_idx').on(t.ludoId, t.status, t.section, t.sortOrder, t.id),
-  ],
-)
-
-export const publicProfileSites = pgTable(
-  'public_profile_sites',
-  {
-    profileId: uuid('profile_id').notNull(),
-    ludoId: uuid('ludo_id').notNull(),
-    siteId: uuid('site_id').notNull(),
-  },
-  (t) => [
-    primaryKey({ columns: [t.profileId, t.siteId] }),
-    foreignKey({
-      columns: [t.profileId, t.ludoId],
-      foreignColumns: [publicProfiles.id, publicProfiles.ludoId],
-      name: 'public_profile_sites_profile_tenant_fk',
-    }).onDelete('cascade'),
-    foreignKey({
-      columns: [t.siteId, t.ludoId],
-      foreignColumns: [ludoSites.id, ludoSites.ludoId],
-      name: 'public_profile_sites_site_tenant_fk',
-    }),
+    index('public_profiles_public_order_idx').on(t.ludoId, t.status, t.section, t.createdAt),
   ],
 )
 
@@ -979,7 +972,6 @@ export const publicActivities = pgTable(
     body: text('body').notNull(),
     location: text('location'),
     type: publicActivityType('type').notNull(),
-    recurrenceRule: text('recurrence_rule'),
     imageUrl: text('image_url'),
     imageStorageKey: text('image_storage_key'),
     imageAlt: text('image_alt'),
@@ -1028,10 +1020,6 @@ export const publicActivities = pgTable(
       sql`(${t.lifecycle} = 'active' and ${t.archivedAt} is null and ${t.trashedAt} is null) or (${t.lifecycle} = 'archived' and ${t.archivedAt} is not null and ${t.trashedAt} is null) or (${t.lifecycle} = 'trashed' and ${t.trashedAt} is not null)`,
     ),
     check(
-      'public_activities_recurrence_check',
-      sql`(${t.type} = 'recurring' and ${t.recurrenceRule} is not null and char_length(trim(${t.recurrenceRule})) between 1 and 1000) or (${t.type} <> 'recurring' and ${t.recurrenceRule} is null)`,
-    ),
-    check(
       'public_activities_featured_rank_check',
       sql`${t.featuredRank} is null or (${t.featuredRank} between 1 and 3 and ${t.status} = 'published' and ${t.lifecycle} = 'active')`,
     ),
@@ -1073,50 +1061,6 @@ export const publicActivitySites = pgTable(
       foreignColumns: [ludoSites.id, ludoSites.ludoId],
       name: 'public_activity_sites_site_tenant_fk',
     }),
-  ],
-)
-
-export const publicActivityDates = pgTable(
-  'public_activity_dates',
-  {
-    activityId: uuid('activity_id').notNull(),
-    ludoId: uuid('ludo_id').notNull(),
-    startsAt: timestamp('starts_at', { withTimezone: true }).notNull(),
-    endsAt: timestamp('ends_at', { withTimezone: true }),
-  },
-  (t) => [
-    primaryKey({ columns: [t.activityId, t.startsAt] }),
-    foreignKey({
-      columns: [t.activityId, t.ludoId],
-      foreignColumns: [publicActivities.id, publicActivities.ludoId],
-      name: 'public_activity_dates_activity_tenant_fk',
-    }).onDelete('cascade'),
-    check(
-      'public_activity_dates_range_check',
-      sql`${t.endsAt} is null or ${t.endsAt} > ${t.startsAt}`,
-    ),
-  ],
-)
-
-export const publicActivityExceptions = pgTable(
-  'public_activity_exceptions',
-  {
-    activityId: uuid('activity_id').notNull(),
-    ludoId: uuid('ludo_id').notNull(),
-    excludedAt: timestamp('excluded_at', { withTimezone: true }).notNull(),
-    reason: text('reason'),
-  },
-  (t) => [
-    primaryKey({ columns: [t.activityId, t.excludedAt] }),
-    foreignKey({
-      columns: [t.activityId, t.ludoId],
-      foreignColumns: [publicActivities.id, publicActivities.ludoId],
-      name: 'public_activity_exceptions_activity_tenant_fk',
-    }).onDelete('cascade'),
-    check(
-      'public_activity_exceptions_reason_check',
-      sql`${t.reason} is null or char_length(trim(${t.reason})) between 1 and 500`,
-    ),
   ],
 )
 
@@ -1969,7 +1913,6 @@ export const membersRelations = relations(members, ({ many }) => ({
   publishedPublicGalleryImages: many(publicGalleryImages, {
     relationName: 'publicGalleryImagePublisher',
   }),
-  linkedPublicProfiles: many(publicProfiles, { relationName: 'publicProfileMember' }),
   authoredPublicProfiles: many(publicProfiles, { relationName: 'publicProfileAuthor' }),
   updatedPublicProfiles: many(publicProfiles, { relationName: 'publicProfileUpdater' }),
   publishedPublicProfiles: many(publicProfiles, { relationName: 'publicProfilePublisher' }),
@@ -2172,7 +2115,6 @@ export const ludoSitesRelations = relations(ludoSites, ({ one, many }) => ({
   publicFaqTargets: many(publicFaqSites),
   publicDocumentTargets: many(publicDocumentSites),
   publicGalleryImageTargets: many(publicGalleryImageSites),
-  publicProfileTargets: many(publicProfileSites),
 }))
 
 export const siteOpeningIntervalsRelations = relations(siteOpeningIntervals, ({ one }) => ({
@@ -2289,8 +2231,20 @@ export const publicTopThreeSitesRelations = relations(publicTopThreeSites, ({ on
   }),
 }))
 
+export const publicFaqCategoriesRelations = relations(publicFaqCategories, ({ one, many }) => ({
+  ludo: one(ludotheques, {
+    fields: [publicFaqCategories.ludoId],
+    references: [ludotheques.id],
+  }),
+  faqs: many(publicFaqs),
+}))
+
 export const publicFaqsRelations = relations(publicFaqs, ({ one, many }) => ({
   ludo: one(ludotheques, { fields: [publicFaqs.ludoId], references: [ludotheques.id] }),
+  category: one(publicFaqCategories, {
+    fields: [publicFaqs.categoryId, publicFaqs.ludoId],
+    references: [publicFaqCategories.id, publicFaqCategories.ludoId],
+  }),
   author: one(members, {
     fields: [publicFaqs.authorMemberId, publicFaqs.ludoId],
     references: [members.id, members.ludoId],
@@ -2379,12 +2333,7 @@ export const publicGalleryImageSitesRelations = relations(publicGalleryImageSite
     references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
-export const publicProfilesRelations = relations(publicProfiles, ({ one, many }) => ({
-  member: one(members, {
-    fields: [publicProfiles.memberId, publicProfiles.ludoId],
-    references: [members.id, members.ludoId],
-    relationName: 'publicProfileMember',
-  }),
+export const publicProfilesRelations = relations(publicProfiles, ({ one }) => ({
   author: one(members, {
     fields: [publicProfiles.authorMemberId, publicProfiles.ludoId],
     references: [members.id, members.ludoId],
@@ -2399,17 +2348,6 @@ export const publicProfilesRelations = relations(publicProfiles, ({ one, many })
     fields: [publicProfiles.publishedByMemberId, publicProfiles.ludoId],
     references: [members.id, members.ludoId],
     relationName: 'publicProfilePublisher',
-  }),
-  targets: many(publicProfileSites),
-}))
-export const publicProfileSitesRelations = relations(publicProfileSites, ({ one }) => ({
-  profile: one(publicProfiles, {
-    fields: [publicProfileSites.profileId, publicProfileSites.ludoId],
-    references: [publicProfiles.id, publicProfiles.ludoId],
-  }),
-  site: one(ludoSites, {
-    fields: [publicProfileSites.siteId, publicProfileSites.ludoId],
-    references: [ludoSites.id, ludoSites.ludoId],
   }),
 }))
 export const publicDirectoryEntriesRelations = relations(publicDirectoryEntries, ({ one }) => ({
@@ -2458,8 +2396,6 @@ export const publicActivitiesRelations = relations(publicActivities, ({ one, man
     relationName: 'publicActivityPublisher',
   }),
   targets: many(publicActivitySites),
-  dates: many(publicActivityDates),
-  exceptions: many(publicActivityExceptions),
   assets: many(publicEditorialAssets),
   registrations: many(publicActivityRegistrations),
 }))
@@ -2492,20 +2428,6 @@ export const publicActivitySitesRelations = relations(publicActivitySites, ({ on
   site: one(ludoSites, {
     fields: [publicActivitySites.siteId, publicActivitySites.ludoId],
     references: [ludoSites.id, ludoSites.ludoId],
-  }),
-}))
-
-export const publicActivityDatesRelations = relations(publicActivityDates, ({ one }) => ({
-  activity: one(publicActivities, {
-    fields: [publicActivityDates.activityId, publicActivityDates.ludoId],
-    references: [publicActivities.id, publicActivities.ludoId],
-  }),
-}))
-
-export const publicActivityExceptionsRelations = relations(publicActivityExceptions, ({ one }) => ({
-  activity: one(publicActivities, {
-    fields: [publicActivityExceptions.activityId, publicActivityExceptions.ludoId],
-    references: [publicActivities.id, publicActivities.ludoId],
   }),
 }))
 
@@ -3073,6 +2995,8 @@ export type PublicTopThreeSiteRow = typeof publicTopThreeSites.$inferSelect
 export type PublicTopThreeSiteInsert = typeof publicTopThreeSites.$inferInsert
 export type PublicFaqRow = typeof publicFaqs.$inferSelect
 export type PublicFaqInsert = typeof publicFaqs.$inferInsert
+export type PublicFaqCategoryRow = typeof publicFaqCategories.$inferSelect
+export type PublicFaqCategoryInsert = typeof publicFaqCategories.$inferInsert
 export type PublicDocumentKind = (typeof publicDocumentKind.enumValues)[number]
 export type PublicDocumentRow = typeof publicDocuments.$inferSelect
 export type PublicDocumentInsert = typeof publicDocuments.$inferInsert
@@ -3095,8 +3019,6 @@ export type PublicEditorialAssetInsert = typeof publicEditorialAssets.$inferInse
 export type PublicActivityType = (typeof publicActivityType.enumValues)[number]
 export type PublicActivityLifecycle = (typeof publicActivityLifecycle.enumValues)[number]
 export type PublicActivitySiteRow = typeof publicActivitySites.$inferSelect
-export type PublicActivityDateRow = typeof publicActivityDates.$inferSelect
-export type PublicActivityExceptionRow = typeof publicActivityExceptions.$inferSelect
 export type PublicActivityRegistrationStatus =
   (typeof publicActivityRegistrationStatus.enumValues)[number]
 export type PublicActivityRegistrationRow = typeof publicActivityRegistrations.$inferSelect

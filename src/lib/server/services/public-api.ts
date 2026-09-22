@@ -35,6 +35,7 @@ export type PublicLudoSite = {
   phone: string | null
   email: string | null
   accessInfo: string | null
+  importantInfo: string | null
   directionsUrl: string | null
   latitude: number | null
   longitude: number | null
@@ -90,7 +91,6 @@ export type PublicPdfAttachment = {
 export type PublicNewsItem = PublicNewsSummaryItem & {
   bodyMarkdown: string
   sites: Array<{ id: string; slug: string; name: string }>
-  supportImage: PublicSupportImage | null
   attachments: PublicPdfAttachment[]
 }
 
@@ -100,14 +100,7 @@ export type PublicNewsPayload = {
   news: PublicNewsSummaryItem[]
 }
 
-export type PublicActivitySchedule = {
-  type: 'one_off' | 'recurring' | 'permanent'
-  recurrenceRule: string | null
-  dates: Array<{ startsAt: string; endsAt: string | null }>
-  exceptions: Array<{ excludedAt: string; reason: string | null }>
-}
-
-export type PublicActivitySchedulePreview = Omit<PublicActivitySchedule, 'exceptions'>
+export type PublicActivityRhythm = 'one_off' | 'recurring' | 'permanent'
 
 export type PublicActivitySummaryItem = {
   id: string
@@ -119,7 +112,7 @@ export type PublicActivitySummaryItem = {
   lifecycle: 'active' | 'archived'
   featuredRank: number | null
   publishedAt: string
-  schedule: PublicActivitySchedulePreview
+  rhythm: PublicActivityRhythm
 }
 
 export type PublicActivityItem = Omit<PublicActivitySummaryItem, 'schedule'> & {
@@ -127,7 +120,7 @@ export type PublicActivityItem = Omit<PublicActivitySummaryItem, 'schedule'> & {
   supportImage: PublicSupportImage | null
   supportImages: PublicSupportImage[]
   attachments: PublicPdfAttachment[]
-  schedule: PublicActivitySchedule
+  rhythm: PublicActivityRhythm
   registration: {
     enabled: boolean
     capacity: number | null
@@ -170,9 +163,8 @@ export type PublicTopThreesPayload = {
 export type PublicFaqItem = {
   id: string
   question: string
-  answerMarkdown: string
-  category: string | null
-  sortOrder: number
+  answerText: string
+  category: string
 }
 
 export type PublicFaqsPayload = {
@@ -223,8 +215,7 @@ export type PublicProfileItem = {
   section: 'team' | 'committee'
   displayName: string
   roleTitle: string | null
-  bioMarkdown: string | null
-  sortOrder: number
+  bioText: string | null
   photo: { url: string; alt: string } | null
 }
 
@@ -284,6 +275,7 @@ export async function getPublicSitesByLudoSlug(slug: string): Promise<PublicSite
       phone: site.phone,
       email: site.email,
       accessInfo: site.accessInfo,
+      importantInfo: site.importantInfo,
       directionsUrl: site.directionsUrl,
       latitude: site.latitude,
       longitude: site.longitude,
@@ -364,7 +356,6 @@ function publicNewsDetailItem(
     sites: news.targets
       .filter((target) => target.site.isActive)
       .map((target) => ({ id: target.site.id, slug: target.site.slug, name: target.site.name })),
-    supportImage: publicSupportImage(news.assets ?? []),
     attachments: publicPdfAttachments(news.assets ?? []),
   }
 }
@@ -484,14 +475,7 @@ function publicActivitySummaryItem(activity: PublicActivityRow): PublicActivityS
     lifecycle: activity.lifecycle as 'active' | 'archived',
     featuredRank: activity.featuredRank,
     publishedAt: activity.publishedAt!.toISOString(),
-    schedule: {
-      type: activity.type,
-      recurrenceRule: activity.recurrenceRule,
-      dates: activity.dates.map((date) => ({
-        startsAt: date.startsAt,
-        endsAt: date.endsAt,
-      })),
-    },
+    rhythm: activity.type,
   }
 }
 
@@ -564,18 +548,7 @@ export async function getPublicActivityDetailByLudoSlug(
       supportImage: publicSupportImage(activity.assets ?? []),
       supportImages: publicSupportImages(activity.assets ?? []),
       attachments: publicPdfAttachments(activity.assets ?? []),
-      schedule: {
-        type: activity.type,
-        recurrenceRule: activity.recurrenceRule,
-        dates: activity.dates.map((date) => ({
-          startsAt: date.startsAt.toISOString(),
-          endsAt: date.endsAt?.toISOString() ?? null,
-        })),
-        exceptions: activity.exceptions.map((exception) => ({
-          excludedAt: exception.excludedAt.toISOString(),
-          reason: exception.reason,
-        })),
-      },
+      rhythm: activity.type,
       registration,
     },
   }
@@ -660,9 +633,8 @@ export async function getPublicFaqsByLudoSlug(
     faqs: rows.map((faq) => ({
       id: faq.id,
       question: faq.question,
-      answerMarkdown: faq.answerMarkdown,
+      answerText: faq.answerText,
       category: faq.category,
-      sortOrder: faq.sortOrder,
     })),
   }
 }
@@ -771,8 +743,7 @@ export async function getPublicProfilesByLudoSlug(
       section: profile.section,
       displayName: profile.displayName,
       roleTitle: profile.roleTitle,
-      bioMarkdown: profile.bioMarkdown,
-      sortOrder: profile.sortOrder,
+      bioText: profile.bioText,
       photo:
         profile.photoUrl && profile.photoAlt
           ? { url: profile.photoUrl, alt: profile.photoAlt }

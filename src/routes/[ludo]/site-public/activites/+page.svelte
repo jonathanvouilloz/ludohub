@@ -29,9 +29,8 @@
     if (item.lifecycle === 'trashed') return 'warning'
     return item.status === 'published' && item.lifecycle === 'active' ? 'success' : 'secondary'
   }
-  function schedule(item: (typeof data.activities)[number]) {
-    if (item.type === 'permanent') return 'Activité permanente'
-    return `${item.dates.length} date${item.dates.length > 1 ? 's' : ''}`
+  function rhythm(item: (typeof data.activities)[number]) {
+    return item.type === 'one_off' ? 'Ponctuelle' : item.type === 'recurring' ? 'Récurrente' : 'Permanente'
   }
   function targets(item: (typeof data.activities)[number]) {
     return item.targets.length === 0
@@ -46,7 +45,7 @@
     <div>
       <h1>Activités</h1>
       <p>
-        Choisissez une activité pour gérer son contenu, ses dates et sa publication.
+        Gérez le contenu, le rythme et la publication de chaque activité.
       </p>
     </div>
     <Button onclick={() => (dialogOpen = true)}
@@ -79,7 +78,7 @@
             href={`${base}/${item.id}`}
             title={item.title}
             description={item.summary}
-            meta={[schedule(item), targets(item), ...(item.location ? [item.location] : [])]}
+            meta={[rhythm(item), targets(item), ...(item.location ? [item.location] : [])]}
             status={status(item)}
             statusVariant={variant(item)}
             warning={item.targets.some((target) => !target.site.isActive)

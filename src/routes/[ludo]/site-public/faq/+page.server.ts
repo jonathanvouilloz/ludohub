@@ -1,16 +1,17 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit'
-import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
 import { emitAuditEvent } from '$lib/server/services/events.js'
 import {
   createPublicFaq,
+  createPublicFaqCategory,
   permanentlyDeletePublicFaq,
   hidePublicFaq,
   listPublicFaqsForManagement,
+  listPublicFaqCategoriesForManagement,
   publishPublicFaq,
   PublicFaqServiceError,
   type PublicFaqInput,
-  type PublicFaqTargeting,
+  updatePublicFaqCategory,
   updatePublicFaq,
 } from '$lib/server/services/public-faqs.js'
 import { isPublicSiteEnabled, PublicSiteServiceError } from '$lib/server/services/public-site.js'
@@ -21,27 +22,13 @@ async function context(event: RequestEvent) {
   if (!(await isPublicSiteEnabled(value.ludo.id))) throw error(404, 'Module indisponible')
   return value
 }
-function targets(data: FormData): PublicFaqTargeting {
-  const targetMode = data.get('targetMode')
-  const siteIds = data.getAll('siteIds').map(String)
-  if (targetMode === 'all') {
-    if (siteIds.length)
-      throw new PublicFaqServiceError('Le ciblage global ne prend pas de lieu précis.')
-    return { targetMode, siteIds: [] }
-  }
-  if (targetMode === 'explicit') {
-    if (!siteIds.length) throw new PublicFaqServiceError('Sélectionnez au moins un lieu actif.')
-    return { targetMode, siteIds }
-  }
-  throw new PublicFaqServiceError('Choisissez le mode de ciblage.')
-}
 function input(data: FormData): PublicFaqInput {
   return {
     question: String(data.get('question') ?? ''),
-    answerMarkdown: String(data.get('answerMarkdown') ?? ''),
-    category: String(data.get('category') ?? '').trim() || null,
-    sortOrder: Number(data.get('sortOrder')),
-    ...targets(data),
+    answerText: String(data.get('answerText') ?? ''),
+    categoryId: String(data.get('categoryId') ?? ''),
+    targetMode: 'all',
+    siteIds: [],
   }
 }
 function revision(data: FormData) {
@@ -78,11 +65,11 @@ async function audit(
 
 export const load: PageServerLoad = async (event) => {
   const { ludo } = await context(event)
-  const [faqs, sites] = await Promise.all([
+  const [faqs, categories] = await Promise.all([
     listPublicFaqsForManagement(ludo.id),
-    listSiteRowsWithOpeningHours(ludo.id),
+    listPublicFaqCategoriesForManagement(ludo.id),
   ])
-  return { faqs, sites }
+  return { faqs, categories }
 }
 export const actions: Actions = {
   create: async (event) => {
@@ -92,10 +79,7 @@ export const actions: Actions = {
       const parsed = input(data)
       const faq = await createPublicFaq(ludo.id, member.id, parsed)
       await audit('public_faq.created', ludo.id, member.id, faq.id, {
-        targetMode: parsed.targetMode,
-        targetSiteIds: parsed.siteIds,
-        sortOrder: parsed.sortOrder,
-        hasCategory: parsed.category !== null,
+        categoryId: parsed.categoryId,
       })
       return { success: true }
     })
@@ -108,10 +92,7 @@ export const actions: Actions = {
       const parsed = input(data)
       const faq = await updatePublicFaq(id, ludo.id, parsed, member.id, revision(data))
       await audit('public_faq.updated', ludo.id, member.id, faq.id, {
-        targetMode: parsed.targetMode,
-        targetSiteIds: parsed.siteIds,
-        sortOrder: parsed.sortOrder,
-        hasCategory: parsed.category !== null,
+        categoryId: parsed.categoryId,
       })
       return { success: true }
     })
@@ -148,5 +129,21 @@ export const actions: Actions = {
       await audit('public_faq.deleted', ludo.id, member.id, id)
       return { success: true }
     })
+  },
+  createCategory: async (event) => {
+    const { ludo } = await context(event)
+    const data = await event.request.formData()
+    return run(async () => ({ category: await createPublicFaqCategory(ludo.id, String(data.get('name') ?? '')) }))
+  },
+  updateCategory: async (event) => {
+    const { ludo } = await context(event)
+    const data = await event.request.formData()
+    return run(async () => ({
+      category: await updatePublicFaqCategory(String(data.get('id') ?? ''), ludo.id, {
+        ...(data.has('name') ? { name: String(data.get('name') ?? '') } : {}),
+        ...(data.has('isActive') ? { isActive: data.get('isActive') === 'true' } : {}),
+        ...(data.has('sortOrder') ? { sortOrder: Number(data.get('sortOrder')) } : {}),
+      }),
+    }))
   },
 }

@@ -1,6 +1,5 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit'
 import { requireLudoContext } from '$lib/server/ludo-context.js'
-import { parseZurichDateTimeLocal, ZurichDateTimeError } from '$lib/server/zurich-datetime.js'
 import { listSiteRowsWithOpeningHours } from '$lib/server/db/sites.js'
 import {
   deletePublicSiteMedia,
@@ -27,8 +26,6 @@ import {
   permanentlyDeletePublicActivity,
   publishPublicActivity,
   PublicActivityServiceError,
-  type PublicActivityDateInput,
-  type PublicActivityExceptionInput,
   type PublicActivityInput,
   type PublicActivityTargeting,
   type PublicActivityUpdateInput,
@@ -63,53 +60,6 @@ function targetingInput(data: FormData): PublicActivityTargeting {
   throw new PublicActivityServiceError('Choisissez le mode de ciblage de l’activité.')
 }
 
-function parseJsonArray(data: FormData, name: string) {
-  try {
-    const value = JSON.parse(String(data.get(name) ?? '[]'))
-    if (!Array.isArray(value)) throw new Error()
-    return value as unknown[]
-  } catch {
-    throw new PublicActivityServiceError('Le calendrier de l’activité est invalide.')
-  }
-}
-
-function parseDate(value: unknown, label: string) {
-  if (typeof value !== 'string' || !value)
-    throw new PublicActivityServiceError(`${label} est invalide.`)
-  try {
-    return parseZurichDateTimeLocal(value)
-  } catch (cause) {
-    if (cause instanceof ZurichDateTimeError) {
-      throw new PublicActivityServiceError(`${label} est invalide. ${cause.message}`)
-    }
-    throw cause
-  }
-}
-
-function scheduleInput(data: FormData): {
-  dates: PublicActivityDateInput[]
-  exceptions: PublicActivityExceptionInput[]
-} {
-  const dates = parseJsonArray(data, 'dates').map((entry) => {
-    if (!entry || typeof entry !== 'object')
-      throw new PublicActivityServiceError('Une date est invalide.')
-    const item = entry as Record<string, unknown>
-    return {
-      startsAt: parseDate(item.startsAt, 'La date de début'),
-      endsAt: item.endsAt ? parseDate(item.endsAt, 'La date de fin') : null,
-    }
-  })
-  const exceptions = parseJsonArray(data, 'exceptions').map((entry) => {
-    if (!entry || typeof entry !== 'object')
-      throw new PublicActivityServiceError('Une exception est invalide.')
-    const item = entry as Record<string, unknown>
-    return {
-      excludedAt: parseDate(item.excludedAt, 'La date d’exception'),
-      reason: typeof item.reason === 'string' && item.reason.trim() ? item.reason : null,
-    }
-  })
-  return { dates, exceptions }
-}
 
 function activityType(data: FormData): PublicActivityInput['type'] {
   const type = data.get('type')
@@ -119,48 +69,8 @@ function activityType(data: FormData): PublicActivityInput['type'] {
   return type
 }
 
-function rruleTimestamp(value: Date) {
-  return value.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
-}
-
-function recurrenceRuleInput(
-  data: FormData,
-  type: PublicActivityInput['type'],
-  dates: PublicActivityDateInput[],
-) {
-  if (type !== 'recurring') return null
-  // Accepte les anciennes soumissions pendant la transition de l'interface.
-  if (!data.has('recurrenceFrequency')) return String(data.get('recurrenceRule') ?? '')
-
-  const frequency = data.get('recurrenceFrequency')
-  if (frequency !== 'DAILY' && frequency !== 'WEEKLY' && frequency !== 'MONTHLY' && frequency !== 'YEARLY') {
-    throw new PublicActivityServiceError('Choisissez la frÃ©quence de rÃ©pÃ©tition.')
-  }
-  const endMode = data.get('recurrenceEndMode')
-  if (endMode === 'count') {
-    const count = Number(data.get('recurrenceCount'))
-    if (!Number.isSafeInteger(count) || count < 1 || count > 366) {
-      throw new PublicActivityServiceError('Le nombre de sÃ©ances doit Ãªtre compris entre 1 et 366.')
-    }
-    return `FREQ=${frequency};COUNT=${count}`
-  }
-  if (endMode === 'until') {
-    const untilDate = String(data.get('recurrenceUntil') ?? '')
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(untilDate)) {
-      throw new PublicActivityServiceError('Choisissez la date de fin de la rÃ©pÃ©tition.')
-    }
-    const until = parseDate(`${untilDate}T23:59`, 'La date de fin de la rÃ©pÃ©tition')
-    if (dates.length && until < dates[0].startsAt) {
-      throw new PublicActivityServiceError('La date de fin doit suivre la premiÃ¨re sÃ©ance.')
-    }
-    return `FREQ=${frequency};UNTIL=${rruleTimestamp(until)}`
-  }
-  throw new PublicActivityServiceError('Choisissez quand la rÃ©pÃ©tition se termine.')
-}
-
 function createInput(data: FormData): PublicActivityInput {
   const type = activityType(data)
-  const schedule = scheduleInput(data)
   return {
     slug: String(data.get('slug') || data.get('title') || ''),
     title: String(data.get('title') ?? ''),
@@ -168,15 +78,12 @@ function createInput(data: FormData): PublicActivityInput {
     body: String(data.get('body') ?? ''),
     location: String(data.get('location') ?? ''),
     type,
-    recurrenceRule: recurrenceRuleInput(data, type, schedule.dates),
-    ...schedule,
     ...targetingInput(data),
   }
 }
 
 function updateInput(data: FormData): PublicActivityUpdateInput {
   const type = activityType(data)
-  const schedule = scheduleInput(data)
   return {
     ...(data.has('slug') ? { slug: String(data.get('slug') ?? '') } : {}),
     title: String(data.get('title') ?? ''),
@@ -184,8 +91,6 @@ function updateInput(data: FormData): PublicActivityUpdateInput {
     body: String(data.get('body') ?? ''),
     location: String(data.get('location') ?? ''),
     type,
-    recurrenceRule: recurrenceRuleInput(data, type, schedule.dates),
-    ...schedule,
     ...(data.has('targetMode') ? targetingInput(data) : {}),
   }
 }

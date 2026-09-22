@@ -13,7 +13,6 @@ import {
   addPublicPdfAttachment,
   deletePublicEditorialAsset,
   PublicEditorialAssetServiceError,
-  upsertPublicSupportImage,
 } from '$lib/server/services/public-editorial-assets.js'
 import {
   authorizePublicNewsMediaScope,
@@ -157,7 +156,7 @@ async function cleanupPreviousImage(input: {
   ludoId: string
   memberId: string
   newsId: string
-  operation: 'replace' | 'remove' | 'support-replace' | 'asset-remove' | 'delete'
+  operation: 'replace' | 'remove' | 'asset-remove' | 'delete'
 }) {
   if (!input.pathname) return
   try {
@@ -224,36 +223,6 @@ async function applyNewsMedia(input: {
       operation: 'remove',
     })
     news = result.news
-  }
-
-  const contentImage = optionalFile(data, 'contentImageFile', 'une image dans l’actualité')
-  if (contentImage) {
-    const alt = requiredText(data, 'contentImageAlt', 'Le texte alternatif de l’image', 300)
-    const registered = await uploadAndRegisterMedia({
-      authorize: () => authorizePublicNewsMediaScope(ludoId, news.id, news.revision),
-      upload: (scope) =>
-        uploadPublicSiteMedia({ scope, file: contentImage, policy: NEWS_IMAGE_POLICY }),
-      register: async (scope, blob) => ({
-        scope,
-        result: await upsertPublicSupportImage({
-          ludoId,
-          owner: { type: 'news', id: news.id },
-          memberId,
-          scope,
-          blob,
-          alt,
-        }),
-      }),
-      cleanup: deletePublicSiteMedia,
-    })
-    await cleanupPreviousImage({
-      scope: registered.scope,
-      pathname: registered.result.previousStorageKey,
-      ludoId,
-      memberId,
-      newsId: news.id,
-      operation: 'support-replace',
-    })
   }
 
   const attachment = optionalFile(data, 'attachmentFile', 'un PDF')
@@ -503,53 +472,6 @@ export const actions: Actions = {
         actorMemberId: member.id,
         entityType: 'public_news',
         entityId: result.news.id,
-      })
-      return { success: true }
-    })
-  },
-
-  uploadSupportImage: async (event) => {
-    const { ludo, member } = await requireNewsContext(event)
-    const data = await event.request.formData()
-    const id = String(data.get('id') ?? '')
-    return run(async () => {
-      const revision = parseRevision(data)
-      const file = parseImageFile(data)
-      const alt = parseImageAlt(data)
-      const caption = String(data.get('caption') ?? '').trim() || null
-      const credit = String(data.get('credit') ?? '').trim() || null
-      const registered = await uploadAndRegisterMedia({
-        authorize: () => authorizePublicNewsMediaScope(ludo.id, id, revision),
-        upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: NEWS_IMAGE_POLICY }),
-        register: async (scope, blob) => ({
-          scope,
-          result: await upsertPublicSupportImage({
-            ludoId: ludo.id,
-            owner: { type: 'news', id },
-            memberId: member.id,
-            scope,
-            blob,
-            alt,
-            caption,
-            credit,
-          }),
-        }),
-        cleanup: deletePublicSiteMedia,
-      })
-      await cleanupPreviousImage({
-        scope: registered.scope,
-        pathname: registered.result.previousStorageKey,
-        ludoId: ludo.id,
-        memberId: member.id,
-        newsId: id,
-        operation: 'support-replace',
-      })
-      await emitAuditEvent({
-        action: 'public_news.support_image_updated',
-        actorLudoId: ludo.id,
-        actorMemberId: member.id,
-        entityType: 'public_news',
-        entityId: id,
       })
       return { success: true }
     })

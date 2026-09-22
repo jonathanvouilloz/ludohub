@@ -2,14 +2,11 @@
   import { enhance } from '$app/forms'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
-  import EditorialAssetsEditor from '$lib/components/public-site/EditorialAssetsEditor.svelte'
-  import { compressEditorialImageFormData } from '$lib/media/editorial-image.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
   import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left'
   import PencilIcon from '@lucide/svelte/icons/pencil'
   let { data } = $props()
   let pending = $state(false)
-  let imagePending = $state(false)
   const news = $derived(data.news)
   const base = $derived(`/${data.ludo.slug}/site-public/actualites`)
   const targetLabel = $derived(
@@ -60,7 +57,7 @@
     </div>
     <form
       method="POST"
-      action="?/transition"
+      action={`${base}?/transition`}
       use:enhance={toastEnhance({
         success: news.status === 'published' ? 'Actualité masquée.' : 'Actualité publiée.',
         onPending: (value) => (pending = value),
@@ -93,90 +90,23 @@
     <div class="article-body">{news.body}</div>
   </section>
 
-  <section aria-labelledby="cover-title">
-    <div class="section-heading">
-      <div>
-        <h2 id="cover-title">Image de couverture</h2>
-        <p>Cette image accompagne l’actualité dans les listes du site.</p>
-      </div>
-    </div>
-    {#if news.imageUrl}<img class="cover" src={news.imageUrl} alt={news.imageAlt ?? ''} />{/if}
-    <div class="media-actions">
-      <form
-        method="POST"
-        action="?/uploadImage"
-        enctype="multipart/form-data"
-        use:enhance={toastEnhance({
-          success: news.imageUrl ? 'Image remplacée.' : 'Image ajoutée.',
-          prepare: (formData) => compressEditorialImageFormData(formData, 'content'),
-          onPending: (value) => (imagePending = value),
-        })}
-      >
-        <input type="hidden" name="id" value={news.id} /><input
-          type="hidden"
-          name="revision"
-          value={news.revision}
-        />
-        <label
-          ><span>Choisir une image</span><input
-            type="file"
-            name="file"
-            accept="image/jpeg,image/png,image/webp"
-            required
-          /></label
-        ><label
-          ><span>Description de l’image</span><input
-            type="text"
-            name="alt"
-            value={news.imageAlt ?? ''}
-            maxlength="300"
-            required
-          /></label
-        >
-        <Button type="submit" disabled={imagePending}
-          >{imagePending
-            ? 'Envoi…'
-            : news.imageUrl
-              ? 'Remplacer l’image'
-              : 'Ajouter l’image'}</Button
-        >
-      </form>
-      {#if news.imageUrl}<form
-          method="POST"
-          action="?/removeImage"
-          use:enhance={toastEnhance({
-            success: 'Image retirée.',
-            onPending: (value) => (imagePending = value),
-          })}
-        >
-          <input type="hidden" name="id" value={news.id} /><input
-            type="hidden"
-            name="revision"
-            value={news.revision}
-          /><Button type="submit" variant="outline" disabled={imagePending}>Retirer l’image</Button>
-        </form>{/if}
-    </div>
-  </section>
-
-  <EditorialAssetsEditor ownerId={news.id} revision={news.revision} assets={news.assets} />
-
   <section class="danger-zone" aria-labelledby="delete-title">
-      <div>
-        <h2 id="delete-title">Supprimer cette actualité</h2>
-        <p>Cette action supprime aussi toutes ses images et pièces jointes.</p>
-      </div>
-      <form
-        method="POST"
-        action="?/delete"
-        onsubmit={(event) => {
-          if (!confirm('Supprimer définitivement cette actualité ?')) event.preventDefault()
-        }}
-        use:enhance={toastEnhance({ redirect: 'Actualité supprimée.' })}
-      >
-        <input type="hidden" name="id" value={news.id} />
-        <input type="hidden" name="revision" value={news.revision} />
-        <Button type="submit" variant="destructive">Supprimer définitivement</Button>
-      </form>
+    <div>
+      <h2 id="delete-title">Supprimer cette actualité</h2>
+      <p>Cette action supprime aussi toutes ses images et pièces jointes.</p>
+    </div>
+    <form
+      method="POST"
+      action="?/delete"
+      onsubmit={(event) => {
+        if (!confirm('Supprimer définitivement cette actualité ?')) event.preventDefault()
+      }}
+      use:enhance={toastEnhance({ redirect: 'Actualité supprimée.' })}
+    >
+      <input type="hidden" name="id" value={news.id} />
+      <input type="hidden" name="revision" value={news.revision} />
+      <Button type="submit" variant="destructive">Supprimer définitivement</Button>
+    </form>
   </section>
 </main>
 
@@ -265,10 +195,6 @@
     line-height: 1.7;
     white-space: pre-wrap;
   }
-  .section-heading p {
-    margin-top: var(--space-1);
-    color: var(--text-muted);
-  }
   .danger-zone {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
@@ -278,46 +204,12 @@
     margin-top: var(--space-1);
     color: var(--text-muted);
   }
-  .cover {
-    width: min(100%, 640px);
-    max-height: 380px;
-    border-radius: var(--radius-sm);
-    object-fit: cover;
-  }
-  .media-actions,
-  .media-actions form {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--space-3);
-  }
-  .media-actions form:first-child {
-    flex: 1;
-  }
-  label {
-    display: grid;
-    flex: 1;
-    gap: var(--space-1);
-    color: var(--text-muted);
-    font-size: var(--text-small);
-  }
-  input[type='text'],
-  input[type='file'] {
-    min-height: 44px;
-    width: 100%;
-    padding: var(--space-2);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-sm);
-    background: var(--bg-card);
-    color: var(--text-main);
-  }
   @media (max-width: 700px) {
     .detail-page {
       padding: var(--space-3) var(--space-4) var(--space-10);
     }
     .detail-header,
     .publication,
-    .media-actions,
-    .media-actions form,
     .danger-zone {
       align-items: stretch;
       flex-direction: column;
@@ -327,8 +219,7 @@
       padding: var(--space-4);
     }
     .detail-header :global(a),
-    .publication :global(button),
-    .media-actions :global(button) {
+    .publication :global(button) {
       width: 100%;
     }
   }

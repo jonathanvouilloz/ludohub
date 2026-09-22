@@ -3,6 +3,7 @@ import { db } from './index.js'
 import {
   publicFaqs,
   publicFaqSites,
+  publicFaqCategories,
   type PublicContentStatus,
   type PublicFaqInsert,
 } from '../schema.js'
@@ -17,13 +18,13 @@ const withRelations = {
 export const listPublicFaqRows = (ludoId: string) =>
   db.query.publicFaqs.findMany({
     where: eq(publicFaqs.ludoId, ludoId),
-    with: withRelations,
-    orderBy: [asc(publicFaqs.sortOrder), asc(publicFaqs.id)],
+    with: { ...withRelations, category: true },
+    orderBy: [asc(publicFaqs.createdAt)],
   })
 export const getPublicFaqRowForLudo = (id: string, ludoId: string) =>
   db.query.publicFaqs.findFirst({
     where: and(eq(publicFaqs.id, id), eq(publicFaqs.ludoId, ludoId)),
-    with: withRelations,
+    with: { ...withRelations, category: true },
   })
 
 export function listVisiblePublicFaqRows(
@@ -37,19 +38,26 @@ export function listVisiblePublicFaqRows(
       id: publicFaqs.id,
       ludoId: publicFaqs.ludoId,
       question: publicFaqs.question,
-      answerMarkdown: publicFaqs.answerMarkdown,
-      category: publicFaqs.category,
-      sortOrder: publicFaqs.sortOrder,
+      answerText: publicFaqs.answerText,
+      category: publicFaqCategories.name,
     })
     .from(publicFaqs)
+    .innerJoin(
+      publicFaqCategories,
+      and(
+        eq(publicFaqCategories.id, publicFaqs.categoryId),
+        eq(publicFaqCategories.ludoId, publicFaqs.ludoId),
+      ),
+    )
     .where(
       and(
         eq(publicFaqs.ludoId, ludoId),
         eq(publicFaqs.status, 'published'),
+        eq(publicFaqCategories.isActive, true),
         sql`EXISTS (SELECT 1 FROM ludo_sites active WHERE active.ludo_id = ${publicFaqs.ludoId} AND active.is_active = true ${requested} AND (NOT EXISTS (SELECT 1 FROM public_faq_sites x WHERE x.faq_id = ${publicFaqs.id} AND x.ludo_id = ${publicFaqs.ludoId}) OR EXISTS (SELECT 1 FROM public_faq_sites x WHERE x.faq_id = ${publicFaqs.id} AND x.ludo_id = ${publicFaqs.ludoId} AND x.site_id = active.id)))`,
       ),
     )
-    .orderBy(asc(publicFaqs.sortOrder), asc(publicFaqs.id))
+    .orderBy(asc(publicFaqCategories.sortOrder), asc(publicFaqs.createdAt))
     .limit(limit)
 }
 
@@ -73,10 +81,13 @@ export async function updatePublicFaqAtomic(
   id: string,
   ludoId: string,
   expectedRevision: number,
-  data: Pick<
-    PublicFaqInsert,
-    'question' | 'answerMarkdown' | 'category' | 'sortOrder' | 'updatedByMemberId'
-  > & { updatedAt: Date },
+  data: {
+    question: string
+    answerText: string
+    categoryId: string
+    updatedByMemberId: string
+    updatedAt: Date
+  },
   siteIds: string[],
 ) {
   const desired = siteIds.length
@@ -86,11 +97,49 @@ export async function updatePublicFaqAtomic(
       )}`
     : sql`SELECT null::uuid AS site_id WHERE false`
   const result = await db.execute(
-    sql`WITH desired(site_id) AS (${desired}), updated AS (UPDATE public_faqs SET question=${data.question}, answer_markdown=${data.answerMarkdown}, category=${data.category}, sort_order=${data.sortOrder}, updated_by_member_id=${data.updatedByMemberId}::uuid, updated_at=${data.updatedAt}, revision=revision+1 WHERE id=${id}::uuid AND ludo_id=${ludoId}::uuid AND revision=${expectedRevision} RETURNING id,ludo_id), deleted AS (DELETE FROM public_faq_sites x USING updated WHERE x.faq_id=updated.id AND x.ludo_id=updated.ludo_id AND NOT EXISTS (SELECT 1 FROM desired WHERE desired.site_id=x.site_id)), inserted AS (INSERT INTO public_faq_sites(faq_id,ludo_id,site_id) SELECT updated.id,updated.ludo_id,desired.site_id FROM updated CROSS JOIN desired ON CONFLICT(faq_id,site_id) DO NOTHING) SELECT id FROM updated`,
+    sql`WITH desired(site_id) AS (${desired}), updated AS (UPDATE public_faqs SET question=${data.question}, answer_text=${data.answerText}, category_id=${data.categoryId}::uuid, updated_by_member_id=${data.updatedByMemberId}::uuid, updated_at=${data.updatedAt}, revision=revision+1 WHERE id=${id}::uuid AND ludo_id=${ludoId}::uuid AND revision=${expectedRevision} RETURNING id,ludo_id), deleted AS (DELETE FROM public_faq_sites x USING updated WHERE x.faq_id=updated.id AND x.ludo_id=updated.ludo_id AND NOT EXISTS (SELECT 1 FROM desired WHERE desired.site_id=x.site_id)), inserted AS (INSERT INTO public_faq_sites(faq_id,ludo_id,site_id) SELECT updated.id,updated.ludo_id,desired.site_id FROM updated CROSS JOIN desired ON CONFLICT(faq_id,site_id) DO NOTHING) SELECT id FROM updated`,
   )
   if (!result.rows.length) return undefined
   return getPublicFaqRowForLudo(id, ludoId)
 }
+
+export const listPublicFaqCategoryRows = (ludoId: string) =>
+  db.query.publicFaqCategories.findMany({
+    where: eq(publicFaqCategories.ludoId, ludoId),
+    orderBy: [asc(publicFaqCategories.sortOrder), asc(publicFaqCategories.createdAt)],
+  })
+
+export const DEFAULT_PUBLIC_FAQ_CATEGORIES = [
+  'Adhésion et tarifs', 'Emprunts et retours', 'Horaires et accès', 'Jeux sur place',
+  'Enfants et accompagnement', 'Activités et événements', 'Autre',
+] as const
+
+/** Idempotent : chaque ludothèque reçoit les catégories prévues à sa première utilisation. */
+export async function ensureDefaultPublicFaqCategories(ludoId: string) {
+  await db
+    .insert(publicFaqCategories)
+    .values(DEFAULT_PUBLIC_FAQ_CATEGORIES.map((name, sortOrder) => ({ ludoId, name, sortOrder })))
+    .onConflictDoNothing({ target: [publicFaqCategories.ludoId, publicFaqCategories.name] })
+}
+
+export const getPublicFaqCategoryRowForLudo = (id: string, ludoId: string) =>
+  db.query.publicFaqCategories.findFirst({
+    where: and(eq(publicFaqCategories.id, id), eq(publicFaqCategories.ludoId, ludoId)),
+  })
+
+export const insertPublicFaqCategoryRow = (values: typeof publicFaqCategories.$inferInsert) =>
+  db.insert(publicFaqCategories).values(values).returning()
+
+export const updatePublicFaqCategoryRow = (
+  id: string,
+  ludoId: string,
+  values: Partial<Pick<typeof publicFaqCategories.$inferInsert, 'name' | 'isActive' | 'sortOrder' | 'updatedAt'>>,
+) =>
+  db
+    .update(publicFaqCategories)
+    .set(values)
+    .where(and(eq(publicFaqCategories.id, id), eq(publicFaqCategories.ludoId, ludoId)))
+    .returning()
 
 export async function updatePublicFaqPublicationRow(
   id: string,

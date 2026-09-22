@@ -256,13 +256,12 @@ describe('actions actualités', () => {
     expect(metadata).not.toHaveProperty('body')
   })
 
-  it('ajoute directement les médias facultatifs avant de rendre l’actualité visible', async () => {
+  it('ajoute l’image unique et le PDF avant de rendre l’actualité visible', async () => {
     const formData = new FormData()
     for (const [name, value] of newsFields([
       ['targetMode', 'all'],
       ['visible', 'true'],
       ['coverAlt', 'Une table de jeux'],
-      ['contentImageAlt', 'Des enfants qui jouent'],
       ['attachmentTitle', 'Programme complet'],
     ])) {
       formData.set(name, value)
@@ -270,10 +269,6 @@ describe('actions actualités', () => {
     formData.set(
       'coverFile',
       new File([new Uint8Array([0xff, 0xd8, 0xff, 0])], 'cover.jpg', { type: 'image/jpeg' }),
-    )
-    formData.set(
-      'contentImageFile',
-      new File([new Uint8Array([0xff, 0xd8, 0xff, 0])], 'contenu.jpg', { type: 'image/jpeg' }),
     )
     formData.set(
       'attachmentFile',
@@ -293,12 +288,7 @@ describe('actions actualités', () => {
       storedBlob,
       'Une table de jeux',
     )
-    expect(upsertPublicSupportImage).toHaveBeenCalledWith(
-      expect.objectContaining({
-        owner: { type: 'news', id: NEWS_ID },
-        alt: 'Des enfants qui jouent',
-      }),
-    )
+    expect(upsertPublicSupportImage).not.toHaveBeenCalled()
     expect(addPublicPdfAttachment).toHaveBeenCalledWith(
       expect.objectContaining({
         owner: { type: 'news', id: NEWS_ID },

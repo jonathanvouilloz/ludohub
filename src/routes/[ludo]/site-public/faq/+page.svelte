@@ -22,16 +22,6 @@
     editing = faq
     dialogOpen = true
   }
-  function inactiveTargets(faq: EditableFaq) {
-    return faq.targets.some((target) => !target.site.isActive)
-  }
-  function targetLabel(faq: EditableFaq) {
-    return faq.targets.length
-      ? faq.targets
-          .map((target) => `${target.site.name}${target.site.isActive ? '' : ' (inactif)'}`)
-          .join(', ')
-      : 'Tous les lieux actifs'
-  }
 </script>
 
 <svelte:head><title>FAQ · {data.ludo.name}</title></svelte:head>
@@ -47,6 +37,60 @@
   {#if page.form && 'error' in page.form && page.form.error}<p class="error" role="alert">
       {page.form.error}
     </p>{/if}
+  <section class="categories" aria-labelledby="categories-title">
+    <h2 id="categories-title">Catégories</h2>
+    <div class="category-list">
+      {#each data.categories as category (category.id)}
+        <form
+          method="POST"
+          action="?/updateCategory"
+          use:enhance={toastEnhance({ success: 'Catégorie mise à jour.' })}
+        >
+          <input type="hidden" name="id" value={category.id} />
+          <input
+            name="name"
+            value={category.name}
+            maxlength="100"
+            aria-label="Nom de la catégorie"
+          />
+          <input
+            name="sortOrder"
+            type="number"
+            min="0"
+            value={category.sortOrder}
+            aria-label={`Ordre de ${category.name}`}
+            title="Ordre d’affichage"
+          />
+          <Button type="submit" size="sm" variant="outline">Enregistrer</Button>
+        </form>
+        <form
+          method="POST"
+          action="?/updateCategory"
+          use:enhance={toastEnhance({ success: 'Catégorie mise à jour.' })}
+        >
+          <input type="hidden" name="id" value={category.id} />
+          <input type="hidden" name="isActive" value={category.isActive ? 'false' : 'true'} />
+          <Button type="submit" size="sm" variant="outline"
+            >{category.isActive ? 'Désactiver' : 'Réactiver'}</Button
+          >
+        </form>
+      {/each}
+      <form
+        method="POST"
+        action="?/createCategory"
+        use:enhance={toastEnhance({ success: 'Catégorie ajoutée.' })}
+      >
+        <input
+          name="name"
+          maxlength="100"
+          required
+          placeholder="Nouvelle catégorie"
+          aria-label="Nouvelle catégorie"
+        />
+        <Button type="submit" size="sm" variant="outline">Ajouter</Button>
+      </form>
+    </div>
+  </section>
   {#if data.faqs.length === 0}
     <EmptyState
       icon={CircleHelpIcon}
@@ -68,21 +112,16 @@
                 <a href={selectedId === item.id ? '?' : `?item=${item.id}`}>{item.question}</a>
               </h2>
               <p class="meta">
-                {item.category || 'Sans catégorie'} · ordre {item.sortOrder} · {targetLabel(item)}
+                {item.category.name}
               </p>
             </div>
             <div class="badges">
               {#if item.status === 'published'}<Badge variant="success">Publiée</Badge
                 >{:else if item.status === 'hidden'}<Badge variant="secondary">Masquée</Badge
-                >{:else}<Badge variant="outline">Brouillon</Badge
-                >{/if}{#if inactiveTargets(item)}<Badge variant="warning">Cible inactive</Badge
-                >{/if}
+                >{:else}<Badge variant="outline">Brouillon</Badge>{/if}
             </div>
           </div>
-          <p class="answer">{item.answerMarkdown}</p>
-          {#if inactiveTargets(item)}<p class="warning" role="alert">
-              Cette question cible un lieu inactif. Corrigez le ciblage avant publication.
-            </p>{/if}
+          <p class="answer">{item.answerText}</p>
           <footer>
             <Button variant="outline" size="sm" onclick={() => openEdit(item)}
               ><PencilIcon size={16} aria-hidden="true" /> Modifier</Button
@@ -107,30 +146,29 @@
                 type="submit"
                 size="sm"
                 variant={item.status === 'published' ? 'outline' : 'default'}
-                disabled={pendingId === item.id ||
-                  (item.status !== 'published' && inactiveTargets(item))}
+                disabled={pendingId === item.id}
                 >{item.status === 'published' ? 'Masquer' : 'Publier'}</Button
               >
             </form>
             <form
-                method="POST"
-                action="?/delete"
-                onsubmit={(event) => {
-                  if (!confirm('Supprimer définitivement cette question ?')) event.preventDefault()
-                }}
-                use:enhance={toastEnhance({ success: 'Question supprimée.' })}
-              >
-                <input type="hidden" name="id" value={item.id} /><input
-                  type="hidden"
-                  name="revision"
-                  value={item.revision}
-                /><Button type="submit" size="sm" variant="destructive">Supprimer</Button>
+              method="POST"
+              action="?/delete"
+              onsubmit={(event) => {
+                if (!confirm('Supprimer définitivement cette question ?')) event.preventDefault()
+              }}
+              use:enhance={toastEnhance({ success: 'Question supprimée.' })}
+            >
+              <input type="hidden" name="id" value={item.id} /><input
+                type="hidden"
+                name="revision"
+                value={item.revision}
+              /><Button type="submit" size="sm" variant="destructive">Supprimer</Button>
             </form>
           </footer>
         </article>{/each}
     </div>
   {/if}
-  <FaqDialog bind:open={dialogOpen} faq={editing} sites={data.sites} />
+  <FaqDialog bind:open={dialogOpen} faq={editing} categories={data.categories} />
 </main>
 
 <style>
@@ -182,6 +220,29 @@
     display: grid;
     gap: var(--space-4);
   }
+  .categories {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0 0 var(--space-6);
+    padding: var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-card);
+  }
+  .category-list,
+  .category-list form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .category-list input {
+    min-height: 36px;
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-card);
+  }
   .card {
     display: grid;
     gap: var(--space-4);
@@ -211,14 +272,10 @@
     padding-top: var(--space-3);
     border-top: 1px solid var(--border);
   }
-  .warning,
   .error {
     padding: var(--space-3);
     border-radius: var(--radius-sm);
     font-size: var(--text-small);
-  }
-  .warning {
-    background: var(--warning-light);
   }
   .error {
     margin-bottom: var(--space-4);
