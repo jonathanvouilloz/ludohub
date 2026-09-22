@@ -16,7 +16,6 @@
   let dialogOpen = $state(false)
   let editing = $state<EditableDocument | null>(null)
   let pendingId = $state<string | null>(null)
-  let filePendingId = $state<string | null>(null)
   function openCreate() {
     editing = null
     dialogOpen = true
@@ -137,51 +136,6 @@
                 /><Button type="submit" size="sm" variant="destructive">Supprimer</Button>
             </form>
           </footer>
-          <section class="file-editor" aria-label={`PDF de ${item.title}`}>
-            <form
-              method="POST"
-              action="?/uploadFile"
-              enctype="multipart/form-data"
-              use:enhance={toastEnhance({
-                success: item.pdfUrl ? 'PDF remplacé.' : 'PDF ajouté.',
-                onPending: (value) => (filePendingId = value ? item.id : null),
-              })}
-            >
-              <input type="hidden" name="id" value={item.id} /><input
-                type="hidden"
-                name="revision"
-                value={item.revision}
-              /><label
-                ><span>Fichier PDF · 15 Mio maximum</span><input
-                  type="file"
-                  name="file"
-                  accept="application/pdf"
-                  required
-                /></label
-              ><Button type="submit" size="sm" disabled={filePendingId === item.id}
-                >{item.pdfUrl ? 'Remplacer le PDF' : 'Ajouter le PDF'}</Button
-              >
-            </form>
-            {#if item.pdfUrl}<form
-                method="POST"
-                action="?/removeFile"
-                use:enhance={toastEnhance({
-                  success: 'PDF supprimé.',
-                  onPending: (value) => (filePendingId = value ? item.id : null),
-                })}
-              >
-                <input type="hidden" name="id" value={item.id} /><input
-                  type="hidden"
-                  name="revision"
-                  value={item.revision}
-                /><Button
-                  type="submit"
-                  size="sm"
-                  variant="outline"
-                  disabled={filePendingId === item.id}>Supprimer le PDF</Button
-                >
-              </form>{/if}
-          </section>
         </article>{/each}
     </div>{/if}
   <DocumentDialog bind:open={dialogOpen} document={editing} sites={data.sites} />
@@ -260,34 +214,10 @@
     color: var(--ludo-color);
     font-weight: var(--weight-semibold);
   }
-  footer,
-  .file-editor {
+  footer {
     justify-content: flex-end;
     padding-top: var(--space-3);
     border-top: 1px solid var(--border);
-  }
-  .file-editor,
-  .file-editor form {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--space-3);
-  }
-  .file-editor form:first-child {
-    flex: 1;
-  }
-  .file-editor label {
-    display: grid;
-    gap: var(--space-1);
-    flex: 1;
-    color: var(--text-muted);
-    font-size: var(--text-small);
-  }
-  .file-editor input {
-    width: 100%;
-    min-height: 40px;
-    padding: var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
   }
   .warning,
   .error {
@@ -308,9 +238,7 @@
       padding: var(--space-6) var(--space-4);
     }
     header,
-    .card-head,
-    .file-editor,
-    .file-editor form {
+    .card-head {
       align-items: stretch;
       flex-direction: column;
     }

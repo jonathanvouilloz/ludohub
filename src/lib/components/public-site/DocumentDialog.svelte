@@ -24,6 +24,7 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import { toastEnhance } from '$lib/utils/enhance.js'
+  import { compressEditorialPdfFields } from '$lib/media/editorial-image.js'
 
   let {
     open = $bindable(false),
@@ -80,15 +81,19 @@
     <Dialog.Header
       ><Dialog.Title>{isEdit ? 'Modifier le document' : 'Nouveau document'}</Dialog.Title
       ><Dialog.Description
-        >Présentez le document public. Le PDF est ajouté après création.</Dialog.Description
+        >Ajoutez le texte et, si besoin, le PDF dans ce même formulaire.</Dialog.Description
       ></Dialog.Header
     >
     <form
       method="POST"
       action={isEdit ? '?/update' : '?/create'}
+      enctype="multipart/form-data"
       use:enhance={toastEnhance({
         success: isEdit ? 'Document mis à jour.' : 'Brouillon créé.',
         errorMode: 'inline',
+        prepare: async (formData) => {
+          await compressEditorialPdfFields(formData, ['pdfFile'])
+        },
         onPending: (value) => {
           submitting = value
           if (value) submitError = ''
@@ -160,13 +165,26 @@
         ></textarea>
       </div>
       <div class="field">
-        <Label for="document-body">Contenu Markdown</Label><textarea
+        <Label for="document-body">Texte de présentation</Label><textarea
           id="document-body"
           name="bodyMarkdown"
           bind:value={body}
           maxlength="50000"
           rows="9"
+          placeholder="Ajoutez les informations utiles pour présenter ce document."
         ></textarea>
+        <p class="hint">Facultatif si un PDF est joint. Le texte s’affiche sur la page du document.</p>
+      </div>
+      <div class="field">
+        <Label for="document-pdf">Document PDF</Label>
+        {#if document?.pdfUrl}<a class="file-link" href={document.pdfUrl} target="_blank" rel="noreferrer"
+            >PDF actuel : {document.pdfFileName ?? 'consulter le fichier'}</a
+          >{/if}
+        <input id="document-pdf" type="file" name="pdfFile" accept="application/pdf" />
+        <p class="hint">Facultatif · PDF uniquement, 15 Mio maximum.</p>
+        {#if document?.pdfUrl}<label class="remove-choice"
+            ><input type="checkbox" name="removePdf" /> Retirer le PDF actuel</label
+          >{/if}
       </div>
       <fieldset>
         <legend>Lieux concernés</legend>
@@ -278,6 +296,19 @@
     padding: var(--space-3);
     border-radius: var(--radius-sm);
     font-size: var(--text-small);
+  }
+  .hint,
+  .file-link {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+  .file-link {
+    color: var(--ludo-color);
+    font-weight: var(--weight-semibold);
+  }
+  .remove-choice {
+    min-height: 36px;
   }
   .warning {
     background: var(--warning-light);

@@ -120,6 +120,50 @@ async function cleanup(
 }
 const PDF_POLICY = { maxBytes: 15 * 1024 * 1024, allowedTypes: ['application/pdf'] as const }
 
+async function applyPdf(
+  data: FormData,
+  document: Awaited<ReturnType<typeof createPublicDocument>>,
+  ludoId: string,
+  memberId: string,
+) {
+  const file = data.get('pdfFile')
+  if (file instanceof File && file.size > 0) {
+    const registered = await uploadAndRegisterMedia({
+      authorize: () => authorizePublicDocumentMediaScope(ludoId, document.id, document.revision),
+      upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: PDF_POLICY }),
+      register: async (scope, blob) => ({
+        scope,
+        result: await setPublicDocumentPdf(
+          ludoId,
+          document.id,
+          memberId,
+          document.revision,
+          scope,
+          blob,
+          file.name,
+        ),
+      }),
+      cleanup: deletePublicSiteMedia,
+    })
+    await cleanup(
+      registered.scope,
+      registered.result.previousStorageKey,
+      ludoId,
+      memberId,
+      document.id,
+      'replace',
+    )
+    return registered.result.document
+  }
+  if (data.get('removePdf') === 'on' && document.pdfUrl) {
+    const scope = await authorizePublicDocumentMediaScope(ludoId, document.id, document.revision)
+    const result = await clearPublicDocumentPdf(ludoId, document.id, memberId, document.revision)
+    await cleanup(scope, result.previousStorageKey, ludoId, memberId, document.id, 'remove')
+    return result.document
+  }
+  return document
+}
+
 export const load: PageServerLoad = async (event) => {
   const { ludo } = await context(event)
   const [documents, sites] = await Promise.all([
@@ -134,7 +178,8 @@ export const actions: Actions = {
     const data = await event.request.formData()
     return run(async () => {
       const parsed = input(data)
-      const document = await createPublicDocument(ludo.id, member.id, parsed)
+      let document = await createPublicDocument(ludo.id, member.id, parsed)
+      document = await applyPdf(data, document, ludo.id, member.id)
       await audit('public_document.created', ludo.id, member.id, document.id, {
         kind: parsed.kind,
         year: parsed.year,
@@ -152,7 +197,8 @@ export const actions: Actions = {
     const id = String(data.get('id') ?? '')
     return run(async () => {
       const parsed = updateInput(data)
-      const document = await updatePublicDocument(id, ludo.id, parsed, member.id, revision(data))
+      let document = await updatePublicDocument(id, ludo.id, parsed, member.id, revision(data))
+      document = await applyPdf(data, document, ludo.id, member.id)
       await audit('public_document.updated', ludo.id, member.id, document.id, {
         kind: parsed.kind,
         year: parsed.year,
@@ -197,48 +243,6 @@ export const actions: Actions = {
       const result = await permanentlyDeletePublicDocument(id, ludo.id, rev)
       await cleanup(scope, result.previousStorageKey, ludo.id, member.id, id, 'delete')
       await audit('public_document.deleted', ludo.id, member.id, id)
-      return { success: true }
-    })
-  },
-  uploadFile: async (event) => {
-    const { ludo, member } = await context(event)
-    const data = await event.request.formData()
-    const id = String(data.get('id') ?? '')
-    return run(async () => {
-      const rev = revision(data)
-      const file = data.get('file')
-      if (!(file instanceof File)) throw new MediaStorageError('Sélectionnez un PDF.')
-      const registered = await uploadAndRegisterMedia({
-        authorize: () => authorizePublicDocumentMediaScope(ludo.id, id, rev),
-        upload: (scope) => uploadPublicSiteMedia({ scope, file, policy: PDF_POLICY }),
-        register: async (scope, blob) => ({
-          scope,
-          result: await setPublicDocumentPdf(ludo.id, id, member.id, rev, scope, blob, file.name),
-        }),
-        cleanup: deletePublicSiteMedia,
-      })
-      await cleanup(
-        registered.scope,
-        registered.result.previousStorageKey,
-        ludo.id,
-        member.id,
-        id,
-        'replace',
-      )
-      await audit('public_document.pdf_updated', ludo.id, member.id, id)
-      return { success: true }
-    })
-  },
-  removeFile: async (event) => {
-    const { ludo, member } = await context(event)
-    const data = await event.request.formData()
-    const id = String(data.get('id') ?? '')
-    return run(async () => {
-      const rev = revision(data)
-      const scope = await authorizePublicDocumentMediaScope(ludo.id, id, rev)
-      const result = await clearPublicDocumentPdf(ludo.id, id, member.id, rev)
-      await cleanup(scope, result.previousStorageKey, ludo.id, member.id, id, 'remove')
-      await audit('public_document.pdf_removed', ludo.id, member.id, id)
       return { success: true }
     })
   },
