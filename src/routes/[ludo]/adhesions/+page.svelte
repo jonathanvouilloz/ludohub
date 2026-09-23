@@ -1,14 +1,19 @@
 <script lang="ts">
+  import { enhance } from '$app/forms'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Button } from '$lib/components/ui/button/index.js'
+  import { Button, buttonVariants } from '$lib/components/ui/button/index.js'
   import { DataCard } from '$lib/components/ui/data-card/index.js'
   import { DataTable } from '$lib/components/ui/data-table/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Label } from '$lib/components/ui/label/index.js'
   import RichTextEditor from '$lib/components/public-site/RichTextEditor.svelte'
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js'
+  import * as Dialog from '$lib/components/ui/dialog/index.js'
   import * as Table from '$lib/components/ui/table/index.js'
+  import { toastEnhance } from '$lib/utils/enhance.js'
   import PuzzleIcon from '@lucide/svelte/icons/puzzle'
   import SettingsIcon from '@lucide/svelte/icons/settings-2'
+  import Trash2Icon from '@lucide/svelte/icons/trash-2'
   import UsersIcon from '@lucide/svelte/icons/users'
 
   let { data, form } = $props()
@@ -19,6 +24,13 @@
   const publicFormUrl = $derived(data.publicFormUrl)
   let linkCopied = $state(false)
   let regulationText = $state('')
+  let selectedId = $state<string | null>(null)
+  let pendingDeleteId = $state<string | null>(null)
+  let deleteOpen = $state(false)
+  const selected = $derived(data.submissions.find((item) => item.id === selectedId) ?? null)
+  const pendingDelete = $derived(
+    data.submissions.find((item) => item.id === pendingDeleteId) ?? null,
+  )
   $effect(() => {
     regulationText = regulation?.content_markdown ?? ''
   })
@@ -40,6 +52,26 @@
     if (method === 'cash') return 'Espèces'
     return 'À renseigner'
   }
+  function openDelete(id: string) {
+    pendingDeleteId = id
+    deleteOpen = true
+  }
+  function openSubmission(id: string) {
+    const top = window.scrollY
+    selectedId = id
+    queueMicrotask(() => {
+      if (window.scrollY !== top) window.scrollTo(0, top)
+    })
+  }
+  const keepForm = { reset: false }
+  const saveSettings = toastEnhance({ success: 'Réglages enregistrés.', updateOptions: keepForm })
+  const saveRules = toastEnhance({ success: 'Règlement enregistré.', updateOptions: keepForm })
+  const publishForm = toastEnhance({ success: 'Modifications publiées.', updateOptions: keepForm })
+  const markProcessed = toastEnhance({
+    success: 'Demande marquée comme traitée.',
+    updateOptions: keepForm,
+  })
+  const savePayment = toastEnhance({ success: 'Paiement enregistré.', updateOptions: keepForm })
 </script>
 
 <svelte:head><title>Adhésions familiales</title></svelte:head>
@@ -59,17 +91,32 @@
       <div class="heading-icon"><PuzzleIcon size={20} aria-hidden="true" /></div>
       <div>
         <h2 id="extension-title">Extension Orphée</h2>
-        <p>À installer une fois sur le poste d’accueil Chrome, pour remplir Orphée et imprimer les quittances.</p>
+        <p>
+          À installer une fois sur le poste d’accueil Chrome, pour remplir Orphée et imprimer les
+          quittances.
+        </p>
       </div>
     </div>
-    <p><Button href="/extensions/ludo-orphee-chrome.zip" download>Télécharger l’extension</Button></p>
+    <p>
+      <Button href="/extensions/ludo-orphee-chrome.zip" download>Télécharger l’extension</Button>
+    </p>
     <ol class="install-steps">
       <li>Décompressez le fichier. Vous obtenez un dossier <code>ludo-orphee</code>.</li>
       <li>Ouvrez <code>chrome://extensions</code> dans Chrome.</li>
       <li>Activez le mode développeur.</li>
-      <li>Choisissez « Charger l’extension non empaquetée », puis le dossier <code>ludo-orphee</code>.</li>
+      <li>
+        Choisissez « Charger l’extension non empaquetée », puis le dossier <code>ludo-orphee</code>.
+      </li>
+      <li>Épinglez LudoOrphée à côté de la barre d’adresse.</li>
+      <li>Ouvrez le panneau, puis « Connecter cet appareil » pour relier ce poste.</li>
     </ol>
-    <p class="hint">Pour une mise à jour, remplacez ce dossier par la nouvelle archive, puis cliquez sur Recharger dans chrome://extensions.</p>
+    <p class="hint">
+      Le pas à pas illustré est dans <a href="/aide#adhesions">Aide → Adhésions</a>.
+    </p>
+    <p class="hint">
+      Pour une mise à jour, remplacez ce dossier par la nouvelle archive, puis cliquez sur Recharger
+      dans chrome://extensions.
+    </p>
   </section>
 
   {#if config}
@@ -82,7 +129,7 @@
         </div>
       </div>
 
-      <form method="POST" action="?/configuration" class="configuration-form">
+      <form method="POST" action="?/configuration" class="configuration-form" use:enhance={saveSettings}>
         <input type="hidden" name="revision" value={config.revision} />
         <div class="field full">
           <Label for="family-title">Titre du formulaire</Label><Input
@@ -185,7 +232,7 @@
           >{linkCopied ? 'Lien copié' : 'Copier le lien'}</Button
         >
         <Button href={publicFormUrl} target="_blank" variant="outline">Voir le formulaire</Button>
-        <form method="POST" action="?/publish">
+        <form method="POST" action="?/publish" use:enhance={publishForm}>
           <input type="hidden" name="formId" value={config.id} /><input
             type="hidden"
             name="revision"
@@ -206,7 +253,7 @@
           </p>
         </div>
       </div>
-      <form method="POST" action="?/rules" class="regulation-form">
+      <form method="POST" action="?/rules" class="regulation-form" use:enhance={saveRules}>
         <div class="field">
           <Label for="family-regulation">Votre règlement</Label><RichTextEditor
             id="family-regulation"
@@ -234,7 +281,7 @@
         <div class="heading-icon"><UsersIcon size={20} aria-hidden="true" /></div>
         <div>
           <h2 id="submissions-title">Demandes reçues</h2>
-          <p>Sélectionnez une famille pour lire les informations transmises.</p>
+          <p>Cliquez sur un responsable pour lire les informations transmises.</p>
         </div>
       </div>
       <Badge variant="secondary">{data.submissions.length}</Badge>
@@ -248,10 +295,12 @@
             ></Table.Row
           >{/snippet}
         {#snippet body()}{#each data.submissions as item (item.id)}<Table.Row
-              class={data.selected?.id === item.id ? 'selected' : ''}
+              class={selectedId === item.id ? 'selected' : ''}
               ><Table.Cell>{dateLabel(item.createdAt)}</Table.Cell><Table.Cell
-                ><a class="submission-link" href={`?id=${item.id}`}
-                  >{item.firstName} {item.lastName}</a
+                ><button
+                  type="button"
+                  class="submission-name"
+                  onclick={() => openSubmission(item.id)}>{item.firstName} {item.lastName}</button
                 ></Table.Cell
               ><Table.Cell
                 ><Badge variant={item.status === 'new' ? 'warning' : 'success'}
@@ -259,13 +308,17 @@
                 ></Table.Cell
               ><Table.Cell>{paymentLabel(item.paymentMethod)}</Table.Cell><Table.Cell
                 ><div class="submission-action">
-                  {#if item.status === 'new'}<form method="POST" action="?/process">
+                  {#if item.status === 'new'}<form
+                    method="POST"
+                    action="?/process"
+                    use:enhance={markProcessed}
+                  >
                       <input type="hidden" name="id" value={item.id} /><input
                         type="hidden"
                         name="revision"
                         value={item.revision}
                       /><Button type="submit" size="sm">Marquer comme traitée</Button>
-                    </form>{:else}<form method="POST" action="?/payment">
+                    </form>{:else}<form method="POST" action="?/payment" use:enhance={savePayment}>
                       <input type="hidden" name="id" value={item.id} /><input
                         type="hidden"
                         name="revision"
@@ -279,13 +332,27 @@
                         ></select
                       ><Button type="submit" size="sm" variant="outline">Enregistrer</Button>
                     </form>{/if}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-sm"
+                    title="Supprimer"
+                    onclick={() => openDelete(item.id)}
+                  >
+                    <Trash2Icon aria-hidden="true" />
+                    <span class="sr-only">Supprimer</span>
+                  </Button>
                 </div></Table.Cell
               ></Table.Row
             >{/each}{/snippet}
         {#snippet cards()}{#each data.submissions as item (item.id)}<DataCard
               title={`${item.firstName} ${item.lastName}`}
-              href={`?id=${item.id}`}
-              >{#snippet notes()}{dateLabel(item.createdAt)}{/snippet}{#snippet byline()}<Badge
+              >{#snippet notes()}<button
+                  type="button"
+                  class="submission-name"
+                  onclick={() => openSubmission(item.id)}>Voir la demande</button
+                >
+                · {dateLabel(item.createdAt)}{/snippet}{#snippet byline()}<Badge
                   variant={item.status === 'new' ? 'warning' : 'success'}
                   >{statusLabel(item.status)}</Badge
                 > · {paymentLabel(
@@ -293,13 +360,14 @@
                 )}{/snippet}{#snippet actions()}{#if item.status === 'new'}<form
                     method="POST"
                     action="?/process"
+                    use:enhance={markProcessed}
                   >
                     <input type="hidden" name="id" value={item.id} /><input
                       type="hidden"
                       name="revision"
                       value={item.revision}
                     /><Button type="submit" size="sm">Traiter</Button>
-                  </form>{:else}<form method="POST" action="?/payment">
+                  </form>{:else}<form method="POST" action="?/payment" use:enhance={savePayment}>
                     <input type="hidden" name="id" value={item.id} /><input
                       type="hidden"
                       name="revision"
@@ -311,48 +379,134 @@
                     /><Button type="submit" size="sm" variant="outline"
                       >{item.paymentMethod ? 'Annuler le paiement' : 'Noter TWINT'}</Button
                     >
-                  </form>{/if}{/snippet}</DataCard
+                  </form>{/if}<Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  title="Supprimer"
+                  onclick={() => openDelete(item.id)}
+                >
+                  <Trash2Icon aria-hidden="true" />
+                  <span class="sr-only">Supprimer</span>
+                </Button>{/snippet}</DataCard
             >{/each}{/snippet}
       </DataTable>
     {:else}<p class="empty-note">Aucune demande reçue pour le moment.</p>{/if}
   </section>
 
-  {#if data.selected}
-    <section class="selected-submission panel" aria-labelledby="selected-title">
-      <div class="section-intro">
-        <div>
-          <h2 id="selected-title">Demande de {data.selected.firstName} {data.selected.lastName}</h2>
-          <p>Informations transmises lors de la demande.</p>
+  <Dialog.Root
+    open={selected !== null}
+    onOpenChange={(open) => {
+      if (!open) selectedId = null
+    }}
+  >
+    <Dialog.Content
+      class="family-detail sm:max-w-2xl"
+      onOpenAutoFocus={(event) => event.preventDefault()}
+    >
+      {#if selected}
+        <Dialog.Header>
+          <Dialog.Title>Demande de {selected.firstName} {selected.lastName}</Dialog.Title>
+          <Dialog.Description>Informations transmises lors de la demande.</Dialog.Description>
+        </Dialog.Header>
+        <div class="detail-status">
+          <Badge variant={selected.status === 'new' ? 'warning' : 'success'}
+            >{statusLabel(selected.status)}</Badge
+          >
+          <span>{paymentLabel(selected.paymentMethod)} · {dateLabel(selected.createdAt)}</span>
         </div>
-        <Badge variant={data.selected.status === 'new' ? 'warning' : 'success'}
-          >{statusLabel(data.selected.status)}</Badge
+        <dl>
+          <div>
+            <dt>Contact</dt>
+            <dd>
+              {selected.email}<br />{selected.phone}{#if selected.secondaryPhone}<br
+                />{selected.secondaryPhone}{/if}
+            </dd>
+          </div>
+          <div>
+            <dt>Adresse</dt>
+            <dd>{selected.address}<br />{selected.postalCode} {selected.city}</dd>
+          </div>
+          <div>
+            <dt>Consentement</dt>
+            <dd>{selected.consentFullName}<br />{dateLabel(selected.consentAcceptedOn)}</dd>
+          </div>
+        </dl>
+        <div class="member-list">
+          <h3>Membres de la famille</h3>
+          <ul>
+            {#each selected.members as member (member.id)}<li>
+                {member.firstName}
+                {member.lastName}{member.birthDate ? ` · ${member.birthDate}` : ''}
+              </li>{/each}
+          </ul>
+        </div>
+        <Dialog.Footer class="detail-footer">
+          {#if selected.status === 'new'}
+            <form method="POST" action="?/process" use:enhance={markProcessed}>
+              <input type="hidden" name="id" value={selected.id} />
+              <input type="hidden" name="revision" value={selected.revision} />
+              <Button type="submit" size="sm">Marquer comme traitée</Button>
+            </form>
+          {:else}
+            <form method="POST" action="?/payment" class="detail-payment" use:enhance={savePayment}>
+              <input type="hidden" name="id" value={selected.id} />
+              <input type="hidden" name="revision" value={selected.revision} />
+              <select aria-label="Mode de paiement" name="method">
+                <option value="">Non payé</option>
+                <option value="twint" selected={selected.paymentMethod === 'twint'}>TWINT</option>
+                <option value="cash" selected={selected.paymentMethod === 'cash'}>Espèces</option>
+              </select>
+              <Button type="submit" size="sm" variant="outline">Enregistrer</Button>
+            </form>
+          {/if}
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onclick={() => selectedId && openDelete(selectedId)}>Supprimer</Button
+          >
+        </Dialog.Footer>
+      {/if}
+    </Dialog.Content>
+  </Dialog.Root>
+
+  <AlertDialog.Root bind:open={deleteOpen}>
+    <AlertDialog.Content>
+      <AlertDialog.Header>
+        <AlertDialog.Title>Supprimer cette demande ?</AlertDialog.Title>
+        <AlertDialog.Description>
+          {#if pendingDelete}
+            La demande de {pendingDelete.firstName}
+            {pendingDelete.lastName} sera définitivement supprimée, ainsi que les informations de la famille.
+          {/if}
+        </AlertDialog.Description>
+      </AlertDialog.Header>
+      {#if pendingDelete}
+        <form
+          method="POST"
+          action="?/delete"
+          use:enhance={toastEnhance({
+            success: 'Demande supprimée.',
+            onSuccess: () => {
+              if (selectedId === pendingDelete.id) selectedId = null
+              deleteOpen = false
+              pendingDeleteId = null
+            },
+          })}
         >
-      </div>
-      <dl>
-        <div>
-          <dt>Contact</dt>
-          <dd>{data.selected.email}<br />{data.selected.phone}</dd>
-        </div>
-        <div>
-          <dt>Adresse</dt>
-          <dd>{data.selected.address}<br />{data.selected.postalCode} {data.selected.city}</dd>
-        </div>
-        <div>
-          <dt>Consentement</dt>
-          <dd>{data.selected.consentFullName}<br />{dateLabel(data.selected.consentAcceptedOn)}</dd>
-        </div>
-      </dl>
-      <div class="member-list">
-        <h3>Membres de la famille</h3>
-        <ul>
-          {#each data.selected.members as member}<li>
-              {member.firstName}
-              {member.lastName}{member.birthDate ? ` · ${member.birthDate}` : ''}
-            </li>{/each}
-        </ul>
-      </div>
-    </section>
-  {/if}
+          <input type="hidden" name="id" value={pendingDelete.id} />
+          <input type="hidden" name="revision" value={pendingDelete.revision} />
+          <AlertDialog.Footer>
+            <AlertDialog.Cancel type="button">Retour</AlertDialog.Cancel>
+            <button type="submit" class={buttonVariants({ variant: 'destructive' })}
+              >Supprimer</button
+            >
+          </AlertDialog.Footer>
+        </form>
+      {/if}
+    </AlertDialog.Content>
+  </AlertDialog.Root>
 </main>
 
 <style>
@@ -566,12 +720,21 @@
   :global(.actions-head) {
     text-align: right;
   }
-  .submission-link {
+  .hint a {
     color: var(--primary-dark);
     font-weight: var(--weight-semibold);
-    text-decoration: none;
   }
-  .submission-link:hover {
+  .submission-name {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--primary-dark);
+    font: inherit;
+    font-weight: var(--weight-semibold);
+    text-align: left;
+    cursor: pointer;
+  }
+  .submission-name:hover {
     text-decoration: underline;
   }
   .submission-action,
@@ -590,8 +753,27 @@
   :global(.selected > td) {
     background: var(--primary-light);
   }
-  .selected-submission {
-    gap: var(--space-5);
+  :global(.family-detail) {
+    display: grid;
+    gap: var(--space-4);
+  }
+  .detail-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+  .detail-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+  .detail-payment {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
   }
   dl {
     display: grid;

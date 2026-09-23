@@ -292,7 +292,9 @@
         {#each documents as document (document.slug)}
           <Dialog.Root>
             <Dialog.Trigger class="rules-link"
-              ><BookOpenIcon size={18} aria-hidden="true" />{document.title}</Dialog.Trigger
+              ><BookOpenIcon size={18} aria-hidden="true" />{document.kind === 'rules'
+                ? 'Lire le règlement'
+                : document.title}</Dialog.Trigger
             >
             <Dialog.Content class="rules-dialog">
               <Dialog.Header

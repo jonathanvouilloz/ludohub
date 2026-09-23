@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   familyRegistrationForms as forms,
@@ -411,9 +411,18 @@ export function listFamilySubmissionRows(
       id: submissions.id,
       siteSlug: ludoSites.slug,
       siteName: ludoSites.name,
+      gender: submissions.gender,
       firstName: submissions.firstName,
       lastName: submissions.lastName,
+      birthDate: submissions.birthDate,
+      address: submissions.address,
+      postalCode: submissions.postalCode,
+      city: submissions.city,
+      phone: submissions.phone,
+      secondaryPhone: submissions.secondaryPhone,
       email: submissions.email,
+      consentFullName: submissions.consentFullName,
+      consentAcceptedOn: submissions.consentAcceptedOn,
       status: submissions.status,
       paymentMethod: submissions.paymentMethod,
       paymentRecordedAt: submissions.paymentRecordedAt,
@@ -430,6 +439,28 @@ export function listFamilySubmissionRows(
     .where(and(eq(submissions.ludoId, ludoId), status ? eq(submissions.status, status) : undefined))
     .orderBy(desc(submissions.createdAt), asc(submissions.id))
     .limit(limit)
+}
+
+export async function listFamilySubmissionMemberRows(ludoId: string, submissionIds: string[]) {
+  if (submissionIds.length === 0) return []
+  return db
+    .select({
+      submissionId: submissionMembers.submissionId,
+      id: submissionMembers.id,
+      gender: submissionMembers.gender,
+      firstName: submissionMembers.firstName,
+      lastName: submissionMembers.lastName,
+      birthDate: submissionMembers.birthDate,
+      sortOrder: submissionMembers.sortOrder,
+    })
+    .from(submissionMembers)
+    .where(
+      and(
+        eq(submissionMembers.ludoId, ludoId),
+        inArray(submissionMembers.submissionId, submissionIds),
+      ),
+    )
+    .orderBy(asc(submissionMembers.sortOrder), asc(submissionMembers.id))
 }
 
 export async function getFamilySubmissionRowForLudo(id: string, ludoId: string) {
@@ -491,12 +522,7 @@ export async function getFamilySubmissionRowForLudo(id: string, ludoId: string) 
       sortOrder: submissionMembers.sortOrder,
     })
     .from(submissionMembers)
-    .where(
-      and(
-        eq(submissionMembers.submissionId, id),
-        eq(submissionMembers.ludoId, ludoId),
-      ),
-    )
+    .where(and(eq(submissionMembers.submissionId, id), eq(submissionMembers.ludoId, ludoId)))
     .orderBy(asc(submissionMembers.sortOrder))
   return { ...submission, members }
 }
@@ -594,4 +620,28 @@ export async function purgeDueFamilySubmissionsRow(now: Date, limit: number) {
     ) SELECT count(*)::int AS purged FROM deleted
   `)
   return result.rows[0]?.purged ?? 0
+}
+
+/** Suppression manuelle : la demande (membres en cascade) puis son reçu. Aucun agrégat. */
+export async function deleteFamilySubmissionAtomic(input: {
+  id: string
+  ludoId: string
+  expectedRevision: number
+}) {
+  const result = await db.execute<{ id: string }>(sql`
+    WITH removed AS (
+      DELETE FROM family_registration_submissions submission
+      WHERE submission.id=${input.id}::uuid
+        AND submission.ludo_id=${input.ludoId}::uuid
+        AND submission.revision=${input.expectedRevision}
+      RETURNING submission.id, submission.ludo_id
+    ), dropped_receipt AS (
+      DELETE FROM family_submission_receipts receipt
+      USING removed
+      WHERE receipt.receipt_id=removed.id AND receipt.ludo_id=removed.ludo_id
+      RETURNING receipt.id
+    )
+    SELECT id FROM removed
+  `)
+  return result.rows[0]
 }

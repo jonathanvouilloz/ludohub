@@ -10,6 +10,8 @@ import {
   getPublishedFamilyConfigRow,
   insertFamilySubmissionAtomic,
   listFamilyDocumentRows,
+  deleteFamilySubmissionAtomic,
+  listFamilySubmissionMemberRows,
   listFamilySubmissionRows,
   processFamilySubmissionAtomic,
   publishFamilyFormAtomic,
@@ -49,22 +51,28 @@ function text(value: unknown, label: string, max: number, optional = false) {
   if (optional && (value == null || value === '')) return null
   if (typeof value !== 'string') throw new FamilyRegistrationServiceError(`${label} invalide.`)
   const clean = value.replace(/\r\n?/g, '\n').trim()
-  if (!clean || clean.length > max || [...clean].some((c) => c.charCodeAt(0) < 32 && c !== '\n' && c !== '\t'))
+  if (
+    !clean ||
+    clean.length > max ||
+    [...clean].some((c) => c.charCodeAt(0) < 32 && c !== '\n' && c !== '\t')
+  )
     throw new FamilyRegistrationServiceError(`${label} invalide.`)
   return clean
 }
 
 const SWISS_PHONE = /^(?:\+41|0041|0)[1-9]\d{8}$/
-const EMAIL = /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/
+const EMAIL =
+  /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/
 
 function isSwissPhone(value: string) {
   return SWISS_PHONE.test(value.replace(/[\s.-]/g, ''))
 }
 
 function date(value: unknown, label: string) {
-  const parsed = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-    ? new Date(`${value}T00:00:00Z`)
-    : null
+  const parsed =
+    typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? new Date(`${value}T00:00:00Z`)
+      : null
   if (!parsed || Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value)
     throw new FamilyRegistrationServiceError(`${label} invalide.`)
   return value
@@ -92,14 +100,18 @@ export async function getPublicFamilyMembershipByLudoSlug(ludoSlug: string) {
   const config = await getPublishedFamilyConfigRow(ludo.id)
   if (!config) throw new FamilyRegistrationServiceError('Formulaire introuvable.', 'not_found')
   const sites = await listActiveSiteRows(ludo.id)
-  if (!sites.length) throw new FamilyRegistrationServiceError('Formulaire introuvable.', 'not_found')
+  if (!sites.length)
+    throw new FamilyRegistrationServiceError('Formulaire introuvable.', 'not_found')
   return {
     title: config.title,
     intro: config.intro,
     version: config.version,
     annualFeeCents: config.annual_fee_cents,
     currency: config.currency,
-    paymentMethods: [config.allows_twint ? 'twint' : null, config.allows_cash ? 'cash' : null].filter(Boolean),
+    paymentMethods: [
+      config.allows_twint ? 'twint' : null,
+      config.allows_cash ? 'cash' : null,
+    ].filter(Boolean),
     consentLabel: config.consent_label,
     documents: config.documents.map((document) => ({
       slug: document.slug,
@@ -172,10 +184,7 @@ export async function submitPublicFamilyMembership(
   if (input.consentAccepted !== true)
     throw new FamilyRegistrationServiceError('Le consentement est obligatoire.')
   const rawMembers = input.members ?? []
-  if (
-    !Array.isArray(rawMembers) ||
-    rawMembers.length > TECHNICAL_MAX_FAMILY_MEMBERS
-  )
+  if (!Array.isArray(rawMembers) || rawMembers.length > TECHNICAL_MAX_FAMILY_MEMBERS)
     throw new FamilyRegistrationServiceError('Le nombre de membres est invalide.')
   const responsible = cleanResponsible(input)
   const cleanPayload = {
@@ -191,14 +200,22 @@ export async function submitPublicFamilyMembership(
     email: (text(input.email, 'E-mail', 320) as string).toLowerCase(),
     consentFullName: text(input.consentFullName, 'Nom de consentement', 200) as string,
     consentAcceptedOn: date(input.consentAcceptedOn, "Date d'acceptation"),
-    members: rawMembers.map((member, index) => cleanFamilyMember(member as FamilyMemberInput, index)),
+    members: rawMembers.map((member, index) =>
+      cleanFamilyMember(member as FamilyMemberInput, index),
+    ),
   }
   if (!isSwissPhone(cleanPayload.phone))
-    throw new FamilyRegistrationServiceError('Le téléphone doit être un numéro suisse, par exemple 079 000 00 00.')
+    throw new FamilyRegistrationServiceError(
+      'Le téléphone doit être un numéro suisse, par exemple 079 000 00 00.',
+    )
   if (cleanPayload.secondaryPhone && !isSwissPhone(cleanPayload.secondaryPhone))
-    throw new FamilyRegistrationServiceError('Le second téléphone doit être un numéro suisse, par exemple 022 000 00 00.')
+    throw new FamilyRegistrationServiceError(
+      'Le second téléphone doit être un numéro suisse, par exemple 022 000 00 00.',
+    )
   if (!EMAIL.test(cleanPayload.email))
-    throw new FamilyRegistrationServiceError("L'e-mail doit être une adresse complète, par exemple prenom@exemple.ch.")
+    throw new FamilyRegistrationServiceError(
+      "L'e-mail doit être une adresse complète, par exemple prenom@exemple.ch.",
+    )
   // Le fingerprint ne contient ni UUID généré par le serveur ni version publiée
   // courante : une même clé doit rester rejouable après purge ou republication.
   const requestFingerprint = fingerprint({
@@ -226,14 +243,24 @@ export async function submitPublicFamilyMembership(
   const existing = await getFamilySubmissionReceiptByKey(ludo.id, keyHash)
   if (existing) {
     if (existing.requestFingerprint !== requestFingerprint)
-      throw new FamilyRegistrationServiceError("Cette clé d'idempotence correspond à une autre demande.", 'conflict')
+      throw new FamilyRegistrationServiceError(
+        "Cette clé d'idempotence correspond à une autre demande.",
+        'conflict',
+      )
     return { receiptId: existing.receiptId, submittedAt: existing.submittedAt, created: false }
   }
   const config = await getPublishedFamilyConfigRow(ludo.id)
   if (!config) throw new FamilyRegistrationServiceError('Formulaire introuvable.', 'not_found')
   const sites = await listActiveSiteRows(ludo.id)
-  const site = requestedSiteId ? sites.find((candidate) => candidate.id === requestedSiteId) : sites.length === 1 ? sites[0] : undefined
-  if (!site) throw new FamilyRegistrationServiceError(sites.length > 1 ? 'Le lieu est obligatoire.' : 'Lieu invalide.')
+  const site = requestedSiteId
+    ? sites.find((candidate) => candidate.id === requestedSiteId)
+    : sites.length === 1
+      ? sites[0]
+      : undefined
+  if (!site)
+    throw new FamilyRegistrationServiceError(
+      sites.length > 1 ? 'Le lieu est obligatoire.' : 'Lieu invalide.',
+    )
   const clean = { siteId: site.id, ...cleanPayload }
   const receiptId = randomUUID()
   const inserted = await insertFamilySubmissionAtomic({
@@ -266,58 +293,181 @@ export async function getFamilyFormManagement(ludoId: string) {
 export async function ensureFamilyForm(ludoId: string, memberId: string, now = new Date()) {
   const existing = await getFamilyRegistrationFormForLudo(ludoId)
   if (existing) return existing
-  const created = await createFamilyRegistrationFormRow({ id: randomUUID(), ludoId, memberId, title: 'Adhésion familiale', now })
+  const created = await createFamilyRegistrationFormRow({
+    id: randomUUID(),
+    ludoId,
+    memberId,
+    title: 'Adhésion familiale',
+    now,
+  })
   if (created) return created
   const raced = await getFamilyRegistrationFormForLudo(ludoId)
   if (!raced) throw new FamilyRegistrationServiceError('Initialisation impossible.', 'conflict')
   return raced
 }
 
-export async function updateFamilyForm(ludoId: string, memberId: string, input: Record<string, unknown>, now = new Date()) {
+export async function updateFamilyForm(
+  ludoId: string,
+  memberId: string,
+  input: Record<string, unknown>,
+  now = new Date(),
+) {
   const form = await ensureFamilyForm(ludoId, memberId, now)
   const annualFeeCents = input.annualFeeCents
   const retentionDays = input.retentionDays
-  if (!Number.isSafeInteger(annualFeeCents) || (annualFeeCents as number) < 0 || (annualFeeCents as number) > 1_000_000 ||
-      !Number.isSafeInteger(retentionDays) || (retentionDays as number) < 1 || (retentionDays as number) > 365 ||
-      typeof input.enabled !== 'boolean' || typeof input.allowsTwint !== 'boolean' || typeof input.allowsCash !== 'boolean' || (!input.allowsTwint && !input.allowsCash))
+  if (
+    !Number.isSafeInteger(annualFeeCents) ||
+    (annualFeeCents as number) < 0 ||
+    (annualFeeCents as number) > 1_000_000 ||
+    !Number.isSafeInteger(retentionDays) ||
+    (retentionDays as number) < 1 ||
+    (retentionDays as number) > 365 ||
+    typeof input.enabled !== 'boolean' ||
+    typeof input.allowsTwint !== 'boolean' ||
+    typeof input.allowsCash !== 'boolean' ||
+    (!input.allowsTwint && !input.allowsCash)
+  )
     throw new FamilyRegistrationServiceError('Configuration invalide.')
-  const updated = await updateFamilyRegistrationFormRow({ id: form.id, ludoId, memberId, expectedRevision: revision(input.revision), title: text(input.title, 'Titre', 200) as string, intro: text(input.intro, 'Introduction', 5000, true), consentLabel: text(input.consentLabel, 'Consentement', 1000, true), enabled: input.enabled, maxMembers: TECHNICAL_MAX_FAMILY_MEMBERS, retentionDays: retentionDays as number, annualFeeCents: annualFeeCents as number, allowsTwint: input.allowsTwint, allowsCash: input.allowsCash, now })
-  if (!updated) throw new FamilyRegistrationServiceError('Configuration modifiée simultanément.', 'conflict')
-  await emitAuditEvent({ action: 'family_membership.configuration_updated', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_form', entityId: form.id, metadata: { revision: updated.revision } })
+  const updated = await updateFamilyRegistrationFormRow({
+    id: form.id,
+    ludoId,
+    memberId,
+    expectedRevision: revision(input.revision),
+    title: text(input.title, 'Titre', 200) as string,
+    intro: text(input.intro, 'Introduction', 5000, true),
+    consentLabel: text(input.consentLabel, 'Consentement', 1000, true),
+    enabled: input.enabled,
+    maxMembers: TECHNICAL_MAX_FAMILY_MEMBERS,
+    retentionDays: retentionDays as number,
+    annualFeeCents: annualFeeCents as number,
+    allowsTwint: input.allowsTwint,
+    allowsCash: input.allowsCash,
+    now,
+  })
+  if (!updated)
+    throw new FamilyRegistrationServiceError('Configuration modifiée simultanément.', 'conflict')
+  await emitAuditEvent({
+    action: 'family_membership.configuration_updated',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'family_registration_form',
+    entityId: form.id,
+    metadata: { revision: updated.revision },
+  })
   return updated
 }
 
-export async function saveFamilyDocument(ludoId: string, formId: string, memberId: string, input: Record<string, unknown>, now = new Date()) {
-  if (!DOCUMENT_KINDS.has(input.kind as FamilyRegistrationDocumentKind) || typeof input.requiredAcceptance !== 'boolean')
+export async function saveFamilyDocument(
+  ludoId: string,
+  formId: string,
+  memberId: string,
+  input: Record<string, unknown>,
+  now = new Date(),
+) {
+  if (
+    !DOCUMENT_KINDS.has(input.kind as FamilyRegistrationDocumentKind) ||
+    typeof input.requiredAcceptance !== 'boolean'
+  )
     throw new FamilyRegistrationServiceError('Document invalide.')
   const contentMarkdown = text(input.contentMarkdown, 'Contenu', 100_000) as string
   const sortOrder = Number(input.sortOrder)
   if (!Number.isSafeInteger(sortOrder) || sortOrder < 0 || sortOrder > 10_000)
     throw new FamilyRegistrationServiceError('Ordre invalide.')
-  const common = { ludoId, memberId, title: text(input.title, 'Titre', 200) as string, kind: input.kind as FamilyRegistrationDocumentKind, requiredAcceptance: input.requiredAcceptance, sortOrder, contentMarkdown, sha256: createHash('sha256').update(contentMarkdown).digest('hex'), versionId: randomUUID(), now }
+  const common = {
+    ludoId,
+    memberId,
+    title: text(input.title, 'Titre', 200) as string,
+    kind: input.kind as FamilyRegistrationDocumentKind,
+    requiredAcceptance: input.requiredAcceptance,
+    sortOrder,
+    contentMarkdown,
+    sha256: createHash('sha256').update(contentMarkdown).digest('hex'),
+    versionId: randomUUID(),
+    now,
+  }
   if (typeof input.id === 'string') {
-    const result = await versionFamilyDocumentAtomic({ ...common, id: input.id, expectedRevision: revision(input.revision) })
-    if (!result) throw new FamilyRegistrationServiceError('Document modifié simultanément.', 'conflict')
-    await emitAuditEvent({ action: 'family_membership.document_versioned', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_document', entityId: input.id, metadata: { kind: common.kind, requiredAcceptance: common.requiredAcceptance } })
+    const result = await versionFamilyDocumentAtomic({
+      ...common,
+      id: input.id,
+      expectedRevision: revision(input.revision),
+    })
+    if (!result)
+      throw new FamilyRegistrationServiceError('Document modifié simultanément.', 'conflict')
+    await emitAuditEvent({
+      action: 'family_membership.document_versioned',
+      actorLudoId: ludoId,
+      actorMemberId: memberId,
+      entityType: 'family_registration_document',
+      entityId: input.id,
+      metadata: { kind: common.kind, requiredAcceptance: common.requiredAcceptance },
+    })
     return result
   }
-  const slug = (text(input.slug, 'Slug', 100) as string).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const slug = (text(input.slug, 'Slug', 100) as string)
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
   if (!slug) throw new FamilyRegistrationServiceError('Slug invalide.')
   const id = randomUUID()
   const result = await createFamilyDocumentAtomic({ ...common, id, formId, slug })
-  await emitAuditEvent({ action: 'family_membership.document_created', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_document', entityId: id, metadata: { kind: common.kind, requiredAcceptance: common.requiredAcceptance } })
+  await emitAuditEvent({
+    action: 'family_membership.document_created',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'family_registration_document',
+    entityId: id,
+    metadata: { kind: common.kind, requiredAcceptance: common.requiredAcceptance },
+  })
   return result
 }
 
-export async function publishFamilyForm(ludoId: string, memberId: string, formId: string, expectedRevision: unknown, now = new Date()) {
-  const result = await publishFamilyFormAtomic({ formId, versionId: randomUUID(), ludoId, expectedRevision: revision(expectedRevision), memberId, now })
-  if (!result) throw new FamilyRegistrationServiceError('Publication impossible : consentement et document obligatoire requis, ou modification concurrente.', 'conflict')
-  await emitAuditEvent({ action: 'family_membership.published', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_form', entityId: formId, metadata: { version: result.version } })
+export async function publishFamilyForm(
+  ludoId: string,
+  memberId: string,
+  formId: string,
+  expectedRevision: unknown,
+  now = new Date(),
+) {
+  const result = await publishFamilyFormAtomic({
+    formId,
+    versionId: randomUUID(),
+    ludoId,
+    expectedRevision: revision(expectedRevision),
+    memberId,
+    now,
+  })
+  if (!result)
+    throw new FamilyRegistrationServiceError(
+      'Publication impossible : consentement et document obligatoire requis, ou modification concurrente.',
+      'conflict',
+    )
+  await emitAuditEvent({
+    action: 'family_membership.published',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'family_registration_form',
+    entityId: formId,
+    metadata: { version: result.version },
+  })
   return result
 }
 
-export async function listFamilySubmissions(ludoId: string, status?: FamilyRegistrationSubmissionStatus, limit = 100) {
-  return listFamilySubmissionRows(ludoId, status, Math.min(Math.max(limit, 1), 200))
+export async function listFamilySubmissions(
+  ludoId: string,
+  status?: FamilyRegistrationSubmissionStatus,
+  limit = 100,
+) {
+  const rows = await listFamilySubmissionRows(ludoId, status, Math.min(Math.max(limit, 1), 200))
+  const members = await listFamilySubmissionMemberRows(
+    ludoId,
+    rows.map((row) => row.id),
+  )
+  return rows.map((row) => ({
+    ...row,
+    members: members.filter((member) => member.submissionId === row.id),
+  }))
 }
 
 export async function getFamilySubmission(id: string, ludoId: string) {
@@ -326,30 +476,109 @@ export async function getFamilySubmission(id: string, ludoId: string) {
   return row
 }
 
-export async function processFamilySubmission(id: string, ludoId: string, memberId: string, expectedRevision: unknown, now = new Date()) {
-  const result = await processFamilySubmissionAtomic({ id, ludoId, memberId, expectedRevision: revision(expectedRevision), now })
-  if (!result) throw new FamilyRegistrationServiceError('Adhésion modifiée simultanément.', 'conflict')
-  await emitAuditEvent({ action: 'family_membership.processed', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_submission', entityId: id, metadata: {} })
+export async function processFamilySubmission(
+  id: string,
+  ludoId: string,
+  memberId: string,
+  expectedRevision: unknown,
+  now = new Date(),
+) {
+  const result = await processFamilySubmissionAtomic({
+    id,
+    ludoId,
+    memberId,
+    expectedRevision: revision(expectedRevision),
+    now,
+  })
+  if (!result)
+    throw new FamilyRegistrationServiceError('Adhésion modifiée simultanément.', 'conflict')
+  await emitAuditEvent({
+    action: 'family_membership.processed',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'family_registration_submission',
+    entityId: id,
+    metadata: {},
+  })
   return getFamilySubmission(id, ludoId)
 }
 
-export async function recordFamilyPayment(id: string, ludoId: string, memberId: string, method: unknown, expectedRevision: unknown, now = new Date()) {
-  if (method !== null && method !== 'twint' && method !== 'cash') throw new FamilyRegistrationServiceError('Paiement invalide.')
-  const result = await recordFamilyPaymentAtomic({ id, ludoId, memberId, paymentMethod: method as FamilyRegistrationPaymentMethod | null, expectedRevision: revision(expectedRevision), now })
-  if (!result) throw new FamilyRegistrationServiceError('Adhésion modifiée simultanément.', 'conflict')
-  await emitAuditEvent({ action: 'family_membership.payment_recorded', actorLudoId: ludoId, actorMemberId: memberId, entityType: 'family_registration_submission', entityId: id, metadata: { method } })
+export async function deleteFamilySubmission(
+  id: string,
+  ludoId: string,
+  memberId: string,
+  expectedRevision: unknown,
+) {
+  const result = await deleteFamilySubmissionAtomic({
+    id,
+    ludoId,
+    expectedRevision: revision(expectedRevision),
+  })
+  if (!result)
+    throw new FamilyRegistrationServiceError('Adhésion modifiée simultanément.', 'conflict')
+  await emitAuditEvent({
+    action: 'family_membership.deleted',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'family_registration_submission',
+    entityId: id,
+    metadata: {},
+  })
+  return result
+}
+
+export async function recordFamilyPayment(
+  id: string,
+  ludoId: string,
+  memberId: string,
+  method: unknown,
+  expectedRevision: unknown,
+  now = new Date(),
+) {
+  if (method !== null && method !== 'twint' && method !== 'cash')
+    throw new FamilyRegistrationServiceError('Paiement invalide.')
+  const result = await recordFamilyPaymentAtomic({
+    id,
+    ludoId,
+    memberId,
+    paymentMethod: method as FamilyRegistrationPaymentMethod | null,
+    expectedRevision: revision(expectedRevision),
+    now,
+  })
+  if (!result)
+    throw new FamilyRegistrationServiceError('Adhésion modifiée simultanément.', 'conflict')
+  await emitAuditEvent({
+    action: 'family_membership.payment_recorded',
+    actorLudoId: ludoId,
+    actorMemberId: memberId,
+    entityType: 'family_registration_submission',
+    entityId: id,
+    metadata: { method },
+  })
   return getFamilySubmission(id, ludoId)
 }
 
 /** Travail borné et relançable : au plus 1 000 familles par invocation. */
-export async function purgeDueFamilySubmissions(now = new Date(), batchSize = 100, maxBatches = 10) {
-  if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 500 || !Number.isSafeInteger(maxBatches) || maxBatches < 1 || maxBatches > 20)
+export async function purgeDueFamilySubmissions(
+  now = new Date(),
+  batchSize = 100,
+  maxBatches = 10,
+) {
+  if (
+    !Number.isSafeInteger(batchSize) ||
+    batchSize < 1 ||
+    batchSize > 500 ||
+    !Number.isSafeInteger(maxBatches) ||
+    maxBatches < 1 ||
+    maxBatches > 20
+  )
     throw new FamilyRegistrationServiceError('Paramètres de purge invalides.')
   let purged = 0
   let batches = 0
   while (batches < maxBatches) {
     const count = await purgeDueFamilySubmissionsRow(now, batchSize)
-    purged += count; batches += 1
+    purged += count
+    batches += 1
     if (count < batchSize) break
   }
   return { purged, batches, hasMore: batches === maxBatches }

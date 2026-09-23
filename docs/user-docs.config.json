@@ -275,6 +275,69 @@
           "spotlight": ".cards"
         }
       ]
+    },
+    {
+      "id": "adhesions",
+      "title": "Adhésions",
+      "shots": [
+        {
+          "id": "telecharger",
+          "route": "/demo/adhesions",
+          "waitFor": ".extension-panel",
+          "label": "Télécharger l’extension",
+          "caption": "Le panneau Adhésions : téléchargez l’archive, puis suivez les étapes.",
+          "clip": { "selector": ".extension-panel", "padding": 16 }
+        },
+        {
+          "id": "liaison",
+          "preAuth": true,
+          "route": "/extensions/authorize?user_code=ABCD-EFGH",
+          "waitFor": "h1",
+          "label": "Relier le poste",
+          "caption": "Le code affiché par l’extension se confirme ici, après connexion responsable.",
+          "clip": { "selector": "main", "padding": 16 }
+        },
+        {
+          "id": "formulaire",
+          "route": "/demo/adhesions",
+          "waitFor": "#configuration-title",
+          "label": "Le formulaire public",
+          "caption": "Titre, consentement, tarif et moyens de paiement présentés aux familles.",
+          "clip": { "selector": ".configuration", "padding": 12 }
+        },
+        {
+          "id": "reglement",
+          "route": "/demo/adhesions",
+          "waitFor": "#regulation-title",
+          "label": "Le règlement",
+          "caption": "Le règlement que les familles lisent avant de donner leur consentement.",
+          "clip": { "selector": ".regulation-panel", "padding": 12 }
+        },
+        {
+          "id": "demandes",
+          "route": "/demo/adhesions",
+          "waitFor": ".submission-name",
+          "label": "Les demandes reçues",
+          "caption": "① Le nom ouvre le détail. ② Traiter, noter le paiement ou supprimer.",
+          "clip": { "selector": ".submissions-section", "padding": 12 },
+          "highlights": [
+            { "selector": ".submission-name", "label": "1" },
+            { "selector": ".submission-action", "label": "2" }
+          ]
+        },
+        {
+          "id": "detail",
+          "route": "/demo/adhesions",
+          "waitFor": "h1",
+          "before": [
+            { "click": "button.submission-name" },
+            { "waitFor": ".family-detail" }
+          ],
+          "label": "Le détail d’une demande",
+          "caption": "Contact, adresse, consentement et membres, sans recharger la page.",
+          "clip": { "selector": ".family-detail", "padding": 12 }
+        }
+      ]
     }
   ]
 }

@@ -8,6 +8,7 @@ import { section as materiel } from './materiel'
 import { section as newsletter } from './newsletter'
 import { section as reseau } from './reseau'
 import { section as sitePublic } from './site-public'
+import { section as adhesions } from './adhesions'
 
 // Le skill user-docs ajoute ici un import + une entrée par module généré.
 // Ordre = sommaire affiché sur /aide (du premier pas vers les modules avancés).
@@ -20,9 +21,10 @@ export const sections: GuideSection[] = [
   materiel,
   newsletter,
   sitePublic,
+  adhesions,
   reseau,
 ]
 
 // Cache-busting des captures : bumpé à chaque régénération de la doc par le skill.
 // Empêche les navigateurs de resservir d'anciennes captures (même URL, nouveau contenu).
-export const docsVersion = '2026-06-24-6'
+export const docsVersion = '2026-09-23-1'

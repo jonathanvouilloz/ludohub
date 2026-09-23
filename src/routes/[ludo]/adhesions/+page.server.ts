@@ -1,11 +1,11 @@
-import { error, fail } from '@sveltejs/kit'
+import { fail } from '@sveltejs/kit'
 import type { Actions, PageServerLoad } from './$types'
 import { requireResponsableContext } from '$lib/server/ludo-context.js'
 import {
   FamilyRegistrationServiceError,
+  deleteFamilySubmission,
   ensureFamilyForm,
   getFamilyFormManagement,
-  getFamilySubmission,
   listFamilySubmissions,
   processFamilySubmission,
   publishFamilyForm,
@@ -17,22 +17,10 @@ import {
 export const load: PageServerLoad = async (event) => {
   const { ludo, member } = await requireResponsableContext(event)
   await ensureFamilyForm(ludo.id, member.id)
-  const selectedId = event.url.searchParams.get('id')
-  let selected = null
-  if (selectedId) {
-    try {
-      selected = await getFamilySubmission(selectedId, ludo.id)
-    } catch (cause) {
-      if (cause instanceof FamilyRegistrationServiceError && cause.code === 'not_found')
-        throw error(404, 'Adhésion introuvable')
-      throw cause
-    }
-  }
   const baseUrl = event.url.origin
   return {
     management: await getFamilyFormManagement(ludo.id),
     submissions: await listFamilySubmissions(ludo.id),
-    selected,
     publicFormUrl: `${baseUrl}/formulaires/${encodeURIComponent(ludo.slug)}/adhesion`,
   }
 }
@@ -119,6 +107,13 @@ export const actions: Actions = {
     const input = values(await event.request.formData())
     return wrap(() =>
       processFamilySubmission(String(input.id), ludo.id, member.id, Number(input.revision)),
+    )
+  },
+  delete: async (event) => {
+    const { ludo, member } = await requireResponsableContext(event)
+    const input = values(await event.request.formData())
+    return wrap(() =>
+      deleteFamilySubmission(String(input.id), ludo.id, member.id, Number(input.revision)),
     )
   },
   payment: async (event) => {

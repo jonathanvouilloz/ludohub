@@ -35,14 +35,21 @@ import {
   closurePeriods,
   seasonMemberSettings,
   absences,
-  helpRequests,
-  helpResponses,
   gameWishes,
   supplyRequests,
   notifications,
   newsletterContacts,
   campaigns,
   campaignSends,
+  ludoSites,
+  familyRegistrationForms,
+  familyRegistrationDocuments,
+  familyRegistrationDocumentVersions,
+  familyRegistrationFormVersions,
+  familyRegistrationFormVersionDocuments,
+  familySubmissionReceipts,
+  familyRegistrationSubmissions,
+  familyRegistrationSubmissionMembers,
 } from '../src/lib/server/schema.js'
 
 // ─── UUID fixes (routes stables) ─────────────────────────────────────────────
@@ -91,11 +98,6 @@ const MV_RESP = '0d000000-0000-4000-8000-000000000610'
 const TV_CHATEAU = '0d000000-0000-4000-8000-000000000700' // partagé, disponible
 const TV_FERME = '0d000000-0000-4000-8000-000000000710' // partagé, prêté à demo
 const LOAN = '0d000000-0000-4000-8000-000000000720'
-// Demandes d'aide : 1 ouverte (voisine) + 1 ouverte (demo, avec volontaire) + 1 passée (demo)
-const HR_VOISINE = '0d000000-0000-4000-8000-000000000800'
-const HR_DEMO = '0d000000-0000-4000-8000-000000000810'
-const HR_PAST = '0d000000-0000-4000-8000-000000000820'
-const HRESP = '0d000000-0000-4000-8000-000000000830'
 
 // ─── Newsletter : contacts (public) + campagnes ──────────────────────────────
 // Contacts du public côté `demo` (route /demo/newsletter). UUID fixes pour les
@@ -114,6 +116,18 @@ const NL_C = [
 ]
 const CAMP_DRAFT = '0d000000-0000-4000-8000-000000000950'
 const CAMP_SENT = '0d000000-0000-4000-8000-000000000951'
+
+// Adhésion familiale : lieu, formulaire publié, règlement et une demande fixe
+// pour les captures de /demo/adhesions.
+const SITE_DEMO = '0d000000-0000-4000-8000-000000000a10'
+const FAM_FORM = '0d000000-0000-4000-8000-000000000a20'
+const FAM_DOC = '0d000000-0000-4000-8000-000000000a21'
+const FAM_DOC_VER = '0d000000-0000-4000-8000-000000000a22'
+const FAM_FORM_VER = '0d000000-0000-4000-8000-000000000a23'
+const FAM_SUB = '0d000000-0000-4000-8000-000000000a30'
+const FAM_MEMBER_A = '0d000000-0000-4000-8000-000000000a31'
+const FAM_MEMBER_B = '0d000000-0000-4000-8000-000000000a32'
+const FAM_AT = new Date('2026-09-01T10:00:00Z')
 
 // Samedis de la saison démo (dates figées pour des captures stables).
 // `assigned` = Camille + Sacha sont de service ce samedi-là. Le premier samedi
@@ -141,13 +155,19 @@ async function main() {
   // 1. Reset des deux tenants de démo (`demo` + `demo-voisine`). Plusieurs FK
   //    n'ont PAS de cascade et bloqueraient la suppression des ludos — on purge
   //    donc explicitement, dans l'ordre, ce qui les référence :
-  //    - help_requests (FK ludoId cascade) → cascade help_responses, ce qui retire
-  //      aussi les réponses inter-ludos (helpResponses.ludoId/memberId sans cascade) ;
   //    - theme_loans (from/to ludoId sans cascade) ;
   //    - theme_installations (ludoId sans cascade — une install peut être à une emprunteuse).
   //    Le reste part en cascade avec la ludo (slug).
   const DEMO_LUDOS = [LUDO, VOISINE]
-  await db.delete(helpRequests).where(inArray(helpRequests.ludoId, DEMO_LUDOS))
+  await db
+    .delete(familyRegistrationSubmissionMembers)
+    .where(inArray(familyRegistrationSubmissionMembers.ludoId, DEMO_LUDOS))
+  await db
+    .delete(familyRegistrationSubmissions)
+    .where(inArray(familyRegistrationSubmissions.ludoId, DEMO_LUDOS))
+  await db
+    .delete(familySubmissionReceipts)
+    .where(inArray(familySubmissionReceipts.ludoId, DEMO_LUDOS))
   await db
     .delete(themeLoans)
     .where(or(inArray(themeLoans.fromLudoId, DEMO_LUDOS), inArray(themeLoans.toLudoId, DEMO_LUDOS)))
@@ -389,47 +409,6 @@ async function main() {
     createdAt: new Date('2026-06-15T09:00:00Z'),
   })
 
-  // ─── Réseau : demandes d'aide ──────────────────────────────────────────────
-  await db.insert(helpRequests).values([
-    {
-      id: HR_VOISINE,
-      ludoId: VOISINE,
-      date: '2026-07-04',
-      slotInfo: 'Samedi matin, 9h-12h',
-      notes: 'Il nous manque une personne pour l’ouverture.',
-      status: 'ouverte',
-      createdAt: new Date('2026-06-18T08:00:00Z'),
-    },
-    {
-      id: HR_DEMO,
-      ludoId: LUDO,
-      date: '2026-07-11',
-      slotInfo: 'Samedi après-midi, 14h-17h',
-      notes: 'Renfort bienvenu pour l’animation Pirates.',
-      status: 'ouverte',
-      createdAt: new Date('2026-06-20T08:00:00Z'),
-    },
-    {
-      id: HR_PAST,
-      ludoId: LUDO,
-      date: '2026-05-30',
-      slotInfo: 'Samedi matin',
-      status: 'pourvue',
-      createdAt: new Date('2026-05-10T08:00:00Z'),
-    },
-  ])
-
-  // Un·e volontaire de la voisine se propose sur la demande de `demo`
-  // → la carte « à moi » de demo affiche la section Volontaires.
-  await db.insert(helpResponses).values({
-    id: HRESP,
-    helpRequestId: HR_DEMO,
-    memberId: MV_RESP,
-    ludoId: VOISINE,
-    status: 'propose',
-    createdAt: new Date('2026-06-21T10:00:00Z'),
-  })
-
   // ─── Jeux à acheter (game_wishes) ──────────────────────────────────────────
   await db.insert(gameWishes).values([
     {
@@ -517,12 +496,12 @@ async function main() {
     {
       recipientLudoId: LUDO,
       recipientMemberId: null,
-      type: 'help_response',
+      type: 'theme_request_confirmed',
       severity: 'info',
-      entityType: 'help_request',
-      entityId: HR_DEMO,
-      title: 'Une ludo se propose',
-      body: 'Ludothèque Voisine se propose pour votre demande d’aide du 11 juillet.',
+      entityType: 'theme',
+      entityId: TV_FERME,
+      title: 'Prêt confirmé',
+      body: 'Ludothèque Voisine a confirmé le prêt de « La ferme ».',
       isRead: false,
       createdAt: new Date('2026-06-21T10:05:00Z'),
     },
@@ -614,12 +593,163 @@ async function main() {
     { campaignId: CAMP_SENT, contactId: NL_C[8], status: 'bounced', createdAt: CAMP_SENT_AT },
   ])
 
+  const rulesMarkdown = [
+    '## Règlement',
+    '',
+    'Les jeux empruntés se rendent en bon état au samedi suivant.',
+    '',
+    'L’adhésion est annuelle et se règle sur place, en espèces ou par TWINT.',
+  ].join('\n')
+  await db.insert(ludoSites).values({
+    id: SITE_DEMO,
+    ludoId: LUDO,
+    slug: 'centre',
+    name: 'Ludothèque Démo',
+    address: 'Rue de la Démo 1',
+    postalCode: '1200',
+    city: 'Genève',
+    isPrimary: true,
+    isActive: true,
+    sortOrder: 0,
+    createdAt: FAM_AT,
+    updatedAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationForms).values({
+    id: FAM_FORM,
+    ludoId: LUDO,
+    slug: 'adhesion-famille',
+    title: 'Adhésion familiale',
+    intro:
+      'Remplissez cette demande pour rejoindre la ludothèque. Le règlement se lit avant la validation.',
+    consentLabel: 'J’ai lu et j’accepte le règlement de la ludothèque.',
+    annualFeeCents: 3000,
+    currency: 'CHF',
+    allowsTwint: true,
+    allowsCash: true,
+    enabled: true,
+    maxMembers: 20,
+    retentionDays: 30,
+    revision: 1,
+    updatedByMemberId: M_RESP,
+    createdAt: FAM_AT,
+    updatedAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationDocuments).values({
+    id: FAM_DOC,
+    ludoId: LUDO,
+    formId: FAM_FORM,
+    slug: 'reglement',
+    title: 'Règlement de la ludothèque',
+    kind: 'rules',
+    requiredAcceptance: true,
+    sortOrder: 0,
+    revision: 1,
+    createdAt: FAM_AT,
+    updatedAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationDocumentVersions).values({
+    id: FAM_DOC_VER,
+    ludoId: LUDO,
+    documentId: FAM_DOC,
+    version: 1,
+    title: 'Règlement de la ludothèque',
+    kind: 'rules',
+    requiredAcceptance: true,
+    contentMarkdown: rulesMarkdown,
+    sha256: 'a'.repeat(64),
+    createdByMemberId: M_RESP,
+    createdAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationFormVersions).values({
+    id: FAM_FORM_VER,
+    ludoId: LUDO,
+    formId: FAM_FORM,
+    version: 1,
+    title: 'Adhésion familiale',
+    intro:
+      'Remplissez cette demande pour rejoindre la ludothèque. Le règlement se lit avant la validation.',
+    consentLabel: 'J’ai lu et j’accepte le règlement de la ludothèque.',
+    maxMembers: 20,
+    retentionDays: 30,
+    annualFeeCents: 3000,
+    currency: 'CHF',
+    allowsTwint: true,
+    allowsCash: true,
+    publishedByMemberId: M_RESP,
+    publishedAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationFormVersionDocuments).values({
+    formVersionId: FAM_FORM_VER,
+    documentVersionId: FAM_DOC_VER,
+    ludoId: LUDO,
+    sortOrder: 0,
+  })
+  await db.insert(familySubmissionReceipts).values({
+    ludoId: LUDO,
+    idempotencyKeyHash: 'b'.repeat(64),
+    requestFingerprint: 'c'.repeat(64),
+    receiptId: FAM_SUB,
+    submittedAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationSubmissions).values({
+    id: FAM_SUB,
+    ludoId: LUDO,
+    formId: FAM_FORM,
+    formVersionId: FAM_FORM_VER,
+    siteId: SITE_DEMO,
+    gender: 'female',
+    firstName: 'Inès',
+    lastName: 'Martin',
+    birthDate: '1988-05-14',
+    address: 'Rue de la Démo 12',
+    postalCode: '1200',
+    city: 'Genève',
+    phone: '079 000 00 00',
+    email: 'ines.martin@example.com',
+    consentAccepted: true,
+    consentFullName: 'Inès Martin',
+    consentAcceptedOn: '2026-09-01',
+    consentAcceptedAt: FAM_AT,
+    consentLabelSnapshot: 'J’ai lu et j’accepte le règlement de la ludothèque.',
+    consentDocumentsSnapshot: [
+      { id: FAM_DOC_VER, title: 'Règlement de la ludothèque', requiredAcceptance: true },
+    ],
+    status: 'new',
+    revision: 1,
+    createdAt: FAM_AT,
+    updatedAt: FAM_AT,
+  })
+  await db.insert(familyRegistrationSubmissionMembers).values([
+    {
+      id: FAM_MEMBER_A,
+      ludoId: LUDO,
+      submissionId: FAM_SUB,
+      gender: 'female',
+      firstName: 'Léa',
+      lastName: 'Martin',
+      birthDate: '2016-03-12',
+      sortOrder: 0,
+    },
+    {
+      id: FAM_MEMBER_B,
+      ludoId: LUDO,
+      submissionId: FAM_SUB,
+      gender: 'male',
+      firstName: 'Noah',
+      lastName: 'Martin',
+      birthDate: '2019-11-02',
+      sortOrder: 1,
+    },
+  ])
+
   console.log('✓ Tenant démo seedé : /demo (mdp demo2026)')
   console.log(`  Thème Pirates : /demo/themes/${T_PIRATES}`)
   console.log(`  Installation  : /demo/themes/${T_PIRATES}/installations/${INSTALL}`)
   console.log('✓ Ludo voisine seedée : /demo-voisine (catalogue + aide réseau)')
   console.log('  + jeux, matériel et notifications côté /demo')
-  console.log(`  Newsletter : 9 contacts, 1 brouillon + 1 envoyée (rapport /demo/newsletter/${CAMP_SENT}/stats)`)
+  console.log(
+    `  Newsletter : 9 contacts, 1 brouillon + 1 envoyée (rapport /demo/newsletter/${CAMP_SENT}/stats)`,
+  )
 }
 
 main()
