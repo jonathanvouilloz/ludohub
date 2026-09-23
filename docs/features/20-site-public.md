@@ -6,6 +6,20 @@
 > Plan de simplification validé le 23 septembre 2026 :
 > [20-site-public-simplification.md](20-site-public-simplification.md)
 
+## État session 2026-09-23
+
+**Fait localement, en attente de commit/push :**
+
+- Le formulaire d’adhésion familiale a été remis en forme : champs lisibles, étapes Responsable / Famille / Validation et gestion propre des membres.
+- Le responsable n’a plus à gérer des « documents » techniques : un seul règlement enrichi est éditable depuis « Adhésions », distinct du texte de la case de consentement.
+- Le règlement est lu dans une fenêtre modale sur le formulaire public ; les versions déjà acceptées restent figées avec les demandes.
+- `pnpm check`, `pnpm test` (628 tests) et `pnpm run build` passent.
+
+**À finaliser en production :**
+
+- La page Pâquis-Sécheron ne renvoie plus 500 : elle renvoie actuellement « Formulaire introuvable » car la configuration existante n’a ni consentement, ni règlement, ni version publiée. Renseigner ces deux textes dans Hub → Adhésions, puis publier.
+- L’extension Orphée utilise déjà l’API LudoHub et non Google Sheets/Tally, mais sa configuration locale et le test de bout en bout en production restent à faire (origine d’extension autorisée, liaison, inscription → traitement → paiement).
+
 ## État session 2026-09-18
 
 **Fait :**
@@ -108,7 +122,7 @@ lecture ; LudoHub demeure le back-office et la source de vérité.
 - [ ] profils publics séparés, lien facultatif vers `members` ;
 - [ ] FAQ, documents institutionnels et rapports ;
 - [ ] messages de contact stockés et notifiés par e-mail ;
-- [ ] formulaire d'adhésion public mutualisé par ludothèque ;
+- [x] formulaire d'adhésion public mutualisé par ludothèque ;
 - [ ] API publique en lecture seule, versionnée et strictement filtrée ;
 - [ ] audit des actions éditoriales via le dispatcher existant.
 

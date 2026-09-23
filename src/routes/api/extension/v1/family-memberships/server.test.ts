@@ -9,6 +9,10 @@ vi.mock('$lib/server/extension-http.js', () => ({
   },
 }))
 vi.mock('$lib/server/services/family-registrations.js', () => ({ listFamilySubmissions: list }))
+vi.mock('$lib/server/extension-ludo.js', () => ({
+  extensionTargetLudoId: async (slug: string | null, fallback: string) =>
+    slug ? `id:${slug}` : fallback,
+}))
 
 import { GET } from './+server.js'
 
@@ -49,4 +53,13 @@ it('résume la liste sans UUID de tenant, site ou membre', async () => {
       },
     ],
   })
+})
+
+it('filtre les demandes sur la ludothèque choisie', async () => {
+  list.mockResolvedValue([])
+  await GET({
+    request: new Request('https://api.test/api/extension/v1/family-memberships?ludo=servette'),
+    url: new URL('https://api.test/api/extension/v1/family-memberships?ludo=servette'),
+  } as never)
+  expect(list).toHaveBeenCalledWith('id:servette', undefined, 100)
 })

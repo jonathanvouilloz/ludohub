@@ -234,6 +234,7 @@ export type ExtensionPrincipal = {
   memberId: string
   label: string
   ludoName: string
+  ludoSlug: string
   memberName: string
 }
 
@@ -254,6 +255,7 @@ export async function authenticateAccessToken(
     memberId: row.memberId,
     label: row.label,
     ludoName: row.ludoName,
+    ludoSlug: row.ludoSlug,
     memberName: row.memberName,
   }
 }

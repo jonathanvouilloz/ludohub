@@ -8,6 +8,7 @@ vi.mock('$lib/server/extension-http.js', () => ({
     memberId: 'hidden-member-id',
     label: 'Poste accueil',
     ludoName: 'Ludothèque des Pâquis',
+    ludoSlug: 'paquis-secheron',
     memberName: 'Ada',
   }),
   extensionError: (error: unknown) => {
@@ -28,6 +29,7 @@ it('expose uniquement l’identité autoritative nécessaire à l’extension', 
       id: 'session',
       deviceName: 'Poste accueil',
       ludoName: 'Ludothèque des Pâquis',
+      ludoSlug: 'paquis-secheron',
       memberName: 'Ada',
       scopes: [
         'family-memberships:read',

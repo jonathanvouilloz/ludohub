@@ -5,6 +5,7 @@ import {
   extensionHeaders,
   requireExtensionPrincipal,
 } from '$lib/server/extension-http.js'
+import { extensionTargetLudoId } from '$lib/server/extension-ludo.js'
 import { listFamilySubmissions } from '$lib/server/services/family-registrations.js'
 import type { FamilyRegistrationSubmissionStatus } from '$lib/server/schema.js'
 
@@ -25,8 +26,9 @@ export const GET: RequestHandler = async ({ request, url }) => {
     return json({ error: 'invalid_request' }, { status: 400, headers })
   try {
     const principal = await requireExtensionPrincipal(request)
+    const ludoId = await extensionTargetLudoId(url.searchParams.get('ludo'), principal.ludoId)
     const rows = await listFamilySubmissions(
-      principal.ludoId,
+      ludoId,
       (status ?? undefined) as FamilyRegistrationSubmissionStatus | undefined,
       Number(rawLimit),
     )

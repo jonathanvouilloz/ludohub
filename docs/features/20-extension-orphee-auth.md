@@ -1,5 +1,11 @@
 # Extension Orphée — liaison et API LudoHub
 
+## État 2026-09-23
+
+- Le flux est implémenté : l’extension lit et met à jour les adhésions via `/api/extension/v1/family-memberships`, avec liaison device + PKCE.
+- Les Google Sheets, Tally et GAS ne font plus partie du flux de l’extension.
+- Reste l’intégration de production : construire l’extension avec `https://ludohub.vercel.app`, autoriser son origine dans `EXTENSION_API_ALLOWED_ORIGINS`, puis valider liaison, lecture, traitement et paiement sur une inscription réelle de test.
+
 ## Contrat local du lot 9
 
 - `POST /api/extension/v1/device-authorizations` crée une liaison de 10 minutes avec PKCE S256.

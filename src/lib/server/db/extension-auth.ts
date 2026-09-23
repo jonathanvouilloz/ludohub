@@ -146,6 +146,7 @@ export async function getAccessContext(accessTokenHash: string, now: Date) {
       memberId: sessions.memberId,
       label: sessions.label,
       ludoName: ludotheques.name,
+      ludoSlug: ludotheques.slug,
       memberName: members.name,
       passwordVersion: sessions.passwordVersion,
       passwordHash: ludotheques.passwordHash,

@@ -10,6 +10,7 @@ import {
   getFamilySubmission,
 } from '$lib/server/services/family-registrations.js'
 import { extensionFamilySubmissionDto } from '$lib/server/extension-family-dto.js'
+import { extensionTargetLudoId } from '$lib/server/extension-ludo.js'
 
 export const OPTIONS: RequestHandler = ({ request }) => {
   const headers = extensionHeaders(request, 'GET')
@@ -22,7 +23,11 @@ export const GET: RequestHandler = async ({ request, params }) => {
   if (!headers) return json({ error: 'origin_not_allowed' }, { status: 403 })
   try {
     const principal = await requireExtensionPrincipal(request)
-    const row = await getFamilySubmission(params.id, principal.ludoId)
+    const ludoId = await extensionTargetLudoId(
+      new URL(request.url).searchParams.get('ludo'),
+      principal.ludoId,
+    )
+    const row = await getFamilySubmission(params.id, ludoId)
     return json({ submission: extensionFamilySubmissionDto(row) }, { headers })
   } catch (error) {
     if (error instanceof FamilyRegistrationServiceError)

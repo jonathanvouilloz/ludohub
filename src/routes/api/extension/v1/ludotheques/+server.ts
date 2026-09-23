@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit'
 import type { RequestHandler } from './$types'
+import { getAllLudos } from '$lib/server/db/ludotheques.js'
 import {
   extensionError,
   extensionHeaders,
@@ -12,27 +13,15 @@ export const OPTIONS: RequestHandler = ({ request }) => {
     ? new Response(null, { status: 204, headers })
     : new Response(null, { status: 403 })
 }
+
 export const GET: RequestHandler = async ({ request }) => {
   const headers = extensionHeaders(request, 'GET')
   if (!headers) return json({ error: 'origin_not_allowed' }, { status: 403 })
   try {
-    const principal = await requireExtensionPrincipal(request)
+    await requireExtensionPrincipal(request)
+    const ludos = await getAllLudos()
     return json(
-      {
-        authenticated: true,
-        session: {
-          id: principal.sessionId,
-          deviceName: principal.label,
-          ludoName: principal.ludoName,
-          ludoSlug: principal.ludoSlug,
-          memberName: principal.memberName,
-          scopes: [
-            'family-memberships:read',
-            'family-memberships:process',
-            'family-memberships:payment',
-          ],
-        },
-      },
+      { ludos: ludos.map((ludo) => ({ slug: ludo.slug, name: ludo.name })) },
       { headers },
     )
   } catch (error) {

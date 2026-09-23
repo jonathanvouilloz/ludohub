@@ -182,6 +182,7 @@ describe('sessions Bearer et rotation', () => {
     memberId: MEMBER,
     label: 'Poste',
     ludoName: 'Ludothèque test',
+    ludoSlug: 'ludotheque-test',
     memberName: 'Responsable test',
     passwordVersion: passwordVersion(HASH),
     passwordHash: HASH,
@@ -197,6 +198,7 @@ describe('sessions Bearer et rotation', () => {
       memberId: MEMBER,
       label: 'Poste',
       ludoName: 'Ludothèque test',
+      ludoSlug: 'ludotheque-test',
       memberName: 'Responsable test',
     })
     expect(store.access).toHaveBeenCalledWith(hashOpaque('lda_secret'), expect.any(Date))
