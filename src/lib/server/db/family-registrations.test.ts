@@ -2,7 +2,11 @@ import { PgDialect } from 'drizzle-orm/pg-core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({ execute: vi.fn(), batch: vi.fn(), findFirst: vi.fn() }))
 vi.mock('./index.js', () => ({ db: { execute: mocks.execute, batch: mocks.batch, query: { familyRegistrationForms: { findFirst: mocks.findFirst }, familySubmissionReceipts: { findFirst: mocks.findFirst } } } }))
-import { purgeDueFamilySubmissionsRow, recordFamilyPaymentAtomic } from './family-registrations.js'
+import {
+  getPublishedFamilyConfigRow,
+  purgeDueFamilySubmissionsRow,
+  recordFamilyPaymentAtomic,
+} from './family-registrations.js'
 const sql = (query: unknown) => new PgDialect().sqlToQuery(query as never).sql
 beforeEach(() => { vi.clearAllMocks(); mocks.execute.mockResolvedValue({ rows: [] }) })
 
@@ -15,6 +19,17 @@ describe('paiement hors ligne', () => {
     expect(query).toContain('version.allows_twint')
     expect(query).toContain('version.allows_cash')
     expect(query).toContain('version.id=submission.form_version_id')
+  })
+})
+
+describe('configuration publique d’adhésion', () => {
+  it('groupe explicitement les colonnes de la version publiée', async () => {
+    await getPublishedFamilyConfigRow('10000000-0000-4000-8000-000000000001')
+    const query = sql(mocks.execute.mock.calls[0][0])
+    expect(query).toContain(
+      'GROUP BY form.id,published.id,published.version,published.title,published.intro',
+    )
+    expect(query).toContain('published.allows_cash')
   })
 })
 

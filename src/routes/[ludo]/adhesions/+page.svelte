@@ -14,7 +14,14 @@
   const config = $derived(data.management?.form)
   const documents = $derived(data.management?.documents ?? [])
   const annualFee = $derived(config ? (config.annualFeeCents / 100).toFixed(2) : '')
-  const publicFormHref = $derived(`/formulaires/${data.ludo.slug}/adhesion`)
+  const publicFormUrl = $derived(data.publicFormUrl)
+  let linkCopied = $state(false)
+
+  async function copyPublicFormUrl() {
+    await navigator.clipboard.writeText(publicFormUrl)
+    linkCopied = true
+    window.setTimeout(() => (linkCopied = false), 2000)
+  }
 
   function dateLabel(value: Date | string) {
     return new Intl.DateTimeFormat('fr-CH', { dateStyle: 'medium' }).format(new Date(value))
@@ -64,9 +71,11 @@
     </section>
 
     <section class="panel publication-panel" aria-labelledby="publication-title">
-      <div><h2 id="publication-title">Formulaire destiné aux familles</h2><p>Publiez une nouvelle version après avoir vérifié les réglages et les documents. Vous pouvez ensuite l’ouvrir exactement comme les familles le verront.</p></div>
+      <div><h2 id="publication-title">Formulaire destiné aux familles</h2><p>Ce lien est hébergé par LudoHub, indépendamment des sites publics de chaque ludothèque. Publiez une nouvelle version après avoir vérifié les réglages et les documents.</p></div>
       <div class="publication-actions">
-        <Button href={publicFormHref} target="_blank" variant="outline">Voir le formulaire public</Button>
+        <input class="public-form-url" aria-label="Lien public du formulaire" value={publicFormUrl} readonly />
+        <Button type="button" variant="outline" onclick={() => void copyPublicFormUrl()}>{linkCopied ? 'Lien copié' : 'Copier le lien'}</Button>
+        <Button href={publicFormUrl} target="_blank" variant="outline">Voir le formulaire</Button>
         <form method="POST" action="?/publish"><input type="hidden" name="formId" value={config.id} /><input type="hidden" name="revision" value={config.revision} /><Button type="submit">Publier les modifications</Button></form>
       </div>
     </section>
@@ -133,7 +142,7 @@
   textarea, select { box-sizing: border-box; width: 100%; min-height: 44px; padding: var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg-card); color: var(--text-main); font: inherit; line-height: var(--leading-base); } textarea { resize: vertical; } textarea:focus-visible, select:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
   .input-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: var(--space-4); }.input-grid > .field { align-self: start; }.hint { font-size: var(--text-small); }
   .payment-methods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin: 0; padding: 0; border: 0; }.payment-methods legend { grid-column: 1 / -1; color: var(--text-main); font-size: var(--text-small); font-weight: var(--weight-semibold); }.check-option { display: flex; align-items: flex-start; gap: var(--space-3); min-height: 48px; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; }.check-option:focus-within { box-shadow: var(--shadow-focus); }.check-option span { display: grid; gap: var(--space-1); }.check-option strong { color: var(--text-main); font-size: var(--text-body); }.check-option small { color: var(--text-muted); font-size: var(--text-small); line-height: var(--leading-base); }.enabled-option { width: fit-content; }.form-actions { display: flex; justify-content: flex-end; padding-top: var(--space-1); }
-  .publication-panel, .section-intro { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); }.publication-panel p { margin-top: var(--space-1); }.publication-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }.documents-section, .submissions-section { gap: var(--space-4); }.document-list { display: grid; gap: var(--space-3); }
+  .publication-panel, .section-intro { display: flex; align-items: center; justify-content: space-between; gap: var(--space-5); }.publication-panel p { margin-top: var(--space-1); }.publication-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }.public-form-url { width: min(100%, 28rem); min-height: 40px; padding: var(--space-2) var(--space-3); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--bg-hover); color: var(--text-muted); font: inherit; font-size: var(--text-small); }.documents-section, .submissions-section { gap: var(--space-4); }.document-list { display: grid; gap: var(--space-3); }
   .document-card, .add-document { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); overflow: hidden; }.document-card summary, .add-document summary { display: flex; align-items: center; gap: var(--space-3); min-height: 64px; padding: var(--space-3) var(--space-4); color: var(--text-main); cursor: pointer; list-style: none; }.document-card summary::-webkit-details-marker, .add-document summary::-webkit-details-marker { display: none; }.document-card summary > span:nth-child(2) { display: grid; gap: var(--space-1); min-width: 0; }.document-card summary small { color: var(--text-muted); font-size: var(--text-small); }.document-kind { margin-left: auto; color: var(--text-muted); font-size: var(--text-small); }.document-form { padding: 0 var(--space-4) var(--space-4); border-top: 1px solid var(--border); }.document-form > :first-child { margin-top: var(--space-4); }.document-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(11rem, 1fr) minmax(9rem, .6fr); gap: var(--space-3); }.simple-check { display: flex; align-items: center; gap: var(--space-2); color: var(--text-main); font-size: var(--text-small); font-weight: var(--weight-medium); }.add-document summary { color: var(--primary); font-weight: var(--weight-semibold); }.empty-note { padding: var(--space-5); border: 1px dashed var(--border-strong); border-radius: var(--radius-md); color: var(--text-muted); text-align: center; }
   :global(.actions-head) { text-align: right; }.submission-link { color: var(--primary-dark); font-weight: var(--weight-semibold); text-decoration: none; }.submission-link:hover { text-decoration: underline; }.submission-action, .submission-action form { display: flex; justify-content: flex-end; align-items: center; gap: var(--space-2); }.submission-action select { width: auto; min-height: 32px; padding: var(--space-1) var(--space-2); font-size: var(--text-small); }:global(.selected > td) { background: var(--primary-light); }
   .selected-submission { gap: var(--space-5); } dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin: 0; }dl div, .member-list { display: grid; gap: var(--space-1); }dt { color: var(--text-muted); font-size: var(--text-small); }dd { margin: 0; color: var(--text-main); line-height: var(--leading-base); }.member-list { padding-top: var(--space-4); border-top: 1px solid var(--border); }.member-list h3 { color: var(--text-main); font-size: var(--text-h3); }.member-list ul { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }.member-list li { padding: var(--space-2) var(--space-3); border-radius: var(--radius-pill); background: var(--bg-hover); color: var(--text-main); font-size: var(--text-small); }

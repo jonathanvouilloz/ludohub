@@ -12,7 +12,13 @@ export const load: PageServerLoad = async (event) => {
     try { selected = await getFamilySubmission(selectedId, ludo.id) }
     catch (cause) { if (cause instanceof FamilyRegistrationServiceError && cause.code === 'not_found') throw error(404, 'Adhésion introuvable'); throw cause }
   }
-  return { management: await getFamilyFormManagement(ludo.id), submissions: await listFamilySubmissions(ludo.id), selected }
+  const baseUrl = event.url.origin
+  return {
+    management: await getFamilyFormManagement(ludo.id),
+    submissions: await listFamilySubmissions(ludo.id),
+    selected,
+    publicFormUrl: `${baseUrl}/formulaires/${encodeURIComponent(ludo.slug)}/adhesion`,
+  }
 }
 const values = (data: FormData) => Object.fromEntries(data.entries())
 function chfToCents(value: unknown) {

@@ -305,7 +305,13 @@ export async function getPublishedFamilyConfigRow(ludoId: string) {
     JOIN family_registration_documents document
       ON document.id=document_version.document_id AND document.ludo_id=document_version.ludo_id
     WHERE form.ludo_id=${ludoId}::uuid AND form.enabled=true
-    GROUP BY form.id,published.id
+    -- published est une sous-requête latérale : PostgreSQL ne peut pas en
+    -- déduire les dépendances fonctionnelles depuis sa clé primaire. Toutes
+    -- ses colonnes non agrégées doivent donc figurer explicitement ici.
+    GROUP BY form.id,published.id,published.version,published.title,published.intro,
+             published.consent_label,published.max_members,published.retention_days,
+             published.annual_fee_cents,published.currency,published.allows_twint,
+             published.allows_cash
   `)
   return result.rows[0]
 }
