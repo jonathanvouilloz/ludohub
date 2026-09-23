@@ -142,26 +142,28 @@
     color: var(--text-main);
     line-height: var(--leading-base);
   }
-  /* Le Preflight Tailwind force list-style:none sur tout ol/ul → on rétablit un
-     marqueur explicite sous forme de puce colorée (même langage que .tips). */
+  /* Le Preflight Tailwind force list-style:none sur tout ol/ul. Les étapes du
+     tutoriel sont numérotées ; les conseils (.tips) restent en puces. */
   .actions {
     margin: 0;
-    padding-inline-start: var(--space-5);
+    padding: 0;
     list-style: none;
+    counter-reset: action;
   }
   .actions li {
     position: relative;
     margin-block: var(--space-2);
+    padding-inline-start: 1.75rem;
   }
   .actions li::before {
-    content: '';
+    counter-increment: action;
+    content: counter(action) ".";
     position: absolute;
-    inset-inline-start: calc(-1 * var(--space-4));
-    inset-block-start: 0.55em;
-    inline-size: 6px;
-    block-size: 6px;
-    border-radius: var(--radius-pill);
-    background: var(--ludo-color);
+    inset-inline-start: 0;
+    inset-block-start: 0;
+    color: var(--ludo-color);
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
   }
   .actions :global(strong) {
     color: var(--text-main);

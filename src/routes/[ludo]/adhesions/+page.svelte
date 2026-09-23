@@ -97,26 +97,10 @@
         </p>
       </div>
     </div>
-    <p>
+    <div class="extension-actions">
       <Button href="/extensions/ludo-orphee-chrome.zip" download>Télécharger l’extension</Button>
-    </p>
-    <ol class="install-steps">
-      <li>Décompressez le fichier. Vous obtenez un dossier <code>ludo-orphee</code>.</li>
-      <li>Ouvrez <code>chrome://extensions</code> dans Chrome.</li>
-      <li>Activez le mode développeur.</li>
-      <li>
-        Choisissez « Charger l’extension non empaquetée », puis le dossier <code>ludo-orphee</code>.
-      </li>
-      <li>Épinglez LudoOrphée à côté de la barre d’adresse.</li>
-      <li>Ouvrez le panneau, puis « Connecter cet appareil » pour relier ce poste.</li>
-    </ol>
-    <p class="hint">
-      Le pas à pas illustré est dans <a href="/aide#adhesions">Aide → Adhésions</a>.
-    </p>
-    <p class="hint">
-      Pour une mise à jour, remplacez ce dossier par la nouvelle archive, puis cliquez sur Recharger
-      dans chrome://extensions.
-    </p>
+      <Button href="/aide#adhesions" variant="outline">Voir le tutoriel</Button>
+    </div>
   </section>
 
   {#if config}
@@ -446,24 +430,23 @@
             <form method="POST" action="?/process" use:enhance={markProcessed}>
               <input type="hidden" name="id" value={selected.id} />
               <input type="hidden" name="revision" value={selected.revision} />
-              <Button type="submit" size="sm">Marquer comme traitée</Button>
+              <Button type="submit">Marquer comme traitée</Button>
             </form>
           {:else}
             <form method="POST" action="?/payment" class="detail-payment" use:enhance={savePayment}>
               <input type="hidden" name="id" value={selected.id} />
               <input type="hidden" name="revision" value={selected.revision} />
-              <select aria-label="Mode de paiement" name="method">
+              <select class="detail-method" aria-label="Mode de paiement" name="method">
                 <option value="">Non payé</option>
                 <option value="twint" selected={selected.paymentMethod === 'twint'}>TWINT</option>
                 <option value="cash" selected={selected.paymentMethod === 'cash'}>Espèces</option>
               </select>
-              <Button type="submit" size="sm" variant="outline">Enregistrer</Button>
+              <Button type="submit" variant="outline">Enregistrer</Button>
             </form>
           {/if}
           <Button
             type="button"
             variant="destructive"
-            size="sm"
             onclick={() => selectedId && openDelete(selectedId)}>Supprimer</Button
           >
         </Dialog.Footer>
@@ -571,16 +554,10 @@
   .section-heading p {
     margin-top: var(--space-1);
   }
-  .install-steps {
-    display: grid;
+  .extension-actions {
+    display: flex;
+    flex-wrap: wrap;
     gap: var(--space-2);
-    margin: 0;
-    padding-left: 1.25rem;
-    color: var(--text-main);
-    line-height: var(--leading-base);
-  }
-  .install-steps code {
-    font-size: 0.92em;
   }
   .heading-icon {
     display: grid;
@@ -767,6 +744,7 @@
   .detail-footer {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     justify-content: flex-end;
     gap: var(--space-2);
   }
@@ -774,6 +752,21 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+  }
+  .detail-method {
+    box-sizing: border-box;
+    width: auto;
+    height: 2rem;
+    min-height: 2rem;
+    margin: 0;
+    padding: 0 1.75rem 0 0.75rem;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-lg, 0.5rem);
+    background-color: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.875rem;
+    font-weight: var(--weight-medium, 500);
+    line-height: 1;
   }
   dl {
     display: grid;
