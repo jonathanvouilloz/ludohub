@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto'
 import { env } from '$env/dynamic/private'
+import { env as publicEnv } from '$env/dynamic/public'
 import {
   approveDeviceAuthorizationAtomic,
   exchangeApprovedDeviceAtomic,
@@ -91,10 +92,24 @@ function validChallenge(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{43}$/.test(value)
 }
 
-export async function createDeviceAuthorization(input: Record<string, unknown>, now = new Date()) {
+function verificationBase(requestOrigin: string) {
+  const configured = (publicEnv.PUBLIC_APP_URL || '').replace(/\/$/, '')
+  if (/^https:\/\//.test(configured) && (!requestOrigin || configured === requestOrigin))
+    return configured
+  if (/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(requestOrigin)) return requestOrigin
+  if (/^https?:\/\//.test(configured)) return configured
+  throw new Error('PUBLIC_APP_URL invalide')
+}
+
+export async function createDeviceAuthorization(
+  input: Record<string, unknown>,
+  now = new Date(),
+  requestOrigin = '',
+) {
   if (input.codeChallengeMethod !== 'S256' || !validChallenge(input.codeChallenge))
     throw new ExtensionAuthError('invalid_request')
   const clientName = cleanClientName(input.clientName)
+  const base = verificationBase(requestOrigin)
   const deviceCode = opaque('ldc')
   const displayedCode = userCode()
   await insertDeviceAuthorization({
@@ -106,8 +121,6 @@ export async function createDeviceAuthorization(input: Record<string, unknown>, 
     expiresAt: new Date(now.getTime() + DEVICE_TTL_MS),
     now,
   })
-  const base = (env.PUBLIC_APP_URL || '').replace(/\/$/, '')
-  if (!/^https?:\/\//.test(base)) throw new Error('PUBLIC_APP_URL invalide')
   return {
     deviceCode,
     userCode: displayedCode,

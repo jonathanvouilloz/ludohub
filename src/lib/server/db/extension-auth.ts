@@ -48,6 +48,7 @@ export async function approveDeviceAuthorizationAtomic(input: {
 }
 
 export async function pollDeviceAuthorizationAtomic(input: { deviceCodeHash: string; now: Date }) {
+  const slowBefore = new Date(input.now.getTime() - 5_000)
   const result = await db.execute<{
     id: string
     status: 'pending' | 'approved' | 'denied' | 'consumed'
@@ -60,7 +61,7 @@ export async function pollDeviceAuthorizationAtomic(input: { deviceCodeHash: str
     too_fast: boolean
   }>(sql`
     WITH candidate AS MATERIALIZED (
-      SELECT id,(last_polled_at IS NOT NULL AND last_polled_at > ${input.now} - interval '5 seconds') AS too_fast
+      SELECT id,(last_polled_at IS NOT NULL AND last_polled_at > ${slowBefore}) AS too_fast
       FROM extension_device_authorizations
       WHERE device_code_hash=${input.deviceCodeHash}
         AND status <> 'consumed' AND expires_at > ${input.now} AND poll_count < 240

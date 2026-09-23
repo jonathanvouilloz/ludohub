@@ -7,6 +7,13 @@ import {
   requireExtensionPrincipal,
 } from '$lib/server/extension-http.js'
 
+function publicDetail(value: string | null, max: number) {
+  if (!value) return null
+  const clean = value.trim()
+  if (!clean || clean.length > max) return null
+  return clean
+}
+
 export const OPTIONS: RequestHandler = ({ request }) => {
   const headers = extensionHeaders(request, 'GET')
   return headers
@@ -21,7 +28,17 @@ export const GET: RequestHandler = async ({ request }) => {
     await requireExtensionPrincipal(request)
     const ludos = await getAllLudos()
     return json(
-      { ludos: ludos.map((ludo) => ({ slug: ludo.slug, name: ludo.name })) },
+      {
+        ludos: ludos.map((ludo) => ({
+          slug: ludo.slug,
+          name: ludo.name,
+          logoUrl: ludo.logoUrl && /^https:\/\/\S+$/.test(ludo.logoUrl) ? ludo.logoUrl : null,
+          address: publicDetail(ludo.address, 300),
+          phone: publicDetail(ludo.phone, 50),
+          email: publicDetail(ludo.email, 320),
+          website: publicDetail(ludo.website, 300),
+        })),
+      },
       { headers },
     )
   } catch (error) {

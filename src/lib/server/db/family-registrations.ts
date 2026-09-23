@@ -316,6 +316,10 @@ export async function getPublishedFamilyConfigRow(ludoId: string) {
   return result.rows[0]
 }
 
+function sqlNullableDate(value: string | null) {
+  return value ? sql`${value}::date` : sql`NULL::date`
+}
+
 export type FamilyMemberWrite = {
   id: string
   gender: FamilyRegistrationGender
@@ -358,7 +362,7 @@ export async function insertFamilySubmissionAtomic(input: {
       : sql`VALUES ${sql.join(
           input.members.map(
             (member) =>
-              sql`(${member.id}::uuid,${member.gender}::text,${member.firstName},${member.lastName},${member.birthDate}::date,${member.sortOrder})`,
+              sql`(${member.id}::uuid,${member.gender}::text,${member.firstName},${member.lastName},${sqlNullableDate(member.birthDate)},${member.sortOrder})`,
           ),
           sql`,`,
         )}`
@@ -378,7 +382,7 @@ export async function insertFamilySubmissionAtomic(input: {
          status,revision,created_at,updated_at)
       SELECT receipt.receipt_id,${input.ludoId}::uuid,${input.formId}::uuid,
              ${input.formVersionId}::uuid,${input.siteId}::uuid,${input.gender},${input.firstName},
-             ${input.lastName},${input.birthDate}::date,${input.address},${input.postalCode},
+             ${input.lastName},${sqlNullableDate(input.birthDate)},${input.address},${input.postalCode},
              ${input.city},${input.phone},${input.secondaryPhone},${input.email},true,
              ${input.consentFullName},${input.consentAcceptedOn}::date,${input.consentAcceptedAt},${input.consentLabelSnapshot},
              ${JSON.stringify(input.consentDocumentsSnapshot)}::jsonb,'new',1,${input.now},${input.now}
@@ -516,7 +520,7 @@ export async function processFamilySubmissionAtomic(input: {
       UPDATE family_registration_submissions submission
       SET status='processed',
           processed_by_member_id=${input.memberId}::uuid,processed_at=${input.now},
-          purge_at=${input.now} + candidate.retention_days * interval '1 day',
+          purge_at=${input.now}::timestamptz + make_interval(days => candidate.retention_days),
           revision=submission.revision+1,updated_at=${input.now}
       FROM candidate WHERE submission.id=candidate.id
       RETURNING submission.id

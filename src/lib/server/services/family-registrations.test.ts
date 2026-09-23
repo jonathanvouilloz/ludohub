@@ -75,10 +75,20 @@ describe('soumission familiale idempotente', () => {
     await expect(submitPublicFamilyMembership('demo', 'request-0000000001', invalid as never)).rejects.toMatchObject({ code: 'invalid' })
   })
 
-  it('exige au moins un membre de la famille', async () => {
+  it.each([
+    ['téléphone', { phone: '123' }],
+    ['second téléphone', { secondaryPhone: 'hello' }],
+    ['e-mail', { email: 'ada@' }],
+  ])('refuse un %s mal formé', async (_label, patch) => {
+    await expect(submitPublicFamilyMembership('demo', 'request-0000000001', { ...input, ...patch })).rejects.toMatchObject({ code: 'invalid' })
+    expect(db.insert).not.toHaveBeenCalled()
+  })
+
+  it('accepte une demande dont la personne responsable est le seul membre', async () => {
     await expect(
       submitPublicFamilyMembership('demo', 'request-0000000001', { ...input, members: [] }),
-    ).rejects.toMatchObject({ code: 'invalid' })
+    ).resolves.toMatchObject({ created: true })
+    expect(db.insert.mock.calls[0][0].members).toEqual([])
   })
 
   it('exige un site explicite lorsqu’il y en a plusieurs', async () => {

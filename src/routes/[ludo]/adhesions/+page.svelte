@@ -7,6 +7,7 @@
   import { Label } from '$lib/components/ui/label/index.js'
   import RichTextEditor from '$lib/components/public-site/RichTextEditor.svelte'
   import * as Table from '$lib/components/ui/table/index.js'
+  import PuzzleIcon from '@lucide/svelte/icons/puzzle'
   import SettingsIcon from '@lucide/svelte/icons/settings-2'
   import UsersIcon from '@lucide/svelte/icons/users'
 
@@ -52,6 +53,24 @@
   </header>
 
   {#if form?.error}<p class="form-error" role="alert">{form.error}</p>{/if}
+
+  <section class="panel extension-panel" aria-labelledby="extension-title">
+    <div class="section-heading">
+      <div class="heading-icon"><PuzzleIcon size={20} aria-hidden="true" /></div>
+      <div>
+        <h2 id="extension-title">Extension Orphée</h2>
+        <p>À installer une fois sur le poste d’accueil Chrome, pour remplir Orphée et imprimer les quittances.</p>
+      </div>
+    </div>
+    <p><Button href="/extensions/ludo-orphee-chrome.zip" download>Télécharger l’extension</Button></p>
+    <ol class="install-steps">
+      <li>Décompressez le fichier. Vous obtenez un dossier <code>ludo-orphee</code>.</li>
+      <li>Ouvrez <code>chrome://extensions</code> dans Chrome.</li>
+      <li>Activez le mode développeur.</li>
+      <li>Choisissez « Charger l’extension non empaquetée », puis le dossier <code>ludo-orphee</code>.</li>
+    </ol>
+    <p class="hint">Pour une mise à jour, remplacez ce dossier par la nouvelle archive, puis cliquez sur Recharger dans chrome://extensions.</p>
+  </section>
 
   {#if config}
     <section class="panel configuration" aria-labelledby="configuration-title">
@@ -397,6 +416,17 @@
   }
   .section-heading p {
     margin-top: var(--space-1);
+  }
+  .install-steps {
+    display: grid;
+    gap: var(--space-2);
+    margin: 0;
+    padding-left: 1.25rem;
+    color: var(--text-main);
+    line-height: var(--leading-base);
+  }
+  .install-steps code {
+    font-size: 0.92em;
   }
   .heading-icon {
     display: grid;

@@ -54,6 +54,13 @@ function text(value: unknown, label: string, max: number, optional = false) {
   return clean
 }
 
+const SWISS_PHONE = /^(?:\+41|0041|0)[1-9]\d{8}$/
+const EMAIL = /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/
+
+function isSwissPhone(value: string) {
+  return SWISS_PHONE.test(value.replace(/[\s.-]/g, ''))
+}
+
 function date(value: unknown, label: string) {
   const parsed = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
     ? new Date(`${value}T00:00:00Z`)
@@ -167,7 +174,6 @@ export async function submitPublicFamilyMembership(
   const rawMembers = input.members ?? []
   if (
     !Array.isArray(rawMembers) ||
-    rawMembers.length < 1 ||
     rawMembers.length > TECHNICAL_MAX_FAMILY_MEMBERS
   )
     throw new FamilyRegistrationServiceError('Le nombre de membres est invalide.')
@@ -187,8 +193,12 @@ export async function submitPublicFamilyMembership(
     consentAcceptedOn: date(input.consentAcceptedOn, "Date d'acceptation"),
     members: rawMembers.map((member, index) => cleanFamilyMember(member as FamilyMemberInput, index)),
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanPayload.email))
-    throw new FamilyRegistrationServiceError("L'e-mail est invalide.")
+  if (!isSwissPhone(cleanPayload.phone))
+    throw new FamilyRegistrationServiceError('Le téléphone doit être un numéro suisse, par exemple 079 000 00 00.')
+  if (cleanPayload.secondaryPhone && !isSwissPhone(cleanPayload.secondaryPhone))
+    throw new FamilyRegistrationServiceError('Le second téléphone doit être un numéro suisse, par exemple 022 000 00 00.')
+  if (!EMAIL.test(cleanPayload.email))
+    throw new FamilyRegistrationServiceError("L'e-mail doit être une adresse complète, par exemple prenom@exemple.ch.")
   // Le fingerprint ne contient ni UUID généré par le serveur ni version publiée
   // courante : une même clé doit rester rejouable après purge ou republication.
   const requestFingerprint = fingerprint({

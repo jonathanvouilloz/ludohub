@@ -20,6 +20,7 @@ const store = vi.hoisted(() => ({
   revokeManaged: vi.fn(),
 }))
 vi.mock('$env/dynamic/private', () => ({ env }))
+vi.mock('$env/dynamic/public', () => ({ env }))
 vi.mock('./auth.js', () => ({ passwordVersion: (value: string) => `pv:${value}` }))
 vi.mock('./events.js', () => ({ emitAuditEvent: audit }))
 vi.mock('../db/extension-auth.js', () => ({
@@ -87,6 +88,26 @@ describe('device authorization + PKCE', () => {
     )
     expect(JSON.stringify(store.insertDevice.mock.calls)).not.toContain(result.deviceCode)
     expect(JSON.stringify(store.insertDevice.mock.calls)).not.toContain(result.userCode)
+  })
+
+  it('ouvre la page sur l’origine appelée quand PUBLIC_APP_URL ne correspond pas', async () => {
+    env.PUBLIC_APP_URL = 'http://localhost:5173'
+    try {
+      const result = await createDeviceAuthorization(
+        {
+          clientName: 'Poste accueil',
+          codeChallengeMethod: 'S256',
+          codeChallenge: pkceChallenge(VERIFIER),
+        },
+        new Date('2026-08-06T10:00:00Z'),
+        'https://ludohub.vercel.app',
+      )
+      expect(result.verificationUriComplete).toMatch(
+        /^https:\/\/ludohub\.vercel\.app\/extensions\/authorize\?user_code=/,
+      )
+    } finally {
+      env.PUBLIC_APP_URL = 'https://app.test'
+    }
   })
 
   it.each([

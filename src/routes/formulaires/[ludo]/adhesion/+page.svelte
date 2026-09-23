@@ -1,7 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog/index.js'
   import BookOpenIcon from '@lucide/svelte/icons/book-open'
-  import CheckIcon from '@lucide/svelte/icons/check'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
 
@@ -11,9 +10,22 @@
   let idempotencyKey = $state('')
   const MAX_TECHNICAL_MEMBERS = 50
   const documents = $derived(data.config.documents)
-  let members = $state<Array<{ firstName: string; lastName: string }>>([
-    { firstName: '', lastName: '' },
-  ])
+  const SWISS_PHONE = /^(?:\+41|0041|0)[1-9]\d{8}$/
+  const EMAIL =
+    /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/i
+  const consentDateLabel = $derived(formatIsoDate(data.today))
+
+  function formatIsoDate(iso: string) {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+    if (!match) return iso
+    return new Intl.DateTimeFormat('fr-CH', { dateStyle: 'long', timeZone: 'UTC' }).format(
+      new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))),
+    )
+  }
+  function swissPhone(value: string) {
+    return SWISS_PHONE.test(value.replace(/[\s.-]/g, ''))
+  }
+  let members = $state<Array<{ firstName: string; lastName: string }>>([])
 
   function changed() {
     idempotencyKey = ''
@@ -25,10 +37,8 @@
     }
   }
   function removeMember(index: number) {
-    if (members.length > 1) {
-      members.splice(index, 1)
-      changed()
-    }
+    members.splice(index, 1)
+    changed()
   }
   function escapeHtml(value: string) {
     return value
@@ -93,10 +103,25 @@
     return blocks.join('')
   }
   async function submit(event: SubmitEvent) {
-    sending = true
     message = ''
     const form = event.currentTarget as HTMLFormElement
     const raw = Object.fromEntries(new FormData(form))
+    const phone = String(raw.phone ?? '')
+    const secondaryPhone = String(raw.secondaryPhone ?? '').trim()
+    const email = String(raw.email ?? '').trim()
+    if (!swissPhone(phone)) {
+      message = 'Le téléphone doit être un numéro suisse, par exemple 079 000 00 00.'
+      return
+    }
+    if (secondaryPhone && !swissPhone(secondaryPhone)) {
+      message = 'Le second téléphone doit être un numéro suisse, par exemple 022 000 00 00.'
+      return
+    }
+    if (!EMAIL.test(email)) {
+      message = 'L’e-mail doit être une adresse complète, par exemple prenom@exemple.ch.'
+      return
+    }
+    sending = true
     const body = { ...raw, consentAccepted: raw.consentAccepted === 'on', members }
     idempotencyKey ||= crypto.randomUUID() + crypto.randomUUID()
     try {
@@ -191,14 +216,16 @@
             name="phone"
             autocomplete="tel"
             inputmode="tel"
-          /></label
+            placeholder="079 000 00 00"
+          /><small>Numéro suisse, par exemple 079 000 00 00.</small></label
         >
         <label class="field"
           ><span>Autre téléphone <em>facultatif</em></span><input
             name="secondaryPhone"
             autocomplete="tel"
             inputmode="tel"
-          /></label
+            placeholder="022 000 00 00"
+          /><small>Même format, si vous en avez un deuxième.</small></label
         >
         <label class="field full"
           ><span>E-mail</span><input
@@ -206,7 +233,8 @@
             name="email"
             type="email"
             autocomplete="email"
-          /></label
+            placeholder="prenom@exemple.ch"
+          /><small>Adresse complète, par exemple prenom@exemple.ch.</small></label
         >
       </div>
     </section>
@@ -215,11 +243,12 @@
       <div class="section-heading">
         <span>2</span>
         <div>
-          <h2 id="members-title">Membres de la famille</h2>
-          <p>Ajoutez les personnes que l’adhésion doit couvrir.</p>
+          <h2 id="members-title">Autres membres</h2>
+          <p>La personne responsable est déjà incluse. Ajoutez un enfant ou un autre parent seulement si besoin.</p>
         </div>
       </div>
       <div class="member-list">
+        {#if members.length === 0}<p class="member-empty">Aucun autre membre.</p>{/if}
         {#each members as member, index}
           <div class="member-row">
             <p>Membre {index + 1}</p>
@@ -229,13 +258,13 @@
             <label class="field"
               ><span>Nom</span><input required bind:value={member.lastName} /></label
             >
-            {#if members.length > 1}<button
-                class="remove-member"
-                type="button"
-                onclick={() => removeMember(index)}
-                aria-label={`Retirer le membre ${index + 1}`}
-                ><Trash2Icon size={17} aria-hidden="true" />Retirer</button
-              >{/if}
+            <button
+              class="remove-member"
+              type="button"
+              onclick={() => removeMember(index)}
+              aria-label={`Retirer le membre ${index + 1}`}
+              ><Trash2Icon size={17} aria-hidden="true" />Retirer</button
+            >
           </div>
         {/each}
       </div>
@@ -281,7 +310,7 @@
         {/each}
         <label class="consent"
           ><input required type="checkbox" name="consentAccepted" /><span
-            ><CheckIcon size={17} aria-hidden="true" />{data.config.consentLabel}</span
+            >{data.config.consentLabel}</span
           ></label
         >
         <div class="signature-grid">
@@ -292,14 +321,11 @@
               placeholder="Nom complet"
             /></label
           >
-          <label class="field"
-            ><span>Date</span><input
-              required
-              name="consentAcceptedOn"
-              type="date"
-              value={data.today}
-            /></label
-          >
+          <div class="field">
+            <span>Date</span>
+            <p class="fixed-date">{consentDateLabel}</p>
+            <input type="hidden" name="consentAcceptedOn" value={data.today} />
+          </div>
         </div>
       </div>
     </section>
@@ -434,12 +460,14 @@
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
   }
-  .field em {
+  .field em,
+  .field small {
     color: var(--text-muted);
     font-style: normal;
     font-weight: var(--weight-normal);
+    font-size: var(--text-small);
   }
-  input:not(.honeypot),
+  input:not(.honeypot):not([type='checkbox']):not([type='hidden']),
   select {
     width: 100%;
     min-height: 44px;
@@ -466,6 +494,10 @@
   .member-list {
     display: grid;
     gap: var(--space-3);
+  }
+  .member-empty {
+    margin: 0;
+    color: var(--text-muted);
   }
   .member-row {
     display: grid;
@@ -540,18 +572,21 @@
   .consent input {
     width: 18px;
     height: 18px;
+    min-height: 18px;
     margin-top: 2px;
+    padding: 0;
+    flex: 0 0 18px;
     accent-color: var(--primary);
   }
   .consent span {
-    display: flex;
-    gap: var(--space-2);
     line-height: var(--leading-base);
   }
-  .consent :global(svg) {
-    flex: 0 0 auto;
-    margin-top: 2px;
-    color: var(--success);
+  .fixed-date {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin: 0;
+    color: var(--text-main);
   }
   .form-footer {
     display: flex;

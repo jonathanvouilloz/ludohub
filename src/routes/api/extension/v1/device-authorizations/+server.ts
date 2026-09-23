@@ -11,7 +11,7 @@ export const OPTIONS: RequestHandler = ({ request }) => {
     : new Response(null, { status: 403 })
 }
 
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+export const POST: RequestHandler = async ({ request, url, getClientAddress }) => {
   const headers = extensionHeaders(request, 'POST')
   if (!headers) return json({ error: 'origin_not_allowed' }, { status: 403 })
   const rate = checkRateLimit(`extension-device:${getClientAddress()}`, 10, 60_000)
@@ -20,10 +20,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
     return json({ error: 'slow_down' }, { status: 429, headers })
   }
   try {
-    return json(await createDeviceAuthorization(await readExtensionJson(request)), {
-      status: 201,
-      headers,
-    })
+    return json(
+      await createDeviceAuthorization(await readExtensionJson(request), new Date(), url.origin),
+      {
+        status: 201,
+        headers,
+      },
+    )
   } catch (error) {
     return extensionError(error, headers)
   }
