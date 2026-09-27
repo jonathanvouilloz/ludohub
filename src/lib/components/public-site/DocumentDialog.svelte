@@ -32,8 +32,6 @@
     sites,
   }: { open?: boolean; document?: EditableDocument | null; sites: DocumentSite[] } = $props()
   let kind = $state<EditableDocument['kind']>('other')
-  let slug = $state('')
-  let slugManuallyEdited = $state(false)
   let title = $state('')
   let summary = $state('')
   let body = $state('')
@@ -43,27 +41,10 @@
   let submitting = $state(false)
   let submitError = $state('')
   const isEdit = $derived(document !== null)
-  const slugEditable = $derived(!document?.publishedAt)
-
-  function slugify(value: string) {
-    return value
-      .normalize('NFD')
-      .replace(/\p{M}/gu, '')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 120)
-  }
-  function updateTitle(value: string) {
-    title = value
-    if (slugEditable && !slugManuallyEdited) slug = slugify(value)
-  }
 
   $effect(() => {
     if (!open) return
     kind = document?.kind ?? 'other'
-    slug = document?.slug ?? ''
-    slugManuallyEdited = document !== null
     title = document?.title ?? ''
     summary = document?.summary ?? ''
     body = document?.bodyMarkdown ?? ''
@@ -92,7 +73,7 @@
         success: isEdit ? 'Document mis à jour.' : 'Brouillon créé.',
         errorMode: 'inline',
         prepare: async (formData) => {
-          await compressEditorialPdfFields(formData, ['pdfFile'])
+          await compressEditorialPdfFields(formData, ['pdfFile'], 4 * 1024 * 1024)
         },
         onPending: (value) => {
           submitting = value
@@ -134,26 +115,11 @@
         <Label for="document-title">Titre</Label><Input
           id="document-title"
           name="title"
-          value={title}
-          oninput={(event) => updateTitle(event.currentTarget.value)}
+          bind:value={title}
           maxlength={180}
           required
         />
-      </div>
-      <div class="field">
-        <Label for="document-slug">Adresse de la page</Label>
-        {#if slugEditable}<Input
-            id="document-slug"
-            name="slug"
-            value={slug}
-            oninput={(event) => {
-              slug = event.currentTarget.value
-              slugManuallyEdited = true
-            }}
-            maxlength={120}
-            required
-          />{:else}<code>/{document?.slug}</code>
-          <p>Adresse immuable depuis la première publication.</p>{/if}
+        <p class="hint">L’adresse de la page sera créée automatiquement à partir du titre.</p>
       </div>
       <div class="field">
         <Label for="document-summary">Résumé</Label><textarea
@@ -173,15 +139,23 @@
           rows="9"
           placeholder="Ajoutez les informations utiles pour présenter ce document."
         ></textarea>
-        <p class="hint">Facultatif si un PDF est joint. Le texte s’affiche sur la page du document.</p>
+        <p class="hint">
+          Facultatif si un PDF est joint. Le texte s’affiche sur la page du document.
+        </p>
       </div>
       <div class="field">
         <Label for="document-pdf">Document PDF</Label>
-        {#if document?.pdfUrl}<a class="file-link" href={document.pdfUrl} target="_blank" rel="noreferrer"
-            >PDF actuel : {document.pdfFileName ?? 'consulter le fichier'}</a
+        {#if document?.pdfUrl}<a
+            class="file-link"
+            href={document.pdfUrl}
+            target="_blank"
+            rel="noreferrer">PDF actuel : {document.pdfFileName ?? 'consulter le fichier'}</a
           >{/if}
         <input id="document-pdf" type="file" name="pdfFile" accept="application/pdf" />
-        <p class="hint">Facultatif · PDF uniquement, 15 Mio maximum.</p>
+        <p class="hint">
+          Facultatif · PDF uniquement, 4 Mio maximum après compression automatique. Pour un fichier
+          plus lourd, compressez-le avant de l’ajouter.
+        </p>
         {#if document?.pdfUrl}<label class="remove-choice"
             ><input type="checkbox" name="removePdf" /> Retirer le PDF actuel</label
           >{/if}
@@ -222,7 +196,6 @@
           type="submit"
           disabled={submitting ||
             !title.trim() ||
-            !slug.trim() ||
             (kind === 'annual_report' && !year) ||
             (targetMode === 'explicit' && !selectedSiteIds.length)}
           >{submitting ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le brouillon'}</Button

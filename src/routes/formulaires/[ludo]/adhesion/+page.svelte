@@ -105,6 +105,26 @@
   async function submit(event: SubmitEvent) {
     message = ''
     const form = event.currentTarget as HTMLFormElement
+    const invalidFields = Array.from(form.elements).filter(
+      (element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
+        (element instanceof HTMLInputElement ||
+          element instanceof HTMLSelectElement ||
+          element instanceof HTMLTextAreaElement) &&
+        !element.validity.valid,
+    )
+    if (invalidFields.length) {
+      const names = [
+        ...new Set(
+          invalidFields.map((field) => {
+            const label = field.closest('label')?.querySelector('span')?.textContent?.trim()
+            return label || field.name || 'un champ obligatoire'
+          }),
+        ),
+      ]
+      message = `Complétez ou corrigez les champs suivants : ${names.join(', ')}.`
+      invalidFields[0]?.focus()
+      return
+    }
     const raw = Object.fromEntries(new FormData(form))
     const phone = String(raw.phone ?? '')
     const secondaryPhone = String(raw.secondaryPhone ?? '').trim()
@@ -133,9 +153,19 @@
           body: JSON.stringify(body),
         },
       )
-      message = response.ok
-        ? 'Votre demande a bien été reçue. La ludothèque vous recontactera prochainement.'
-        : 'La demande n’a pas pu être envoyée. Vérifiez les champs puis réessayez.'
+      const result = (await response.json().catch(() => null)) as { error?: unknown } | null
+      if (response.ok) {
+        message = 'Votre demande a bien été reçue. La ludothèque vous recontactera prochainement.'
+      } else if (
+        (response.status === 400 || response.status === 409) &&
+        typeof result?.error === 'string'
+      ) {
+        message = result.error
+      } else if (response.status === 429) {
+        message = 'Trop de tentatives ont été envoyées. Patientez quelques minutes puis réessayez.'
+      } else {
+        message = 'La demande n’a pas pu être envoyée. Vérifiez les champs puis réessayez.'
+      }
     } catch {
       message = 'La demande n’a pas pu être envoyée. Réessayez.'
     } finally {
@@ -162,6 +192,7 @@
 
   <form
     class="membership-form"
+    novalidate
     oninput={changed}
     onsubmit={(event) => {
       event.preventDefault()
@@ -244,7 +275,10 @@
         <span>2</span>
         <div>
           <h2 id="members-title">Autres membres</h2>
-          <p>La personne responsable est déjà incluse. Ajoutez un enfant ou un autre parent seulement si besoin.</p>
+          <p>
+            La personne responsable est déjà incluse. Ajoutez un enfant ou un autre parent seulement
+            si besoin.
+          </p>
         </div>
       </div>
       <div class="member-list">

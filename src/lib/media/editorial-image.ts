@@ -80,23 +80,46 @@ export async function compressEditorialImageEntries(
 export async function compressEditorialPdf(file: File) {
   if (file.type !== 'application/pdf') throw new Error('Sélectionnez un PDF valide.')
   const { PDFDocument } = await import('pdf-lib')
-  const document = await PDFDocument.load(await file.arrayBuffer(), { ignoreEncryption: true })
+  const sourceBytes = await file.arrayBuffer()
+  const document = await PDFDocument.load(sourceBytes, { ignoreEncryption: true })
   const optimized = await document.save({ useObjectStreams: true, addDefaultPage: false })
-  if (optimized.byteLength >= file.size) return file
-  const bytes = new Uint8Array(optimized)
+  let smallest = optimized.byteLength < file.size ? optimized : new Uint8Array(sourceBytes)
+
+  try {
+    const rebuilt = await PDFDocument.create()
+    const pages = await rebuilt.copyPages(document, document.getPageIndices())
+    for (const page of pages) rebuilt.addPage(page)
+    const compact = await rebuilt.save({ useObjectStreams: true, addDefaultPage: false })
+    if (compact.byteLength < smallest.byteLength) smallest = compact
+  } catch {
+    // Certains PDF complexes ne peuvent pas être reconstruits. La version optimisée reste utilisable.
+  }
+
+  if (smallest.byteLength >= file.size) return file
+  const bytes = new Uint8Array(smallest)
   return new File([bytes.buffer], file.name, {
     type: 'application/pdf',
     lastModified: Date.now(),
   })
 }
 
-export async function compressEditorialPdfFields(formData: FormData, names: readonly string[]) {
+export async function compressEditorialPdfFields(
+  formData: FormData,
+  names: readonly string[],
+  maxBytes?: number,
+) {
   for (const name of names) {
     const file = formData.get(name)
     if (!(file instanceof File) || file.size === 0) {
       formData.delete(name)
       continue
     }
-    formData.set(name, await compressEditorialPdf(file))
+    const compressed = await compressEditorialPdf(file)
+    if (maxBytes && compressed.size > maxBytes) {
+      throw new Error(
+        `Le PDF reste trop lourd après compression automatique (${Math.ceil(compressed.size / 1024 / 1024)} Mio). Compressez-le sous 4 Mio puis réessayez.`,
+      )
+    }
+    formData.set(name, compressed)
   }
 }

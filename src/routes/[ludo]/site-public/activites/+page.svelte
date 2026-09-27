@@ -30,7 +30,11 @@
     return item.status === 'published' && item.lifecycle === 'active' ? 'success' : 'secondary'
   }
   function rhythm(item: (typeof data.activities)[number]) {
-    return item.type === 'one_off' ? 'Ponctuelle' : item.type === 'recurring' ? 'Récurrente' : 'Permanente'
+    return item.type === 'one_off'
+      ? 'Ponctuelle'
+      : item.type === 'recurring'
+        ? 'Récurrente'
+        : 'Permanente'
   }
   function targets(item: (typeof data.activities)[number]) {
     return item.targets.length === 0
@@ -44,9 +48,7 @@
   <header>
     <div>
       <h1>Activités</h1>
-      <p>
-        Gérez le contenu, le rythme et la publication de chaque activité.
-      </p>
+      <p>Gérez le contenu, le rythme et la publication de chaque activité.</p>
     </div>
     <Button onclick={() => (dialogOpen = true)}
       ><PlusIcon size={16} aria-hidden="true" /> Nouvelle activité</Button
@@ -89,7 +91,7 @@
           />{/each}
       </div>{/if}
   {/if}
-  <ActivityDialog bind:open={dialogOpen} activity={null} />
+  <ActivityDialog bind:open={dialogOpen} activity={null} sites={data.sites} />
 </main>
 
 <style>

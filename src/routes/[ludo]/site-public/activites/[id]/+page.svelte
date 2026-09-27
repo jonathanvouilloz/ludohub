@@ -205,7 +205,7 @@
       </div>
     </section>
   </details>
-  <ActivityDialog bind:open={editOpen} activity={item} />
+  <ActivityDialog bind:open={editOpen} activity={item} sites={data.sites} />
 </main>
 
 <style>

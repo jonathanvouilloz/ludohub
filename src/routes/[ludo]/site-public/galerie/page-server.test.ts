@@ -39,6 +39,7 @@ import {
   permanentlyDeletePublicGalleryImage,
   listPublicGalleryForManagement,
   setPublicGalleryImageFile,
+  updatePublicGalleryImage,
 } from '$lib/server/services/public-gallery.js'
 import { actions, load } from './+page.server.js'
 const L = '11111111-1111-4111-8111-111111111111',
@@ -74,6 +75,10 @@ beforeEach(() => {
   vi.mocked(isPublicSiteEnabled).mockResolvedValue(true)
   vi.mocked(listPublicGalleryForManagement).mockResolvedValue([item] as never)
   vi.mocked(createPublicGalleryImage).mockResolvedValue(item as never)
+  vi.mocked(updatePublicGalleryImage).mockResolvedValue({
+    ...item,
+    caption: 'Nouvelle légende',
+  } as never)
   vi.mocked(authorizePublicGalleryMediaScope).mockResolvedValue(scope)
   vi.mocked(uploadPublicSiteMedia).mockResolvedValue({
     pathname: NEW,
@@ -86,7 +91,9 @@ beforeEach(() => {
     image: item,
     previousStorageKey: OLD,
   } as never)
-  vi.mocked(permanentlyDeletePublicGalleryImage).mockResolvedValue({ previousStorageKey: OLD } as never)
+  vi.mocked(permanentlyDeletePublicGalleryImage).mockResolvedValue({
+    previousStorageKey: OLD,
+  } as never)
   vi.mocked(uploadAndRegisterMedia).mockImplementation(async (x) => {
     const s = await x.authorize(),
       b = await x.upload(s)
@@ -147,6 +154,23 @@ describe('route galerie', () => {
       }),
     )
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD)
+  })
+  it('modifie la légende sans redemander le fichier image', async () => {
+    await actions.update!(
+      event([
+        ['id', ID],
+        ['revision', '1'],
+        ['caption', 'Nouvelle légende'],
+      ]) as never,
+    )
+    expect(updatePublicGalleryImage).toHaveBeenCalledWith(
+      ID,
+      L,
+      expect.objectContaining({ caption: 'Nouvelle légende', alt: 'Nouvelle légende' }),
+      M,
+      1,
+    )
+    expect(uploadPublicSiteMedia).not.toHaveBeenCalled()
   })
   it('rejette une légende manquante avant upload', async () => {
     const f = new File(['jpg'], 'x.jpg', { type: 'image/jpeg' })

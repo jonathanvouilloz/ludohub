@@ -153,7 +153,7 @@ describe('route documents', () => {
       ) as never,
     )
     expect(createPublicDocument).toHaveBeenCalledWith(L, M, {
-      slug: doc.slug,
+      slug: 'Rapport 2025',
       kind: 'annual_report',
       title: doc.title,
       summary: doc.summary,
@@ -196,17 +196,12 @@ describe('route documents', () => {
   })
   it('ajoute le PDF dès la création dans le scope exact puis nettoie l’ancien blob', async () => {
     const file = new File(['pdf'], 'rapport.pdf', { type: 'application/pdf' })
-    await actions.create!(
-      event([
-        ...fields([['targetMode', 'all']]),
-        ['pdfFile', file],
-      ]) as never,
-    )
+    await actions.create!(event([...fields([['targetMode', 'all']]), ['pdfFile', file]]) as never)
     expect(authorizePublicDocumentMediaScope).toHaveBeenCalledWith(L, ID, 1)
     expect(uploadPublicSiteMedia).toHaveBeenCalledWith({
       scope,
       file: expect.objectContaining({ name: 'rapport.pdf', type: 'application/pdf' }),
-      policy: { maxBytes: 15 * 1024 * 1024, allowedTypes: ['application/pdf'] },
+      policy: { maxBytes: 4 * 1024 * 1024, allowedTypes: ['application/pdf'] },
     })
     expect(setPublicDocumentPdf).toHaveBeenCalledWith(
       L,
@@ -223,19 +218,27 @@ describe('route documents', () => {
     const file = new File(['pdf'], 'rapport.pdf', { type: 'application/pdf' })
     vi.mocked(setPublicDocumentPdf).mockRejectedValue(new Error('database unavailable'))
     await expect(
-      actions.create!(
-        event([
-          ...fields([['targetMode', 'all']]),
-          ['pdfFile', file],
-        ]) as never,
-      ),
+      actions.create!(event([...fields([['targetMode', 'all']]), ['pdfFile', file]]) as never),
     ).rejects.toThrow('database unavailable')
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, NEW)
     expect(deletePublicSiteMedia).not.toHaveBeenCalledWith(scope, OLD)
   })
   it('retire le PDF depuis le même formulaire d’édition', async () => {
-    vi.mocked(updatePublicDocument).mockResolvedValue({ ...doc, pdfUrl: 'https://blob/old.pdf', revision: 4 } as never)
-    await actions.update!(event([...fields([['id', ID], ['revision', '3'], ['targetMode', 'all']]), ['removePdf', 'on']]) as never)
+    vi.mocked(updatePublicDocument).mockResolvedValue({
+      ...doc,
+      pdfUrl: 'https://blob/old.pdf',
+      revision: 4,
+    } as never)
+    await actions.update!(
+      event([
+        ...fields([
+          ['id', ID],
+          ['revision', '3'],
+          ['targetMode', 'all'],
+        ]),
+        ['removePdf', 'on'],
+      ]) as never,
+    )
     expect(clearPublicDocumentPdf).toHaveBeenCalledWith(L, ID, M, 4)
     expect(deletePublicSiteMedia).toHaveBeenCalledWith(scope, OLD)
   })

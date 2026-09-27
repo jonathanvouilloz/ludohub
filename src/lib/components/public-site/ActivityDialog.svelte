@@ -1,4 +1,5 @@
 <script lang="ts" module>
+  export type ActivitySite = { id: string; name: string; isActive: boolean }
   export type EditableActivity = {
     id: string
     revision: number
@@ -13,6 +14,7 @@
     status: 'draft' | 'published' | 'hidden'
     lifecycle: 'active' | 'archived' | 'trashed'
     featuredRank: number | null
+    targets: Array<{ siteId: string; site: ActivitySite }>
     assets: Array<{
       id: string
       kind: 'support_image' | 'pdf_attachment'
@@ -40,13 +42,16 @@
   let {
     open = $bindable(false),
     activity = null,
-  }: { open?: boolean; activity?: EditableActivity | null } = $props()
+    sites,
+  }: { open?: boolean; activity?: EditableActivity | null; sites: ActivitySite[] } = $props()
   let title = $state(''),
     summary = $state(''),
     body = $state(''),
     location = $state('')
   let type = $state<EditableActivity['type']>('one_off'),
     visible = $state(true)
+  let targetMode = $state<'all' | 'explicit'>('all')
+  let selectedSiteIds = $state<string[]>([])
   let submitting = $state(false),
     submitError = $state('')
   const isEdit = $derived(activity !== null)
@@ -61,6 +66,10 @@
     location = activity?.location ?? ''
     type = activity?.type ?? 'one_off'
     visible = activity ? activity.status === 'published' : true
+    targetMode = activity && activity.targets.length > 0 ? 'explicit' : 'all'
+    selectedSiteIds =
+      activity?.targets.filter((target) => target.site.isActive).map((target) => target.siteId) ??
+      []
     submitError = ''
   })
 </script>
@@ -100,11 +109,7 @@
           type="hidden"
           name="revision"
           value={activity?.revision}
-        />{:else}<input type="hidden" name="targetMode" value="all" /><input
-          type="hidden"
-          name="slug"
-          value={title}
-        />{/if}
+        />{:else}<input type="hidden" name="slug" value={title} />{/if}
       <div class="field">
         <Label for="activity-title">Titre</Label><Input
           id="activity-title"
@@ -152,6 +157,36 @@
             ><input type="radio" name="type" value="permanent" bind:group={type} /> Permanente</label
           >
         </div>
+      </fieldset>
+      <fieldset>
+        <legend>Lieux concernés</legend>
+        <p class="hint">Choisissez où cette activité doit apparaître sur le site.</p>
+        <div class="mode-list">
+          <label
+            ><input type="radio" name="targetMode" value="all" bind:group={targetMode} /> Tous les lieux
+            actifs</label
+          ><label
+            ><input type="radio" name="targetMode" value="explicit" bind:group={targetMode} /> Lieux précis</label
+          >
+        </div>
+        {#if targetMode === 'explicit'}<div class="site-list">
+            {#each sites as site (site.id)}<label class:disabled={!site.isActive}
+                ><input
+                  type="checkbox"
+                  name="siteIds"
+                  value={site.id}
+                  bind:group={selectedSiteIds}
+                  disabled={!site.isActive}
+                />
+                {site.name}{site.isActive ? '' : ' — inactif'}</label
+              >{/each}
+          </div>{/if}
+        {#if targetMode === 'explicit' && selectedSiteIds.length === 0}<p
+            class="warning"
+            role="alert"
+          >
+            Sélectionnez au moins un lieu actif.
+          </p>{/if}
       </fieldset>
       <fieldset>
         <legend>Publication</legend><label class="visibility-choice"
@@ -232,7 +267,11 @@
         ><Button type="button" variant="outline" onclick={() => (open = false)}>Annuler</Button
         ><Button
           type="submit"
-          disabled={submitting || !title.trim() || !summary.trim() || !body.trim()}
+          disabled={submitting ||
+            !title.trim() ||
+            !summary.trim() ||
+            !body.trim() ||
+            (targetMode === 'explicit' && selectedSiteIds.length === 0)}
           >{submitting ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer l’activité'}</Button
         ></Dialog.Footer
       >
@@ -279,6 +318,21 @@
     flex-wrap: wrap;
     gap: var(--space-2);
   }
+  .mode-list,
+  .site-list {
+    display: grid;
+    gap: var(--space-2);
+  }
+  .mode-list label,
+  .site-list label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 36px;
+  }
+  .disabled {
+    color: var(--text-muted);
+  }
   .mode-grid label {
     display: inline-flex;
     align-items: center;
@@ -298,6 +352,12 @@
     border-radius: var(--radius-sm);
     background: var(--danger-light);
     color: var(--danger);
+  }
+  .warning {
+    margin: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--warning-light);
   }
   .visibility-choice,
   .remove-choice,
@@ -330,7 +390,9 @@
     width: min(100%, 460px);
     max-height: 220px;
     border-radius: var(--radius-sm);
-    object-fit: cover;
+    padding: var(--space-2);
+    background: var(--bg-page);
+    object-fit: contain;
   }
   .image-list,
   .attachments {

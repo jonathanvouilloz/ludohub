@@ -53,10 +53,11 @@ function kind(data: FormData): PublicDocumentInput['kind'] {
 }
 function input(data: FormData): PublicDocumentInput {
   const documentKind = kind(data)
+  const title = String(data.get('title') ?? '')
   return {
-    slug: String(data.get('slug') ?? ''),
+    slug: title,
     kind: documentKind,
-    title: String(data.get('title') ?? ''),
+    title,
     summary: String(data.get('summary') ?? '').trim() || null,
     bodyMarkdown: String(data.get('bodyMarkdown') ?? '').trim() || null,
     year: documentKind === 'annual_report' ? Number(data.get('year')) : null,
@@ -64,7 +65,7 @@ function input(data: FormData): PublicDocumentInput {
   }
 }
 function updateInput(data: FormData) {
-  return { ...input(data), ...(data.has('slug') ? {} : { slug: undefined }) }
+  return { ...input(data), slug: undefined }
 }
 function revision(data: FormData) {
   const value = Number(data.get('revision'))
@@ -118,7 +119,7 @@ async function cleanup(
     await audit('public_document.pdf_cleanup_failed', ludoId, memberId, id, { operation })
   }
 }
-const PDF_POLICY = { maxBytes: 15 * 1024 * 1024, allowedTypes: ['application/pdf'] as const }
+const PDF_POLICY = { maxBytes: 4 * 1024 * 1024, allowedTypes: ['application/pdf'] as const }
 
 async function applyPdf(
   data: FormData,

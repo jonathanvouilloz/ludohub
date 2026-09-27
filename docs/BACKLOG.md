@@ -106,6 +106,8 @@ Domaines : Navigation/Design · Accueil/Dashboard · Thèmes · Fréquentation �
   [features/20-site-public.md](features/20-site-public.md), avec la spécification canonique dans
   `../../website-v2/docs/PHASE-2-SPEC.md`. Le projet cible est `website-v2`. L’archive de l’ancien site est dans `website-v2/docs/legacy-content/`.
 
+- [ ] **Catégorie facultative pour chacun des trois jeux d'un Top 3 public.** _(demande du 2026-09-24 ; à faire dans LudoHub, hors refonte UI du site)_ Ajouter au formulaire Top 3 un libellé de catégorie par jeu (ex. « Jeu d'expression », « Jeu de questions »), le conserver avec les trois jeux existants et l'exposer dans les réponses publiques utilisées par le site. Le champ reste facultatif pour les sélections déjà publiées ; valider et borner sa longueur, adapter la contrainte JSON en base, la lecture publique et les tests. Le site prévoit un badge qui s'affiche uniquement quand la catégorie est renseignée. Plan visuel : `../../website-v2/docs/REFONTE-UI-PASTEL.md`.
+
 ---
 
 ## Questions tranchées (2026-07-30)
