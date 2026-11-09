@@ -6,6 +6,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { WEEK_DAYS, formatTime, type OpeningHourInput } from '$lib/utils/opening-hours.js'
   import InlineSiteEditor from './InlineSiteEditor.svelte'
+  import SitePhotoEditor from './SitePhotoEditor.svelte'
 
   type PreviewSite = {
     id: string
@@ -18,6 +19,9 @@
     email: string | null
     accessInfo: string | null
     importantInfo: string | null
+    photoUrl?: string | null
+    photoAlt?: string | null
+    photoStorageKey?: string | null
     directionsUrl: string | null
     latitude: number | string | null
     longitude: number | string | null
@@ -26,10 +30,7 @@
     openingHours: OpeningHourInput[]
   }
 
-  let {
-    sites,
-    editable = false,
-  }: { sites: PreviewSite[]; editable?: boolean } = $props()
+  let { sites, editable = false }: { sites: PreviewSite[]; editable?: boolean } = $props()
   let editingSiteId = $state<string | null>(null)
 
   function ranges(site: PreviewSite, dayOfWeek: number): string {
@@ -86,6 +87,15 @@
       {#if site.accessInfo}
         <p class="access"><strong>À savoir&nbsp;:</strong> {site.accessInfo}</p>
       {/if}
+      {#if site.photoUrl}
+        <img
+          class="site-photo"
+          src={site.photoUrl}
+          alt={site.photoAlt || site.name}
+          loading="lazy"
+        />
+      {/if}
+      {#if editable}<SitePhotoEditor {site} />{/if}
       {#if site.importantInfo}
         <p class="important"><strong>Information importante&nbsp;:</strong> {site.importantInfo}</p>
       {/if}
@@ -94,6 +104,13 @@
 </div>
 
 <style>
+  .site-photo {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-top: var(--space-4);
+    border-radius: var(--radius-sm);
+  }
   .preview-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));

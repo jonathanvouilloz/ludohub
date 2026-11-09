@@ -56,16 +56,10 @@ export type PublicActivitySummaryRow = Pick<
   | 'lifecycle'
   | 'featuredRank'
   | 'publishedAt'
->
+> & { sites: Array<{ id: string; slug: string; name: string }> }
 export type PublicActivityUpdateData = Pick<
   PublicActivityInsert,
-  | 'slug'
-  | 'title'
-  | 'summary'
-  | 'body'
-  | 'location'
-  | 'type'
-  | 'updatedByMemberId'
+  'slug' | 'title' | 'summary' | 'body' | 'location' | 'type' | 'updatedByMemberId'
 >
 
 export function listPublicActivityRows(ludoId: string) {
@@ -131,6 +125,22 @@ export function listVisiblePublicActivitySummaryRows(
       lifecycle: publicActivities.lifecycle,
       featuredRank: publicActivities.featuredRank,
       publishedAt: publicActivities.publishedAt,
+      // Keep correlated columns inside nested SQL: Drizzle removes table qualifiers
+      // from direct projection columns in a single-table SELECT, even in subqueries.
+      sites: sql<Array<{ id: string; slug: string; name: string }>>`${sql`(
+        SELECT coalesce(json_agg(json_build_object('id', active.id, 'slug', active.slug, 'name', active.name)
+          ORDER BY active.sort_order, active.name), '[]'::json)
+        FROM ludo_sites AS active
+        WHERE active.ludo_id = ${publicActivities.ludoId} AND active.is_active = true
+          AND (NOT EXISTS (
+            SELECT 1 FROM public_activity_sites AS any_target
+            WHERE any_target.activity_id = ${publicActivities.id} AND any_target.ludo_id = ${publicActivities.ludoId}
+          ) OR EXISTS (
+            SELECT 1 FROM public_activity_sites AS target
+            WHERE target.activity_id = ${publicActivities.id} AND target.ludo_id = ${publicActivities.ludoId}
+              AND target.site_id = active.id
+          ))
+      )`}`,
     })
     .from(publicActivities)
     .where(and(publicVisibility(ludoId, siteId), eq(publicActivities.lifecycle, lifecycle)))

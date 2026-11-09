@@ -36,6 +36,7 @@ export type PublicLudoSite = {
   email: string | null
   accessInfo: string | null
   importantInfo: string | null
+  photo: { url: string; alt: string } | null
   directionsUrl: string | null
   latitude: number | null
   longitude: number | null
@@ -70,6 +71,7 @@ export type PublicNewsSummaryItem = {
   summary: string
   image: { url: string; alt: string } | null
   publishedAt: string
+  authorName: string | null
 }
 
 export type PublicSupportImage = {
@@ -108,6 +110,7 @@ export type PublicActivitySummaryItem = {
   title: string
   summary: string
   location: string | null
+  sites: Array<{ id: string; slug: string; name: string }>
   image: { url: string; alt: string } | null
   lifecycle: 'active' | 'archived'
   featuredRank: number | null
@@ -276,6 +279,7 @@ export async function getPublicSitesByLudoSlug(slug: string): Promise<PublicSite
       email: site.email,
       accessInfo: site.accessInfo,
       importantInfo: site.importantInfo,
+      photo: site.photoUrl ? { url: site.photoUrl, alt: site.photoAlt || site.name } : null,
       directionsUrl: site.directionsUrl,
       latitude: site.latitude,
       longitude: site.longitude,
@@ -344,6 +348,7 @@ function publicNewsSummaryItem(
           }
         : null,
     publishedAt: news.publishedAt!.toISOString(),
+    authorName: 'authorName' in news ? news.authorName : null,
   }
 }
 
@@ -351,7 +356,8 @@ function publicNewsDetailItem(
   news: NonNullable<Awaited<ReturnType<typeof getVisiblePublicNewsBySlug>>>,
 ): PublicNewsItem {
   return {
-    ...publicNewsSummaryItem(news),
+    ...publicNewsSummaryItem({ ...news, authorName: news.author?.name?.trim() || null }),
+    authorName: news.author?.name?.trim() || null,
     bodyMarkdown: news.body,
     sites: news.targets
       .filter((target) => target.site.isActive)
@@ -468,6 +474,7 @@ function publicActivitySummaryItem(activity: PublicActivityRow): PublicActivityS
     title: activity.title,
     summary: activity.summary,
     location: activity.location,
+    sites: activity.sites ?? [],
     image:
       activity.imageUrl && activity.imageAlt
         ? { url: activity.imageUrl, alt: activity.imageAlt }
@@ -523,6 +530,11 @@ export async function getPublicActivityDetailByLudoSlug(
   if (!resolvedSite) return null
   const activity = await getVisiblePublicActivityBySlug(ludo.id, activitySlug, resolvedSite.siteId)
   if (!activity) return null
+  const activeSites = (await listSiteRowsWithOpeningHours(ludo.id)).filter((site) => site.isActive)
+  const targetedIds = activity.targets.map((target) => target.site.id)
+  const sites = activeSites
+    .filter((site) => targetedIds.length === 0 || targetedIds.includes(site.id))
+    .map(({ id, slug, name }) => ({ id, slug, name }))
   const registration =
     activity.lifecycle === 'active'
       ? await getPublicActivityRegistrationAvailability(activity.id, ludo.id)
@@ -537,6 +549,7 @@ export async function getPublicActivityDetailByLudoSlug(
       title: activity.title,
       summary: activity.summary,
       location: activity.location,
+      sites,
       image:
         activity.imageUrl && activity.imageAlt
           ? { url: activity.imageUrl, alt: activity.imageAlt }

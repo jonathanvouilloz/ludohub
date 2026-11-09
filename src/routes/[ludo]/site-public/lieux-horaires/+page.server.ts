@@ -9,7 +9,19 @@ import {
   reorderSites,
   SiteServiceError,
   updateSiteWithOpeningHours,
+  authorizeSiteMediaScope,
+  setSitePhoto,
+  clearSitePhoto,
+  getSiteByIdForLudo,
+  isSitePhotoUnreferenced,
 } from '$lib/server/services/sites.js'
+import {
+  deletePublicSiteMedia,
+  uploadPublicSiteMedia,
+  MediaStorageError,
+} from '$lib/server/media/blob-storage.js'
+import { uploadAndRegisterMedia, MediaCompensationError } from '$lib/server/media/media-service.js'
+import type { AuthorizedMediaScope } from '$lib/server/media/paths.js'
 import { isResponsable } from '$lib/utils/permissions.js'
 import { OpeningHoursValidationError, parseOpeningHours } from '$lib/utils/opening-hours.js'
 import type { Actions, PageServerLoad } from './$types'
@@ -27,6 +39,13 @@ function optionalText(data: FormData, key: string): string | null {
   return value || null
 }
 
+function expectedPhotoReference(data: FormData): string | null {
+  const value = data.get('expectedPhotoStorageKey')
+  if (typeof value !== 'string' || value.length > 1000)
+    throw new SiteServiceError('La référence photo manque ou est invalide. Rechargez le lieu.')
+  return value || null
+}
+
 function optionalCoordinate(data: FormData, key: string): number | null {
   const raw = String(data.get(key) ?? '').trim()
   if (!raw) return null
@@ -35,19 +54,105 @@ function optionalCoordinate(data: FormData, key: string): number | null {
   return value
 }
 
-async function run(operation: () => Promise<unknown>) {
+async function run(operation: () => Promise<unknown>, unknownErrorMessage?: string) {
   try {
     await operation()
     return { success: true }
   } catch (error) {
-    if (error instanceof SiteServiceError || error instanceof OpeningHoursValidationError) {
+    if (
+      error instanceof SiteServiceError ||
+      error instanceof OpeningHoursValidationError ||
+      error instanceof MediaStorageError
+    ) {
       return fail(400, { error: error.message })
     }
+    if (error instanceof MediaCompensationError) return fail(500, { error: error.message })
+    if (unknownErrorMessage) return fail(500, { error: unknownErrorMessage })
     throw error
   }
 }
 
+async function cleanupPhoto(scope: AuthorizedMediaScope, pathname: string | null) {
+  if (!pathname) return
+  try {
+    await deletePublicSiteMedia(scope, pathname)
+  } catch (error) {
+    // A saved photo must remain saved even when deleting its predecessor fails.
+    console.error('[site-photo] Previous media cleanup failed', { siteId: scope.entityId, error })
+  }
+}
+
 export const actions: Actions = {
+  uploadPhoto: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(async () => {
+      const siteId = String(data.get('siteId') ?? '')
+      const expectedStorageKey = expectedPhotoReference(data)
+      const file = data.get('photoFile')
+      if (!(file instanceof File) || file.size === 0)
+        throw new SiteServiceError('Sélectionnez une photo.')
+      const current = await getSiteByIdForLudo(siteId, ludo.id)
+      if (!current) throw new SiteServiceError('Lieu introuvable.')
+      if (current.photoStorageKey !== expectedStorageKey)
+        throw new SiteServiceError('La photo a été modifiée simultanément. Rechargez le lieu.')
+      let registrationDefinitelyRejected = false
+      const registered = await uploadAndRegisterMedia({
+        authorize: () => authorizeSiteMediaScope(ludo.id, siteId),
+        upload: (scope) =>
+          uploadPublicSiteMedia({
+            scope,
+            file,
+            policy: {
+              maxBytes: 5 * 1024 * 1024,
+              allowedTypes: ['image/jpeg', 'image/png', 'image/webp'],
+            },
+          }),
+        register: async (scope, blob) => {
+          try {
+            return {
+              scope,
+              result: await setSitePhoto(
+                ludo.id,
+                siteId,
+                scope,
+                blob,
+                String(data.get('photoAlt') ?? ''),
+                expectedStorageKey,
+              ),
+            }
+          } catch (error) {
+            // Only validation/CAS-zero errors prove that this request did not commit.
+            registrationDefinitelyRejected = error instanceof SiteServiceError
+            throw error
+          }
+        },
+        cleanup: async (scope, pathname) => {
+          const unreferenced = await isSitePhotoUnreferenced(scope, pathname)
+          if (registrationDefinitelyRejected && unreferenced)
+            await deletePublicSiteMedia(scope, pathname)
+          else if (!registrationDefinitelyRejected)
+            console.warn('[site-photo] Uncertain registration; preserving uploaded media', {
+              siteId: scope.entityId,
+              pathname,
+            })
+        },
+      })
+      await cleanupPhoto(registered.scope, registered.result.previousStorageKey)
+    }, 'L’enregistrement de la photo n’a pas pu être confirmé. Rechargez le lieu pour vérifier la photo avant de réessayer.')
+  },
+
+  removePhoto: async (event) => {
+    const { ludo } = await requireResponsableContext(event)
+    const data = await event.request.formData()
+    return run(async () => {
+      const siteId = String(data.get('siteId') ?? '')
+      const expectedStorageKey = expectedPhotoReference(data)
+      const scope = await authorizeSiteMediaScope(ludo.id, siteId)
+      const result = await clearSitePhoto(ludo.id, siteId, expectedStorageKey)
+      await cleanupPhoto(scope, result.previousStorageKey)
+    }, 'Le retrait de la photo n’a pas pu être confirmé. Rechargez le lieu pour vérifier le retrait avant de réessayer.')
+  },
   create: async (event) => {
     const { ludo } = await requireResponsableContext(event)
     const data = await event.request.formData()
@@ -119,6 +224,11 @@ export const actions: Actions = {
   delete: async (event) => {
     const { ludo } = await requireResponsableContext(event)
     const data = await event.request.formData()
-    return run(() => deleteSite(ludo.id, String(data.get('siteId') ?? '')))
+    return run(async () => {
+      const siteId = String(data.get('siteId') ?? '')
+      const scope = await authorizeSiteMediaScope(ludo.id, siteId)
+      const deleted = await deleteSite(ludo.id, siteId)
+      await cleanupPhoto(scope, deleted.photoStorageKey ?? null)
+    })
   },
 }

@@ -171,6 +171,17 @@ describe('soumission familiale idempotente', () => {
     expect(db.insert.mock.calls[0][0].members).toEqual([])
   })
 
+  it('accepte un téléphone secondaire blanc et garde la validation obligatoire au serveur', async () => {
+    await submitPublicFamilyMembership('demo', 'request-0000000001', {
+      ...input,
+      secondaryPhone: '   ',
+    })
+    expect(db.insert.mock.calls[0][0].secondaryPhone).toBeNull()
+    await expect(
+      submitPublicFamilyMembership('demo', 'request-0000000002', { ...input, firstName: '   ' }),
+    ).rejects.toMatchObject({ code: 'invalid' })
+  })
+
   it('exige un site explicite lorsqu’il y en a plusieurs', async () => {
     listActiveSiteRows.mockResolvedValue([{ id: SITE }, { id: 'another' }])
     await expect(

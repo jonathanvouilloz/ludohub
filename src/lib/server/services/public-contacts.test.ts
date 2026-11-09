@@ -59,9 +59,17 @@ describe('contact public', () => {
     expect(insertPublicContactRow).not.toHaveBeenCalled()
   })
 
+  it('traite un téléphone facultatif blanc comme absent', async () => {
+    await submitPublicContactByLudoSlug('demo', 'request-00000001', { ...input, phone: '   ' })
+    expect(insertPublicContactRow).toHaveBeenCalledWith(expect.objectContaining({ phone: null }))
+  })
+
   it.each([
     [{ ...input, recipient: 'ailleurs' }, /Destinataire/],
     [{ ...input, subject: '' }, /sujet/],
+    [{ ...input, subject: '   ' }, /sujet/],
+    [{ ...input, name: '   ' }, /nom/],
+    [{ ...input, message: '   ' }, /message/],
     [{ ...input, email: 'invalide' }, /e-mail/],
   ])('rejette un formulaire invalide', async (badInput, message) => {
     await expect(

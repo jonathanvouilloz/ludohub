@@ -31,7 +31,7 @@ export type PublicNewsUpdateData = Pick<
 export type PublicNewsSummaryRow = Pick<
   PublicNewsRow,
   'id' | 'ludoId' | 'slug' | 'title' | 'summary' | 'imageUrl' | 'imageAlt' | 'publishedAt'
->
+> & { authorName: string | null }
 
 export function listPublicNewsRows(ludoId: string) {
   return db.query.publicNews.findMany({
@@ -66,6 +66,8 @@ export function listVisiblePublicNewsSummaryRows(
       imageUrl: publicNews.imageUrl,
       imageAlt: publicNews.imageAlt,
       publishedAt: publicNews.publishedAt,
+      authorName: sql<string | null>`(SELECT author.name FROM members AS author
+        WHERE author.id = ${publicNews.authorMemberId} AND author.ludo_id = ${publicNews.ludoId})`,
     })
     .from(publicNews)
     .where(

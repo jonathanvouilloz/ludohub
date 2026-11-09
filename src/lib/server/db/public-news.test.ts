@@ -86,9 +86,15 @@ describe('updatePublicNewsAtomic', () => {
       'imageUrl',
       'imageAlt',
       'publishedAt',
+      'authorName',
     ])
     expect(projection).not.toHaveProperty('body')
     expect(projection).not.toHaveProperty('imageStorageKey')
+    const authorSql = new PgDialect().sqlToQuery(projection.authorName).sql
+    expect(authorSql).toContain('SELECT author.name')
+    expect(authorSql).toContain('author.ludo_id = "public_news"."ludo_id"')
+    expect(authorSql).not.toContain('updated_by_member_id')
+    expect(authorSql).not.toContain('published_by_member_id')
     expect(mocks.limit).toHaveBeenCalledWith(20)
 
     const whereSql = new PgDialect().sqlToQuery(mocks.where.mock.calls[0][0]).sql

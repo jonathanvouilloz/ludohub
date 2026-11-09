@@ -2,13 +2,21 @@ import { randomUUID } from 'node:crypto'
 import {
   deleteSiteRow,
   getSiteRowForLudo,
+  getSitePhotoReferenceRow,
   insertSiteWithIntervalsAtomic,
   listActiveSiteRows,
   listSiteRowsWithOpeningHours,
   updateSiteWithIntervalsAtomic,
   updateSiteOrderRows,
+  updateSitePhotoRow,
 } from '../db/sites.js'
 import type { LudoSiteRow, SiteOpeningIntervalRow } from '../schema.js'
+import type { StoredBlob } from '../media/blob-storage.js'
+import {
+  createAuthorizedMediaScope,
+  parseManagedPublicSitePath,
+  type AuthorizedMediaScope,
+} from '../media/paths.js'
 
 export class SiteServiceError extends Error {}
 
@@ -84,7 +92,7 @@ function normalizeCoordinates(latitude?: number | null, longitude?: number | nul
 }
 
 function normalizeDirectionsUrl(value: string | null | undefined): string | null {
-  const url = optional(value, 2000, "Le lien Google Maps")
+  const url = optional(value, 2000, 'Le lien Google Maps')
   if (!url) return null
   try {
     const parsed = new URL(url)
@@ -284,7 +292,9 @@ export async function deleteSite(ludoId: string, siteId: string) {
     throw new SiteServiceError('Masquez le lieu avant de le supprimer.')
   }
   try {
-    if (!(await deleteSiteRow(siteId, ludoId))) throw new SiteServiceError('Lieu introuvable.')
+    const deleted = await deleteSiteRow(siteId, ludoId)
+    if (!deleted) throw new SiteServiceError('Lieu introuvable.')
+    return deleted
   } catch (error) {
     if (typeof error === 'object' && error !== null && 'code' in error && error.code === '23503') {
       throw new SiteServiceError(
@@ -304,4 +314,96 @@ export async function reorderSites(ludoId: string, orderedIds: string[]): Promis
     throw new SiteServiceError('La liste des lieux ne correspond pas à cet espace.')
   }
   await updateSiteOrderRows(ludoId, orderedIds)
+}
+
+export async function authorizeSiteMediaScope(ludoId: string, siteId: string) {
+  if (!(await getSiteRowForLudo(siteId, ludoId))) throw new SiteServiceError('Lieu introuvable.')
+  return createAuthorizedMediaScope({ ludoId, domain: 'sites', entityId: siteId })
+}
+
+/** A failed response can follow a successful commit: preserve media unless absence is confirmed. */
+export async function isSitePhotoUnreferenced(scope: AuthorizedMediaScope, pathname: string) {
+  const parsed = parseManagedPublicSitePath(pathname)
+  if (
+    scope.domain !== 'sites' ||
+    !parsed ||
+    parsed.domain !== scope.domain ||
+    parsed.ludoId !== scope.ludoId ||
+    parsed.entityId !== scope.entityId
+  )
+    return false
+  try {
+    const persisted = await getSitePhotoReferenceRow(scope.entityId, scope.ludoId)
+    if (persisted === undefined) return true // Confirmed site deletion.
+    if (
+      !persisted ||
+      (persisted.photoStorageKey !== null && typeof persisted.photoStorageKey !== 'string')
+    )
+      return false
+    return persisted.photoStorageKey !== pathname
+  } catch {
+    // Keeping an orphan for later cleanup is preferable to deleting a committed photo.
+    return false
+  }
+}
+
+export async function setSitePhoto(
+  ludoId: string,
+  siteId: string,
+  scope: AuthorizedMediaScope,
+  blob: StoredBlob,
+  alt: string,
+  expectedStorageKey: string | null,
+) {
+  const parsed = parseManagedPublicSitePath(blob.pathname)
+  if (
+    scope.domain !== 'sites' ||
+    scope.ludoId !== ludoId.toLowerCase() ||
+    scope.entityId !== siteId.toLowerCase() ||
+    !parsed ||
+    parsed.domain !== scope.domain ||
+    parsed.ludoId !== scope.ludoId ||
+    parsed.entityId !== scope.entityId
+  ) {
+    throw new SiteServiceError("La photo n'appartient pas à ce lieu.")
+  }
+  if (
+    !['image/jpeg', 'image/png', 'image/webp'].includes(blob.contentType) ||
+    !Number.isSafeInteger(blob.size) ||
+    blob.size < 1 ||
+    blob.size > 5 * 1024 * 1024
+  ) {
+    throw new SiteServiceError('Choisissez une photo JPEG, PNG ou WebP de 5 Mio maximum.')
+  }
+  const current = await getSiteRowForLudo(siteId, ludoId)
+  if (!current) throw new SiteServiceError('Lieu introuvable.')
+  if (current.photoStorageKey !== expectedStorageKey)
+    throw new SiteServiceError('La photo a été modifiée simultanément. Rechargez le lieu.')
+  const updated = await updateSitePhotoRow(siteId, ludoId, expectedStorageKey, {
+    photoUrl: required(blob.url, "L'URL photo", 2000),
+    photoStorageKey: blob.pathname,
+    photoAlt: optional(alt, 300, 'Le texte alternatif') ?? current.name,
+  })
+  if (!updated)
+    throw new SiteServiceError('La photo a été modifiée simultanément. Rechargez le lieu.')
+  return { site: updated, previousStorageKey: expectedStorageKey }
+}
+
+export async function clearSitePhoto(
+  ludoId: string,
+  siteId: string,
+  expectedStorageKey: string | null,
+) {
+  const current = await getSiteRowForLudo(siteId, ludoId)
+  if (!current) throw new SiteServiceError('Lieu introuvable.')
+  if (current.photoStorageKey !== expectedStorageKey)
+    throw new SiteServiceError('La photo a été modifiée simultanément. Rechargez le lieu.')
+  const updated = await updateSitePhotoRow(siteId, ludoId, expectedStorageKey, {
+    photoUrl: null,
+    photoStorageKey: null,
+    photoAlt: null,
+  })
+  if (!updated)
+    throw new SiteServiceError('La photo a été modifiée simultanément. Rechargez le lieu.')
+  return { site: updated, previousStorageKey: expectedStorageKey }
 }

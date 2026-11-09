@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 export const PUBLIC_SITE_DOMAINS = [
+  'sites',
   'announcements',
   'news',
   'activities',

@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, sql } from 'drizzle-orm'
 import { db } from './index.js'
 import {
   ludoSites,
@@ -43,6 +43,27 @@ export async function listSiteRowsWithOpeningHours(ludoId: string) {
   })
 }
 
+/** Compare-and-set of the previous media avoids leaking Blobs during concurrent uploads. */
+export async function updateSitePhotoRow(
+  siteId: string,
+  ludoId: string,
+  previousStorageKey: string | null,
+  data: Pick<LudoSiteInsert, 'photoUrl' | 'photoStorageKey' | 'photoAlt'>,
+) {
+  const [row] = await db
+    .update(ludoSites)
+    .set({ ...data, updatedAt: new Date() })
+    .where(
+      and(
+        eq(ludoSites.id, siteId),
+        eq(ludoSites.ludoId, ludoId),
+        sql`${ludoSites.photoStorageKey} IS NOT DISTINCT FROM ${previousStorageKey}`,
+      ),
+    )
+    .returning()
+  return row
+}
+
 export async function listActiveSiteRows(ludoId: string) {
   return db.query.ludoSites.findMany({
     where: and(eq(ludoSites.ludoId, ludoId), eq(ludoSites.isActive, true)),
@@ -65,11 +86,19 @@ export async function getSiteRowForLudo(siteId: string, ludoId: string) {
   })
 }
 
+/** Minimal authoritative read for compensation after an uncertain photo commit. */
+export async function getSitePhotoReferenceRow(siteId: string, ludoId: string) {
+  return db.query.ludoSites.findFirst({
+    columns: { photoStorageKey: true },
+    where: and(eq(ludoSites.id, siteId), eq(ludoSites.ludoId, ludoId)),
+  })
+}
+
 export async function deleteSiteRow(siteId: string, ludoId: string) {
   const [row] = await db
     .delete(ludoSites)
     .where(and(eq(ludoSites.id, siteId), eq(ludoSites.ludoId, ludoId)))
-    .returning({ id: ludoSites.id })
+    .returning({ id: ludoSites.id, photoStorageKey: ludoSites.photoStorageKey })
   return row
 }
 

@@ -3,16 +3,40 @@
   import BookOpenIcon from '@lucide/svelte/icons/book-open'
   import PlusIcon from '@lucide/svelte/icons/plus'
   import Trash2Icon from '@lucide/svelte/icons/trash-2'
+  import {
+    buildFamilyPayload,
+    familyFields,
+    validateFamilyForm,
+  } from '$lib/forms/family-validation.js'
 
   let { data } = $props()
   let sending = $state(false)
   let message = $state('')
   let idempotencyKey = $state('')
+  const requestKeys = new Map<string, string>()
+  let submitted = $state(false)
+  let values = $state<Record<string, string>>(
+    Object.fromEntries(
+      [...familyFields.map((field) => field.name), 'gender', 'siteId', 'consentFullName'].map(
+        (name) => [name, ''],
+      ),
+    ),
+  )
+  let consentAccepted = $state(false)
+  let website = $state('')
+  let touched = $state<Record<string, boolean>>({})
+  let members = $state<Array<{ firstName: string; lastName: string }>>([])
+  const errors = $derived(
+    validateFamilyForm(
+      { ...values, consentAccepted },
+      members,
+      data.config.sites.map((site) => site.id),
+      { consentAcceptedOn: data.today, website },
+    ),
+  )
+  const remaining = $derived(Object.values(errors))
   const MAX_TECHNICAL_MEMBERS = 50
   const documents = $derived(data.config.documents)
-  const SWISS_PHONE = /^(?:\+41|0041|0)[1-9]\d{8}$/
-  const EMAIL =
-    /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/i
   const consentDateLabel = $derived(formatIsoDate(data.today))
 
   function formatIsoDate(iso: string) {
@@ -22,23 +46,20 @@
       new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]))),
     )
   }
-  function swissPhone(value: string) {
-    return SWISS_PHONE.test(value.replace(/[\s.-]/g, ''))
-  }
-  let members = $state<Array<{ firstName: string; lastName: string }>>([])
 
-  function changed() {
-    idempotencyKey = ''
+  function interact(event: Event) {
+    const target = event.target
+    if (target instanceof HTMLInputElement || target instanceof HTMLSelectElement) {
+      touched[target.name] = true
+    }
   }
   function addMember() {
     if (members.length < MAX_TECHNICAL_MEMBERS) {
       members.push({ firstName: '', lastName: '' })
-      changed()
     }
   }
   function removeMember(index: number) {
     members.splice(index, 1)
-    changed()
   }
   function escapeHtml(value: string) {
     return value
@@ -103,47 +124,28 @@
     return blocks.join('')
   }
   async function submit(event: SubmitEvent) {
+    if (sending || submitted) return
     message = ''
     const form = event.currentTarget as HTMLFormElement
-    const invalidFields = Array.from(form.elements).filter(
-      (element): element is HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement =>
-        (element instanceof HTMLInputElement ||
-          element instanceof HTMLSelectElement ||
-          element instanceof HTMLTextAreaElement) &&
-        !element.validity.valid,
-    )
-    if (invalidFields.length) {
-      const names = [
-        ...new Set(
-          invalidFields.map((field) => {
-            const label = field.closest('label')?.querySelector('span')?.textContent?.trim()
-            return label || field.name || 'un champ obligatoire'
-          }),
-        ),
-      ]
-      message = `Complétez ou corrigez les champs suivants : ${names.join(', ')}.`
-      invalidFields[0]?.focus()
+    if (remaining.length) {
+      for (const name of Object.keys(errors)) touched[name] = true
+      const first = form.elements.namedItem(
+        Object.keys(errors)[0] === 'transport' ? 'firstName' : Object.keys(errors)[0],
+      )
+      if (first instanceof HTMLElement) first.focus()
       return
     }
-    const raw = Object.fromEntries(new FormData(form))
-    const phone = String(raw.phone ?? '')
-    const secondaryPhone = String(raw.secondaryPhone ?? '').trim()
-    const email = String(raw.email ?? '').trim()
-    if (!swissPhone(phone)) {
-      message = 'Le téléphone doit être un numéro suisse, par exemple 079 000 00 00.'
+    const body = buildFamilyPayload({ ...values, consentAccepted }, members, data.today, website)
+    const snapshot = JSON.stringify(body)
+    if (!globalThis.crypto?.randomUUID) {
+      message =
+        'Votre navigateur ne permet pas un envoi sécurisé. Contactez la ludothèque directement.'
       return
     }
-    if (secondaryPhone && !swissPhone(secondaryPhone)) {
-      message = 'Le second téléphone doit être un numéro suisse, par exemple 022 000 00 00.'
-      return
-    }
-    if (!EMAIL.test(email)) {
-      message = 'L’e-mail doit être une adresse complète, par exemple prenom@exemple.ch.'
-      return
-    }
+    if (!requestKeys.has(snapshot))
+      requestKeys.set(snapshot, crypto.randomUUID() + crypto.randomUUID())
+    idempotencyKey = requestKeys.get(snapshot)!
     sending = true
-    const body = { ...raw, consentAccepted: raw.consentAccepted === 'on', members }
-    idempotencyKey ||= crypto.randomUUID() + crypto.randomUUID()
     try {
       const response = await fetch(
         `/api/forms/v1/${encodeURIComponent(data.ludoSlug)}/family-membership/submissions`,
@@ -153,14 +155,27 @@
           body: JSON.stringify(body),
         },
       )
-      const result = (await response.json().catch(() => null)) as { error?: unknown } | null
-      if (response.ok) {
+      const result = (await response.json().catch(() => null)) as {
+        error?: unknown
+        accepted?: unknown
+        receiptId?: unknown
+      } | null
+      if (
+        (response.status === 200 || response.status === 201) &&
+        result?.accepted === true &&
+        typeof result.receiptId === 'string' &&
+        result.receiptId.trim()
+      ) {
+        submitted = true
         message = 'Votre demande a bien été reçue. La ludothèque vous recontactera prochainement.'
       } else if (
         (response.status === 400 || response.status === 409) &&
         typeof result?.error === 'string'
       ) {
         message = result.error
+      } else if (response.status === 413) {
+        message =
+          'Votre demande est trop volumineuse. Raccourcissez les champs longs ou contactez directement la ludothèque pour inscrire tous les membres. Vos informations ont été conservées.'
       } else if (response.status === 429) {
         message = 'Trop de tentatives ont été envoyées. Patientez quelques minutes puis réessayez.'
       } else {
@@ -193,182 +208,225 @@
   <form
     class="membership-form"
     novalidate
-    oninput={changed}
+    aria-busy={sending}
+    oninput={interact}
+    onchange={interact}
+    onfocusout={interact}
     onsubmit={(event) => {
       event.preventDefault()
       void submit(event)
     }}
   >
-    <input name="website" class="honeypot" tabindex="-1" autocomplete="off" />
+    <input name="website" class="honeypot" tabindex="-1" autocomplete="off" bind:value={website} />
 
-    <section class="form-section" aria-labelledby="responsible-title">
-      <div class="section-heading">
-        <span>1</span>
-        <div>
-          <h2 id="responsible-title">Personne responsable</h2>
-          <p>Les coordonnées de la personne qui effectue la demande.</p>
-        </div>
-      </div>
-      <div class="fields-grid">
-        <label class="field full"
-          ><span>Genre</span><select required name="gender"
-            ><option value="" disabled selected>Choisir</option><option value="female"
-              >Féminin</option
-            ><option value="male">Masculin</option><option value="other">Neutre</option></select
-          ></label
-        >
-        <label class="field"
-          ><span>Prénom</span><input required name="firstName" autocomplete="given-name" /></label
-        >
-        <label class="field"
-          ><span>Nom</span><input required name="lastName" autocomplete="family-name" /></label
-        >
-        <label class="field full"
-          ><span>Adresse</span><input
-            required
-            name="address"
-            autocomplete="street-address"
-          /></label
-        >
-        <label class="field"
-          ><span>NPA</span><input
-            required
-            name="postalCode"
-            autocomplete="postal-code"
-            inputmode="numeric"
-          /></label
-        >
-        <label class="field"
-          ><span>Ville</span><input required name="city" autocomplete="address-level2" /></label
-        >
-        <label class="field"
-          ><span>Téléphone</span><input
-            required
-            name="phone"
-            autocomplete="tel"
-            inputmode="tel"
-            placeholder="079 000 00 00"
-          /><small>Numéro suisse, par exemple 079 000 00 00.</small></label
-        >
-        <label class="field"
-          ><span>Autre téléphone <em>facultatif</em></span><input
-            name="secondaryPhone"
-            autocomplete="tel"
-            inputmode="tel"
-            placeholder="022 000 00 00"
-          /><small>Même format, si vous en avez un deuxième.</small></label
-        >
-        <label class="field full"
-          ><span>E-mail</span><input
-            required
-            name="email"
-            type="email"
-            autocomplete="email"
-            placeholder="prenom@exemple.ch"
-          /><small>Adresse complète, par exemple prenom@exemple.ch.</small></label
-        >
-      </div>
-    </section>
-
-    <section class="form-section" aria-labelledby="members-title">
-      <div class="section-heading">
-        <span>2</span>
-        <div>
-          <h2 id="members-title">Autres membres</h2>
-          <p>
-            La personne responsable est déjà incluse. Ajoutez un enfant ou un autre parent seulement
-            si besoin.
-          </p>
-        </div>
-      </div>
-      <div class="member-list">
-        {#if members.length === 0}<p class="member-empty">Aucun autre membre.</p>{/if}
-        {#each members as member, index}
-          <div class="member-row">
-            <p>Membre {index + 1}</p>
-            <label class="field"
-              ><span>Prénom</span><input required bind:value={member.firstName} /></label
-            >
-            <label class="field"
-              ><span>Nom</span><input required bind:value={member.lastName} /></label
-            >
-            <button
-              class="remove-member"
-              type="button"
-              onclick={() => removeMember(index)}
-              aria-label={`Retirer le membre ${index + 1}`}
-              ><Trash2Icon size={17} aria-hidden="true" />Retirer</button
-            >
+    <fieldset disabled={sending || submitted} class="form-controls">
+      <section class="form-section" aria-labelledby="responsible-title">
+        <div class="section-heading">
+          <span>1</span>
+          <div>
+            <h2 id="responsible-title">Personne responsable</h2>
+            <p>Les coordonnées de la personne qui effectue la demande.</p>
           </div>
-        {/each}
-      </div>
-      <button class="add-member" type="button" onclick={addMember}
-        ><PlusIcon size={17} aria-hidden="true" />Ajouter un membre</button
-      >
-    </section>
-
-    <section class="form-section" aria-labelledby="confirmation-title">
-      <div class="section-heading">
-        <span>3</span>
-        <div>
-          <h2 id="confirmation-title">Validation</h2>
-          <p>Relisez le règlement avant d’envoyer la demande.</p>
         </div>
-      </div>
-      <div class="validation-fields">
-        {#if data.config.sites.length > 1}<label class="field"
-            ><span>Lieu de la ludothèque</span><select required name="siteId"
-              ><option value="">Choisir un lieu</option>{#each data.config.sites as site}<option
-                  value={site.id}>{site.name}</option
-                >{/each}</select
-            ></label
-          >{/if}
-        {#each documents as document (document.slug)}
-          <Dialog.Root>
-            <Dialog.Trigger class="rules-link"
-              ><BookOpenIcon size={18} aria-hidden="true" />{document.kind === 'rules'
-                ? 'Lire le règlement'
-                : document.title}</Dialog.Trigger
-            >
-            <Dialog.Content class="rules-dialog">
-              <Dialog.Header
-                ><Dialog.Title>{document.title}</Dialog.Title><Dialog.Description
-                  >À lire avant de valider votre demande.</Dialog.Description
-                ></Dialog.Header
-              >
-              <article class="regulation-content">
-                {@html regulationHtml(document.contentMarkdown)}
-              </article>
-              <Dialog.Footer><Dialog.Close class="dialog-close">Fermer</Dialog.Close></Dialog.Footer
-              >
-            </Dialog.Content>
-          </Dialog.Root>
-        {/each}
-        <label class="consent"
-          ><input required type="checkbox" name="consentAccepted" /><span
-            >{data.config.consentLabel}</span
-          ></label
-        >
-        <div class="signature-grid">
-          <label class="field"
-            ><span>Signature</span><input
+        <div class="fields-grid">
+          <label class="field full"
+            ><span>Genre</span><select
               required
-              name="consentFullName"
-              placeholder="Nom complet"
-            /></label
+              name="gender"
+              bind:value={values.gender}
+              aria-invalid={touched.gender && Boolean(errors.gender)}
+              aria-describedby="gender-hint gender-error"
+              ><option value="" disabled>Choisir</option><option value="female">Féminin</option
+              ><option value="male">Masculin</option><option value="other">Neutre</option></select
+            ><small id="gender-hint">Choisissez l’option qui vous correspond.</small><small
+              id="gender-error"
+              class="field-error">{touched.gender ? (errors.gender ?? '') : ''}</small
+            ></label
           >
-          <div class="field">
-            <span>Date</span>
-            <p class="fixed-date">{consentDateLabel}</p>
-            <input type="hidden" name="consentAcceptedOn" value={data.today} />
+          {#each familyFields as field (field.name)}
+            <label class="field" class:full={'full' in field && field.full}>
+              <span>{field.label}</span>
+              <input
+                name={field.name}
+                required={!('optional' in field && field.optional)}
+                type={'type' in field ? field.type : 'text'}
+                maxlength={field.max}
+                autocomplete={field.autocomplete}
+                placeholder={field.placeholder}
+                bind:value={values[field.name]}
+                aria-invalid={touched[field.name] && Boolean(errors[field.name])}
+                aria-describedby={`${field.name}-hint ${field.name}-error`}
+              />
+              <small id={`${field.name}-hint`}>{field.hint}</small>
+              <small id={`${field.name}-error`} class="field-error"
+                >{touched[field.name] ? (errors[field.name] ?? '') : ''}</small
+              >
+            </label>
+          {/each}
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="members-title">
+        <div class="section-heading">
+          <span>2</span>
+          <div>
+            <h2 id="members-title">Autres membres</h2>
+            <p>
+              La personne responsable est déjà incluse. Ajoutez un enfant ou un autre parent
+              seulement si besoin.
+            </p>
           </div>
         </div>
-      </div>
-    </section>
+        <div class="member-list">
+          {#if members.length === 0}<p class="member-empty">Aucun autre membre.</p>{/if}
+          {#each members as member, index}
+            <div class="member-row">
+              <p>Membre {index + 1}</p>
+              {#each ['firstName', 'lastName'] as name}
+                {@const key = `member-${index}-${name}`}
+                <label class="field"
+                  ><span>{name === 'firstName' ? 'Prénom' : 'Nom'}</span>
+                  <input
+                    required
+                    name={key}
+                    maxlength="100"
+                    placeholder={name === 'firstName' ? 'Alex' : 'Martin'}
+                    bind:value={member[name as 'firstName' | 'lastName']}
+                    aria-invalid={touched[key] && Boolean(errors[key])}
+                    aria-describedby={`${key}-hint ${key}-error`}
+                  />
+                  <small id={`${key}-hint`}
+                    >Obligatoire pour ce membre, 100 caractères maximum.</small
+                  >
+                  <small class="field-error" id={`${key}-error`}
+                    >{touched[key] ? (errors[key] ?? '') : ''}</small
+                  >
+                </label>
+              {/each}
+              <button
+                class="remove-member"
+                type="button"
+                onclick={() => removeMember(index)}
+                aria-label={`Retirer le membre ${index + 1}`}
+                ><Trash2Icon size={17} aria-hidden="true" />Retirer</button
+              >
+            </div>
+          {/each}
+        </div>
+        <button
+          class="add-member"
+          type="button"
+          onclick={addMember}
+          disabled={members.length >= MAX_TECHNICAL_MEMBERS}
+          ><PlusIcon size={17} aria-hidden="true" />Ajouter un membre</button
+        >
+      </section>
+
+      <section class="form-section" aria-labelledby="confirmation-title">
+        <div class="section-heading">
+          <span>3</span>
+          <div>
+            <h2 id="confirmation-title">Validation</h2>
+            <p>Relisez le règlement avant d’envoyer la demande.</p>
+          </div>
+        </div>
+        <div class="validation-fields">
+          {#if data.config.sites.length > 1}<label class="field"
+              ><span>Lieu de la ludothèque</span><select
+                required
+                name="siteId"
+                bind:value={values.siteId}
+                aria-invalid={touched.siteId && Boolean(errors.siteId)}
+                aria-describedby="siteId-hint siteId-error"
+                ><option value="">Choisir un lieu</option>{#each data.config.sites as site}<option
+                    value={site.id}>{site.name}</option
+                  >{/each}</select
+              ><small id="siteId-hint">Choisissez le lieu auquel adresser votre demande.</small
+              ><small id="siteId-error" class="field-error"
+                >{touched.siteId ? (errors.siteId ?? '') : ''}</small
+              ></label
+            >{/if}
+          {#each documents as document (document.slug)}
+            <Dialog.Root>
+              <Dialog.Trigger class="rules-link"
+                ><BookOpenIcon size={18} aria-hidden="true" />{document.kind === 'rules'
+                  ? 'Lire le règlement'
+                  : document.title}</Dialog.Trigger
+              >
+              <Dialog.Content class="rules-dialog">
+                <Dialog.Header
+                  ><Dialog.Title>{document.title}</Dialog.Title><Dialog.Description
+                    >À lire avant de valider votre demande.</Dialog.Description
+                  ></Dialog.Header
+                >
+                <article class="regulation-content">
+                  {@html regulationHtml(document.contentMarkdown)}
+                </article>
+                <Dialog.Footer
+                  ><Dialog.Close class="dialog-close">Fermer</Dialog.Close></Dialog.Footer
+                >
+              </Dialog.Content>
+            </Dialog.Root>
+          {/each}
+          <label class="consent"
+            ><input
+              required
+              type="checkbox"
+              name="consentAccepted"
+              bind:checked={consentAccepted}
+              aria-invalid={touched.consentAccepted && Boolean(errors.consentAccepted)}
+              aria-describedby="consent-hint consent-error"
+            /><span>{data.config.consentLabel}</span></label
+          >
+          <small id="consent-hint">Votre accord est nécessaire pour envoyer la demande.</small>
+          <small id="consent-error" class="field-error"
+            >{touched.consentAccepted ? (errors.consentAccepted ?? '') : ''}</small
+          >
+          <div class="signature-grid">
+            <label class="field"
+              ><span>Signature</span><input
+                required
+                name="consentFullName"
+                placeholder="Camille Martin"
+                maxlength="200"
+                bind:value={values.consentFullName}
+                aria-invalid={touched.consentFullName && Boolean(errors.consentFullName)}
+                aria-describedby="signature-hint signature-error"
+              /><small id="signature-hint"
+                >Saisissez votre prénom et nom pour signer, 200 caractères maximum.</small
+              ><small id="signature-error" class="field-error"
+                >{touched.consentFullName ? (errors.consentFullName ?? '') : ''}</small
+              ></label
+            >
+            <div class="field">
+              <span>Date</span>
+              <p class="fixed-date">{consentDateLabel}</p>
+              <input type="hidden" name="consentAcceptedOn" value={data.today} />
+            </div>
+          </div>
+        </div>
+      </section>
+    </fieldset>
 
     <footer class="form-footer">
-      <button class="submit-button" disabled={sending} type="submit"
-        >{sending ? 'Envoi en cours…' : 'Envoyer la demande'}</button
+      <div id="form-requirements" class="form-requirements">
+        {#if submitted}<p>Votre demande a été reçue. Vous n’avez pas besoin de la renvoyer.</p>
+        {:else if remaining.length}<p>
+            Pour envoyer votre demande, complétez les points suivants :
+          </p>
+          <ul>
+            {#each remaining as error}<li>{error}</li>{/each}
+          </ul>
+        {:else}<p role="status">
+            Tous les champs sont valides. Vous pouvez envoyer votre demande.
+          </p>{/if}
+      </div>
+      <button
+        class="submit-button"
+        disabled={sending || submitted || remaining.length > 0}
+        type="submit"
+        aria-describedby="form-requirements"
+        >{submitted ? 'Demande reçue' : sending ? 'Envoi en cours…' : 'Envoyer la demande'}</button
       >
     </footer>
   </form>
@@ -383,6 +441,34 @@
 </main>
 
 <style>
+  .form-controls {
+    display: grid;
+    gap: var(--space-5);
+    margin: 0;
+    padding: 0;
+    min-width: 0;
+    border: 0;
+  }
+  .field .field-error,
+  .field-error {
+    color: var(--danger);
+    font-size: var(--text-small);
+  }
+  .field-error:empty {
+    display: none;
+  }
+  input[aria-invalid='true'],
+  select[aria-invalid='true'] {
+    border-color: var(--danger);
+  }
+  .form-requirements {
+    color: var(--text-muted);
+    font-size: var(--text-small);
+  }
+  .form-requirements ul {
+    margin: var(--space-2) 0;
+    padding-left: var(--space-5);
+  }
   .membership-page {
     width: min(100% - 32px, 48rem);
     margin: 0 auto;
@@ -496,7 +582,6 @@
     font-size: var(--text-small);
     font-weight: var(--weight-semibold);
   }
-  .field em,
   .field small {
     color: var(--text-muted);
     font-style: normal;
@@ -625,10 +710,11 @@
     color: var(--text-main);
   }
   .form-footer {
-    display: flex;
-    justify-content: flex-end;
+    display: grid;
+    gap: var(--space-4);
   }
   .submit-button {
+    justify-self: end;
     min-height: 46px;
     padding: 0 var(--space-5);
     border: 0;
@@ -651,7 +737,7 @@
     box-shadow: var(--shadow-focus);
   }
   .submit-button:disabled {
-    cursor: wait;
+    cursor: not-allowed;
     opacity: 0.65;
   }
   .form-message {

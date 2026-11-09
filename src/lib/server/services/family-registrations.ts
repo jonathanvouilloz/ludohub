@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { FAMILY_EMAIL as EMAIL, isSwissPhone } from '../../forms/family-validation.js'
 import { getLudoBySlug } from '../db/ludotheques.js'
 import { listActiveSiteRows } from '../db/sites.js'
 import {
@@ -48,7 +49,7 @@ const DOCUMENT_KINDS = new Set<FamilyRegistrationDocumentKind>([
 ])
 
 function text(value: unknown, label: string, max: number, optional = false) {
-  if (optional && (value == null || value === '')) return null
+  if (optional && (value == null || (typeof value === 'string' && !value.trim()))) return null
   if (typeof value !== 'string') throw new FamilyRegistrationServiceError(`${label} invalide.`)
   const clean = value.replace(/\r\n?/g, '\n').trim()
   if (
@@ -58,14 +59,6 @@ function text(value: unknown, label: string, max: number, optional = false) {
   )
     throw new FamilyRegistrationServiceError(`${label} invalide.`)
   return clean
-}
-
-const SWISS_PHONE = /^(?:\+41|0041|0)[1-9]\d{8}$/
-const EMAIL =
-  /^[a-z0-9](?:[a-z0-9._%+-]{0,62}[a-z0-9])?@[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/
-
-function isSwissPhone(value: string) {
-  return SWISS_PHONE.test(value.replace(/[\s.-]/g, ''))
 }
 
 function date(value: unknown, label: string) {

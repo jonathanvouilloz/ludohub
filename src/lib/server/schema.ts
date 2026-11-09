@@ -113,6 +113,9 @@ export const ludoSites = pgTable(
     email: text('email'),
     accessInfo: text('access_info'),
     importantInfo: text('important_info'),
+    photoUrl: text('photo_url'),
+    photoStorageKey: text('photo_storage_key'),
+    photoAlt: text('photo_alt'),
     directionsUrl: text('directions_url'),
     latitude: doublePrecision('latitude'),
     longitude: doublePrecision('longitude'),
@@ -124,6 +127,10 @@ export const ludoSites = pgTable(
   },
   (t) => [
     unique('ludo_sites_ludo_slug_unique').on(t.ludoId, t.slug),
+    check(
+      'ludo_sites_photo_check',
+      sql`(${t.photoUrl} is null and ${t.photoStorageKey} is null and ${t.photoAlt} is null) or (${t.photoUrl} is not null and char_length(trim(${t.photoUrl})) between 1 and 2000 and ${t.photoStorageKey} is not null and char_length(trim(${t.photoStorageKey})) between 1 and 1000 and ${t.photoAlt} is not null and char_length(trim(${t.photoAlt})) between 1 and 300)`,
+    ),
     unique('ludo_sites_id_ludo_id_unique').on(t.id, t.ludoId),
     uniqueIndex('ludo_sites_one_active_primary_idx')
       .on(t.ludoId)
@@ -515,10 +522,7 @@ export const publicFaqs = pgTable(
       sql`(${t.status} = 'draft' and ${t.publishedAt} is null and ${t.publishedByMemberId} is null) or (${t.status} in ('published', 'hidden') and ${t.publishedAt} is not null and ${t.publishedByMemberId} is not null)`,
     ),
     check('public_faqs_question_check', sql`char_length(trim(${t.question})) between 1 and 300`),
-    check(
-      'public_faqs_answer_check',
-      sql`char_length(trim(${t.answerText})) between 1 and 20000`,
-    ),
+    check('public_faqs_answer_check', sql`char_length(trim(${t.answerText})) between 1 and 20000`),
     index('public_faqs_public_order_idx').on(t.ludoId, t.status, t.categoryId, t.createdAt),
   ],
 )

@@ -554,6 +554,7 @@ describe('lecture publique', () => {
         imageUrl: null,
         imageAlt: null,
         publishedAt: FIRST,
+        authorName: null,
       })),
     )
     const latest = await listLatestVisiblePublicNews(LUDO)

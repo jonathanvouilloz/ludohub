@@ -279,6 +279,7 @@ const activityRow = {
   summary: 'Une soirée ouverte à toutes et tous.',
   body: '**Bienvenue**',
   location: 'Pâquis',
+  targets: [],
   type: 'recurring' as const,
   imageUrl: null,
   imageAlt: null,
@@ -287,7 +288,97 @@ const activityRow = {
   publishedAt: new Date('2026-08-05T09:00:00.000Z'),
 }
 
-const activitySummaryRow = { ...activityRow }
+const activitySummaryRow = { ...activityRow, sites: [] }
+
+describe('nouveaux contrats des lieux', () => {
+  const paquis = {
+    id: 'paquis-id',
+    slug: 'paquis',
+    name: 'Pâquis',
+    isActive: true,
+    openingIntervals: [],
+  }
+  const secheron = {
+    id: 'secheron-id',
+    slug: 'secheron',
+    name: 'Sécheron',
+    isActive: true,
+    openingIntervals: [],
+  }
+  const inactive = {
+    id: 'hidden-id',
+    slug: 'hidden',
+    name: 'Ancien lieu',
+    isActive: false,
+    openingIntervals: [],
+  }
+  const ref = ({ id, slug, name }: typeof paquis) => ({ id, slug, name })
+
+  it('transmet le ciblage des résumés et archives sans coordonnées internes', async () => {
+    const row = { ...activitySummaryRow, sites: [ref(secheron)] }
+    listVisibleActivities.mockResolvedValue([row])
+    listArchivedActivities.mockResolvedValue([row])
+    expect((await getPublicActivitiesByLudoSlug('demo'))?.activities[0].sites).toEqual([
+      ref(secheron),
+    ])
+    expect((await getArchivedPublicActivitiesByLudoSlug('demo'))?.activities[0].sites).toEqual([
+      ref(secheron),
+    ])
+  })
+
+  it.each([
+    ['global', [], [ref(paquis), ref(secheron)]],
+    ['un lieu', [{ site: secheron }], [ref(secheron)]],
+    ['plusieurs lieux dont un masqué', [{ site: paquis }, { site: inactive }], [ref(paquis)]],
+  ])('résout le détail %s contre les seuls lieux actifs', async (_label, targets, expected) => {
+    listSiteRowsWithOpeningHours.mockResolvedValue([paquis, secheron, inactive])
+    getVisibleActivity.mockResolvedValue({ ...activityRow, targets })
+    expect(
+      (await getPublicActivityDetailByLudoSlug('demo', 'soiree-jeux'))?.activity.sites,
+    ).toEqual(expected)
+  })
+
+  it('transmet la photo et l’information importante sans clé de stockage', async () => {
+    listSiteRowsWithOpeningHours.mockResolvedValue([
+      {
+        ...paquis,
+        importantInfo: 'Fermé le 13 octobre',
+        photoUrl: 'https://blob.test/lieu.webp',
+        photoAlt: null,
+        photoStorageKey: 'private',
+      },
+    ])
+    const site = (await getPublicSitesByLudoSlug('demo'))?.sites[0]
+    expect(site?.photo).toEqual({ url: 'https://blob.test/lieu.webp', alt: 'Pâquis' })
+    expect(site?.importantInfo).toBe('Fermé le 13 octobre')
+    expect(site).not.toHaveProperty('photoStorageKey')
+  })
+
+  it('les actualités identifient uniquement l’auteur original', async () => {
+    const row = {
+      id: 'news-id',
+      slug: 'nouvelle',
+      title: 'Nouvelle',
+      summary: 'Résumé',
+      body: 'Article',
+      imageUrl: null,
+      imageAlt: null,
+      publishedAt: new Date('2026-10-12T08:00:00Z'),
+      targets: [],
+      author: { name: 'Auteur', role: 'responsable', id: 'private' },
+      updatedBy: { name: 'Autre personne' },
+      publishedBy: { name: 'Publication' },
+    }
+    getVisibleNews.mockResolvedValue(row)
+    listVisibleNews.mockResolvedValue([{ ...row, authorName: 'Auteur' }])
+    const detail = (await getPublicNewsDetailByLudoSlug('demo', 'nouvelle'))?.news
+    expect(detail?.authorName).toBe('Auteur')
+    expect((await getPublicNewsByLudoSlug('demo'))?.news[0].authorName).toBe('Auteur')
+    expect(detail).not.toHaveProperty('author')
+    expect(detail).not.toHaveProperty('updatedBy')
+    expect(detail).not.toHaveProperty('publishedBy')
+  })
+})
 
 describe('activités publiques', () => {
   it('sépare la liste actuelle des archives et borne en base', async () => {

@@ -697,10 +697,6 @@
   :global(.actions-head) {
     text-align: right;
   }
-  .hint a {
-    color: var(--primary-dark);
-    font-weight: var(--weight-semibold);
-  }
   .submission-name {
     padding: 0;
     border: 0;

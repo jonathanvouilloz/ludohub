@@ -37,7 +37,7 @@ function text(v: unknown, l: string, max: number) {
   return n
 }
 function optional(v: unknown, l: string, max: number) {
-  return v == null || v === '' ? null : text(v, l, max)
+  return v == null || (typeof v === 'string' && !v.trim()) ? null : text(v, l, max)
 }
 function keyHash(key: string) {
   if (typeof key !== 'string' || key.length < 16 || key.length > 200 || !/^[\x21-\x7e]+$/.test(key))
